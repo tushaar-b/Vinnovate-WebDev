@@ -1,0 +1,31 @@
+DATABASE SCHEMA — PostgreSQL (logical schema)
+Use SQLAlchemy declarative models + Alembic migrations. IDs UUID (or consistently bigint) throughout, UTC timestamptz, FK constraints. Table names below authoritative.
+
+monitors
+id uuid PK; name varchar(120) not null; url text not null; canonical_url text not null; interval_minutes int not null check >=15 <=1440; sensitivity enum low|medium|high default medium; enabled bool default true; status enum pending|ok|changed|error|blocked default pending; last_checked_at timestamptz nullable; last_changed_at timestamptz nullable; next_check_at timestamptz not null; last_error text nullable; created_at,updated_at timestamptz not null. indexes (enabled,next_check_at), (canonical_url).
+
+monitor_rules
+id uuid PK; monitor_id uuid FK monitors ON DELETE CASCADE; rule_type enum watch|ignore; css_selector text not null; label varchar(120) nullable; created_at timestamptz. index (monitor_id, rule_type). If >0 watch selectors, concatenate selected texts in stable selector order. Ignore rules apply within selected regions as well.
+
+check_runs
+id uuid PK; monitor_id FK; job_id varchar(100) UNIQUE; state enum queued|running|unchanged|changed|baseline|error|blocked; started_at timestamptz nullable; finished_at timestamptz nullable; http_status int nullable; error_code varchar(50) nullable; error_message text nullable; content_hash char(64) nullable; duration_ms int nullable; attempt int default 0. index (monitor_id, started_at desc).
+
+versions
+id uuid PK; monitor_id FK; check_run_id FK check_runs UNIQUE; sequence_number int not null; content_hash char(64) not null; normalized_text text not null; screenshot_path text not null; captured_at timestamptz not null; stable_alert_count int default 0 (or equivalent confirmation state elsewhere); UNIQUE(monitor_id,sequence_number). Index (monitor_id,captured_at desc). Only baseline/changed; no errors.
+
+notification_channels
+id uuid PK; monitor_id uuid FK; channel_type enum discord|telegram; configuration_json jsonb not null (secret values encrypted at rest for production; local .env/secret references preferred); enabled bool; created_at timestamptz. Never serialize secret configuration to public API.
+
+notification_outbox
+id uuid PK; monitor_id FK; version_id FK; channel_id FK; state enum pending|sending|sent|failed; attempts int default 0; last_error text nullable; sent_at timestamptz nullable; created_at timestamptz; UNIQUE(monitor_id,version_id,channel_id). index (state,created_at).
+
+OPTIONAL capture_cache table only if needed after phase 5; Redis lock/cache sufficient for demo.
+
+SEQUENCE & TRANSACTION RULES
+- Lock monitor row to assign sequence_number and compare latest version; avoid race duplicates.
+- No new version for equal content hash relative to previous successful version.
+- HTTP error and missing watch selector do not mutate versions; check_runs still records outcome.
+- notification_outbox uniqueness makes retry idempotent.
+- on monitor delete, cascade rules/runs/versions/outbox or implement appropriate FK deletion order; screenshots cleanup best effort.
+- prevent path traversal in screenshot responses; serve only UUID-derived artifacts.
+- `stable_alert_count` is optional only if persistence state implemented reliably elsewhere.

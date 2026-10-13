@@ -1,0 +1,26 @@
+DEMO & OPERATIONS RUNBOOK
+
+COLD START (final README must replace placeholders with exact validated commands)
+1 Create and activate Python venv on Mac, install backend requirements, install Playwright Chromium.
+2 npm install in frontend.
+3 docker compose up -d postgres redis.
+4 alembic upgrade head.
+5 Start FastAPI, RQ worker, due-monitor scheduler as separate processes, Vite dev server.
+6 Confirm /api/health, frontend landing, worker ready.
+7 Start built-in local fixture mode. Only fixture route has explicit trusted access; no global internal-IP exemptions.
+
+5-MINUTE DEMO
+A Show clean dashboard and add fixture product URL (price=4999, timestamp noise).
+B Check Now and explain baseline no alert.
+C Change timestamp only with ignore selector set -> check unchanged.
+D Change price to 3999 -> check new version.
+E View timeline, compare v1 vs v2 and highlighted screenshot differences.
+F Select price region on picker; change rotating banner, verify no new version; change price and verify new version.
+G (Optional) show accelerated scheduler in TEST_MODE and mock notification outbox exactly once.
+H Show status handling for simulated 500/blocked fixture and preserved last good version.
+
+BACKUP DEMO
+If public website blocks Playwright, do not bypass it. Use local fixture and state clearly that the system supports public sites subject to site restrictions. Prepare screenshots of full run and screenshot diff; never fabricate checks.
+
+FINAL EVIDENCE
+Healthy API, frontend build, pytest suite, migration, UI 5 screenshots, deterministic fixture log, alert mock response, and known limitations.

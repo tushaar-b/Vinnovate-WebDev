@@ -1,0 +1,25 @@
+UI/UX REQUIREMENTS — Fast, functional, high quality; default LIGHT THEME
+Design direction: premium observability SaaS; white/off-white background, ink text, restrained electric blue primary, subtle lime green healthy, amber warning, rose error. Avoid heavy gradients, Minecraft theme, glass overload and unnecessary animation. Responsive desktop-first 1440px, usable 768px mobile; accessible focus, contrast, keyboard navigation.
+
+APP NAV: Dashboard, Monitors, Activity, Settings (Settings can be lean).
+DASHBOARD: top heading "Website Change Detector" + Add Monitor CTA. Four metric cards: Total, Healthy, Changed (24h), Errors. Monitors list with name+domain, status pill, last checked, last change, interval, Check Now and Details actions. Search and simple status filter. Empty state with single CTA. Loading skeleton + meaningful errors.
+ADD MONITOR MODAL: name, full URL, interval select, sensitivity select; field validation and description; submit disables during pending.
+MONITOR DETAILS: title+URL, overall status and timestamp; toolbar Check Now, Pause, Configure, Delete (confirm). Tabs Overview, Versions, Region Picker, Alerts. Overview: latest screenshot, selected regions, latest change summary, checks/activity. Errors show explicit reason and preserve previous good screenshot.
+VERSION TIMELINE: chronological rows, sequence number, capture time, hash preview, compare checkboxes for any 2 versions.
+COMPARE: split layout. Text diff (red removed / green added) and screenshot side-by-side with image diff overlay and before/after slider optional stretch. Missing old/new screenshot fallback with clear explanation. Allow returning to version list.
+REGION PICKER: screenshot overlaid with semi-transparent selectable DOM bounding boxes, hover outline, click selects. WATCH/IGNORE segmented control; list selected selectors with remove; Save Changes; selector validity feedback; no iframe embedding untrusted remote page. Use screenshot scale factor when mapping element pixel dimensions.
+ALERT SETTINGS: Discord webhook or Telegram bot token+chat id; connection test optional; show configured channels without exposing secrets.
+
+DESIGN TOKENS
+background #F8FAFC, surface #FFFFFF, primary #2563EB, primaryHover #1D4ED8, text #0F172A, muted #64748B, border #E2E8F0, success #16A34A, warning #D97706, error #DC2626; rounded corners 12-16px; 8px grid; body font Inter or system sans; icons Lucide; subtle shadows; no horizontal scroll at 1440 width.
+
+CRITICAL UX BEHAVIORS
+- "Check Now" returns instantly to queued status; progress polls until terminal; no spinner forever.
+- Alerts status not conflated with changes.
+- Baseline is explicitly "First snapshot saved" not "New change detected".
+- Clicking rows opens details; compare action obvious; warnings distinct from diffs.
+- Screenshot snapshots are safe <img> only; never inject remote HTML.
+- UI must not hang while typing, switching tabs, or rendering image diffs; virtualize/limit long histories.
+- Accessibility: labeled inputs, focus trap modal, ESC close, aria statuses, keyboard selector list editing.
+
+DELIVERABLE: screenshots for 5 core states (empty, populated, monitor detail, picker, compare) in phase evidence.

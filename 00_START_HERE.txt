@@ -1,0 +1,33 @@
+WEBSITE CHANGE DETECTOR — 24-HOUR ANTIGRAVITY BUILD KIT
+Version 1.0 | Date 2026-10-13
+
+MISSION
+Ship a stable, demonstrable, locally runnable website monitoring app in ~24 hours. Prefer working end-to-end reliability over unimplemented features and aesthetic overengineering.
+
+READ ORDER
+1. 01_PRD.txt
+2. 02_TRD_ARCHITECTURE.txt
+3. 03_DATABASE_SCHEMA.txt
+4. 04_API_CONTRACT.txt
+5. 05_UI_UX_REQUIREMENTS.txt
+6. 06_IMPLEMENTATION_PLAN.txt
+7. 07_TEST_AND_ACCEPTANCE.txt
+8. 08_ANTIGRAVITY_OPERATING_RULES.txt
+9. 09_PHASE_PROMPTS.txt
+10. 10_PHASE_REPORT_TEMPLATE.txt
+11. 11_DEMO_RUNBOOK.txt
+
+LOCKED DECISIONS
+- React + Vite + TypeScript + Tailwind CSS; FastAPI + SQLAlchemy + Alembic; PostgreSQL; Redis + RQ worker; Playwright/Chromium; Pillow and difflib.
+- Docker Compose for Postgres + Redis; frontend/backend run locally. Worker and scheduler as separate local processes.
+- Single-user LOCAL DEMO: no auth in v1; never claim multi-tenant security. Avoid internet exposure.
+- Poll-based scheduler and shared-fetch optimization at URL/config level, where feasible.
+- No LLM dependency, no paid services, no external API keys needed for core demo.
+- Baseline screenshot+text; text normalization and hashing; errors not versions; versions on hash changes; text/visual diff; selector picker; retry; per-domain politeness; Discord/Telegram optional (email stretch).
+- Demo against an INCLUDED local fixture webpage; real public websites only when allowed and not blocked.
+
+DEFINITION OF DONE
+User adds monitored URL, manually checks, sees statuses and versions, changes fixture, checks again, sees text+visual diff, filters noise, can select region, receives optional webhook alert exactly once per change, and automatic scheduler performs checks. All runnable with one documented setup and reproducible smoke tests.
+
+PHASE GATES
+Do NOT start next phase until human reviewer (user/ChatGPT) approves preceding report. Antigravity must produce artifacts and evidence, not just claim completion.

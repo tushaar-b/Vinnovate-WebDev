@@ -1,0 +1,33 @@
+TECHNICAL REQUIREMENTS DOCUMENT (TRD)
+
+STACK
+Frontend: React, Vite, TypeScript, Tailwind; React Router; TanStack Query (optional), Lucide icons.
+Backend: Python 3.12+, FastAPI, Pydantic v2, SQLAlchemy 2, Alembic, PostgreSQL, Redis, rq, Playwright, Pillow, httpx for webhook sends.
+Dev infrastructure: Docker Compose Postgres+Redis; locally running uvicorn, rq worker, scheduler, vite; make targets or dev scripts and .env.example.
+Use reproducible locked/minimally pinned dependencies; do not commit credentials.
+
+COMPONENTS
+1 API: CRUD, validation, check scheduling, immutable version metadata, diff endpoints, preview/picker endpoint, static image serving for local demo.
+2 Scheduler: 30-second polling due monitors (test fixture can override interval with TEST_MODE), atomically claim due checks; enqueue job with idempotency key; update next_check_at in database.
+3 RQ worker: render with Playwright fresh browser context and bounded timeout, extract text/screenshot/DOM bounding metadata, normalize, hash, compare to latest version, store changed snapshots, append check event and enqueue alert if confirmed.
+4 PostgreSQL: monitor config, rules, check history, versions, notification outbox. Redis: RQ queue, domain cooldown and in-flight dedupe locks with TTL.
+5 Local artifacts: data/screenshots/<monitor_id>/<version_id>.png; database stores relative safe paths, no arbitrary file URL traversal. Keep artifacts out of git.
+
+FETCH PIPELINE
+validate -> canonicalize -> enforce DNS/IP safety incl all resolved addresses, redirects and egress -> per-domain cooldown -> navigate domcontentloaded with timeout 20s -> wait bounded settle e.g. 1s -> detect challenge/outage -> query watch/ignore selectors -> collect visible text, sanitized element metadata and screenshot -> normalize -> compare SHA256 -> store first/change only -> generate text/screenshot diff on request or cache -> evaluate alert persistence -> outbox delivery.
+DO NOT use networkidle universally; it hangs on dynamic websites. Browser concurrency max 2 for demo, per-domain 1 and minimum 30 sec request spacing. Exponential backoff + jitter on retry (max 2) and honor Retry-After where available. Never automatically bypass CAPTCHA.
+
+SHARED-FETCH RULE
+Canonical URL plus rendering options define fetch key. Group compatible jobs due within a short window. Fetch one base page result and apply monitor-specific selectors/normalizers to that captured DOM. For 24h demo, at minimum implement durable per-key in-flight lock and cache reuse TTL ~30 sec and document limits; do not claim full 200-user fan-out without tests.
+
+SECURITY REQUIREMENTS
+Only http/https; deny embedded credentials, localhost, loopback, link-local, RFC1918, IPv6 private, multicast, cloud metadata, nonstandard ports (default allow 80/443) for user-created monitored targets. Validate every redirect and every DNS resolution, and apply network-level isolation for stronger protection when deployed. A hostname check alone is NOT enough against rebinding; safe demo strategy: disable user-supplied arbitrary addresses to fixture except explicit PUBLIC_URL_MODE enabled by operator, plus outbound gateway/firewall constraints for hosted use. Fixture target must use separate trusted fixture path/flag; never relax global safety checks. Bound response sizes (HTML 5MB), page time (20s), assets, image size, requests and memory. Treat remote content as untrusted: never execute within app origin or expose arbitrary rendered HTML in React. Screenshot picker is not an embedded remote iframe. Escape text output and use restrictive CSP.
+
+API BEHAVIOR
+Return check job ID immediately for manual checks; frontend polls status. Optimistic loading indicators without blocking. All timestamps UTC ISO-8601; formatted locally in UI. Enforce min interval 15m outside TEST_MODE. Structured errors with code+message. HTTP errors/captcha never counted as content version changes.
+
+RELIABILITY
+Unique constraints and transactional check claims; no duplicate alert via unique (monitor_id, version_id, channel); enqueue and store outbox atomically; worker retry should be idempotent. Health endpoints and logs structured with job_id, monitor_id, run duration. Browser closed in finally. Limit screenshot retention. Database migration on bootstrap.
+
+INTERFACE CONTRACT
+See 04_API_CONTRACT. Database in 03_DATABASE_SCHEMA. Quality gates in 07_TEST_AND_ACCEPTANCE.

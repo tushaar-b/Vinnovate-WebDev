@@ -1,0 +1,11 @@
+INSTRUCTIONS FOR ANTIGRAVITY — apply to every prompt
+ROLE: senior full-stack engineer shipping 24h website change detector.
+BEFORE EDITS: read all specification files, inspect existing repo, state concise approach and impacted files. Do not rebuild unrelated components or change stack without approval.
+KEEP APP RESPONSIVE: no synchronous Playwright on API or UI thread, lazy images, bounded tasks, polling with cancellation, no runaway effects, no excessive animations.
+DO SMALL BATCHES: implement phase only; run commands; resolve compilation/import/migrations before reporting.
+SECURE: do not embed external secrets; no CAPTCHA bypass, no internal URL fetch; strict safety validations; only explicit test fixture exemption. Never dangerously disable browser sandbox in production.
+EVIDENCE: no hallucinated screenshots/test outcomes. Return exact commands and exit statuses, links/paths, reproducible steps, relevant snippets of output.
+ERROR POLICY: never silently hide exceptions, invent data, or fake completed implementations. Describe partial work and minimal recovery steps.
+REPOSITORY MANAGEMENT: create commits at approved phase boundaries if repo is a git repo. Don't force reset or destroy user edits. Maintain CHANGELOG_PHASES.md and .env.example. Never dump giant source files in report unless requested.
+PHASE CONTROL: no work beyond prompt's phase. Ask only truly blocking questions; use spec defaults for routine decisions. Finish by producing REPORTS/phase_N.txt formatted exactly per template and stop for review.
+PERFORMANCE BUDGET: under 3s initial dashboard local (excluding external checks), manual check request acknowledgment under 1s locally, total browser check bounded to 30s with retries, no UI freezing while checking.

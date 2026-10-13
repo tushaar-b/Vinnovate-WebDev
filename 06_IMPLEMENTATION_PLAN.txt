@@ -1,0 +1,27 @@
+IMPLEMENTATION PLAN — 24 HOURS (time boxes, stop if over)
+0h-1h PHASE 0: repository scaffold, plan + environment checks, Docker Compose, deps, health + landing app. Gate: all dev processes boot.
+1h-4h PHASE 1: end-to-end baseline: schema migration, monitor CRUD, Playwright screenshot/text, manual check queue, check status, fixture. Gate: baseline stored and UI renders monitor.
+4h-7h PHASE 2: normalization/hash/versions, error classification, diff endpoints, UI timeline and comparison. Gate: changed fixture produces version2, unchanged doesn't; tests.
+7h-10h PHASE 3: noise filters and watch/ignore region picker, screenshot bounds, selector rules, sensitivity/confirmation. Gate: timestamp ignored, selected price detected.
+10h-13h PHASE 4: scheduler + robustness: Redis RQ, dedupe, retries, per-domain cooldown; if already built in Phase1, stabilize now. Gate: unattended repeated checks, blocked/captcha not versioned.
+13h-16h PHASE 5: alerts Discord/Telegram, outbox idempotency, polished UX, loading/errors. Gate: exactly once notification to configured test endpoint; UI states good.
+16h-20h PHASE 6: test and fix: integration tests, SSRF and failure tests, resource leak checks, dev setup/docs, code quality. Gate: tests + smoke flows pass.
+20h-24h PHASE 7: demo hardening: seed deterministic fixture, visuals, record proof screenshots, create demo walkthrough, final consolidated report, fallback mechanisms. Gate: cold-start run and demo completed.
+
+PRIORITY RULE
+P0 before P1. If <6h remains and phase 3 unfinished: complete dashboard + change-diff + picker first; defer alerts/email or advanced dedupe gracefully and mark limitations. Never fake operational features.
+
+EACH PHASE LOOP
+1 Antigravity reads repo docs, performs only assigned phase.
+2 Runs tests and captures factual evidence/log output.
+3 Writes REPORTS/phase_N.txt per template; includes filenames, commands, failures, TODOs, screenshot paths.
+4 User sends report and relevant files/screenshots to ChatGPT.
+5 ChatGPT audits scope, security, correctness, UX and acceptance tests; gives targeted correction prompt if needed.
+6 Antigravity fixes and resubmits until approved; only then move to next phase.
+
+ARCHITECTURAL CUTS FOR SCHEDULE RISK
+- Local single-user demo; no authentication or email.
+- Screenshots stored on filesystem, not S3.
+- Picker based on element rect overlays rather than embedded browser remote view.
+- Text diff via Python difflib; screenshot pixel diff via Pillow.
+- No AI or third-party paid dependencies.

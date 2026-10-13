@@ -1,0 +1,26 @@
+REST API CONTRACT — prefix /api; JSON except PNG
+
+GET /api/health -> {status:"ok", database:"ok", redis:"ok"}
+GET /api/monitors -> {items:[MonitorSummary],total:int}
+POST /api/monitors body {name,url,interval_minutes,sensitivity} -> 201 Monitor
+GET /api/monitors/{id} -> MonitorDetail (includes rules, no notification secrets)
+PATCH /api/monitors/{id} body subset {name,interval_minutes,sensitivity,enabled} -> Monitor
+DELETE /api/monitors/{id} -> 204
+POST /api/monitors/{id}/checks -> 202 {check_run_id,job_id,state:"queued"}
+GET /api/monitors/{id}/checks?limit=50 -> {items:[CheckRun]}
+GET /api/checks/{check_run_id} -> CheckRun
+GET /api/monitors/{id}/versions -> {items:[VersionSummary]}
+GET /api/monitors/{id}/versions/{version_id} -> VersionDetails
+GET /api/monitors/{id}/compare?from=<uuid>&to=<uuid> -> {old_version,new_version,text_diff:[{kind:"equal|add|remove",text}],image_old_url,image_new_url,image_diff_url}
+GET /api/versions/{id}/screenshot -> image/png; authorized single-user demo only
+GET /api/monitors/{id}/picker -> {screenshot_url,width,height,elements:[{selector,label,x,y,width,height}]} ; data captured during last successful check or explicit safe preview job; cap elements and scrub sensitive data
+PUT /api/monitors/{id}/rules body {rules:[{rule_type,css_selector,label?}]} -> rules[]
+POST /api/monitors/{id}/channels body {channel_type,config} -> 201 {id,channel_type,enabled}; webhook URL/token must be validated and never echoed in GET response
+GET /api/monitors/{id}/channels -> metadata[]
+DELETE /api/monitors/{id}/channels/{channel_id} -> 204
+
+MONITOR SUMMARY fields: id,name,url,interval_minutes,sensitivity,enabled,status,last_checked_at,last_changed_at,next_check_at,last_error,versions_count,created_at.
+CHECK RUN: id,monitor_id,state,started_at,finished_at,http_status,error_code,error_message,duration_ms,version_id nullable.
+VERSION: id,monitor_id,sequence_number,captured_at,content_hash,screenshot_url,short_preview.
+ERROR: {error:{code:"VALIDATION_ERROR|BLOCKED_TARGET|NOT_FOUND|CHECK_FAILED|...",message:"..."}} with appropriate 4xx/5xx.
+Use generated OpenAPI schemas; document exact API changes before UI implementation. No synchronous Playwright fetch in the request handler.

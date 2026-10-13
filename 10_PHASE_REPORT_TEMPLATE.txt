@@ -1,0 +1,21 @@
+PHASE REPORT TEMPLATE — REPORTS/phase_N.txt
+Phase number/name:
+Started/finished local time:
+Git commit SHA (if available):
+Scope completed (reference PRD requirement IDs):
+Files created/changed (relative paths):
+Database migrations (revision ID):
+Commands executed + exit code:
+Tests and acceptance IDs: PASS / FAIL / N/A with evidence:
+API examples (request+response, redact secrets):
+UI screenshot paths:
+Reproduction steps (from clean running dev environment):
+Known defects (severity P0/P1/P2):
+Security/performance considerations:
+Deviations from docs (why; ask approval):
+Blockers / remaining work:
+Next phase readiness (YES/NO):
+DO NOT state PASS unless command was executed and result observed. Include concise log snippets. If screenshot missing, say missing.
+
+HOW TO SEND REPORT TO CHATGPT
+Paste the report text and attach screenshots if UI phase. Also attach relevant logs/code diff for suspicious failures. ChatGPT will reply APPROVED or NEEDS FIXES with paste-ready correction prompt. Only proceed after APPROVED.

@@ -1,0 +1,39 @@
+PRODUCT REQUIREMENTS DOCUMENT (PRD) — Website Change Detector
+Goal: Monitor public web pages and notify users of meaningful changes with low false positives.
+Audience: single-user developer/demo audience for 24-hour build; architecture extensible to multi-user later.
+
+P0 USER STORIES
+US01 Add monitor: label, public URL, interval 15/30/60/360/1440 min, sensitivity low/medium/high.
+US02 See list with status (pending/ok/changed/error/blocked), last check, last real change, next due.
+US03 Check now; see run progress and any resulting version or error; do not block browser UI.
+US04 Capture rendered page text and screenshot with Playwright; first successful check creates baseline version without alert.
+US05 Filter repeated whitespace, scripts/styles, timestamp/counter/random-noise by user-specified CSS ignore selectors and configurable normalizers; don't indiscriminately strip meaningful dates or numbers.
+US06 Compare normalized content hashes; store NEW version only when hash differs; each successful check logs check record. Screenshot is saved for each version; temporary screenshot/check may be discarded if unchanged.
+US07 Version timeline; choose any two versions; show line/text diff and side-by-side screenshots, with Pillow visual highlight overlay when screenshots are compatible.
+US08 Select watch and ignore regions with element picker on controlled screenshot+DOM geometry captured via Playwright; store stable CSS selector; users can edit/remove selectors. If selector disappears, show warning/error, never silently treat as meaningful change.
+US09 Scheduler queues due checks at configured intervals; RQ worker handles timeouts/retries; domain rate limiting and in-flight dedupe; no concurrent duplicate fetch per identical fetch key.
+US10 Optional Discord/Telegram webhook alerts, once per confirmed change; configurable destination; a failed delivery is retried without sending duplicate successful alerts.
+US11 Public HTTP(s) pages only; reject local/private/network metadata endpoints and unsafe redirect targets. Blocked/captcha/outages are NOT content changes.
+US12 Local fixture pages and deterministic demo actions for verification.
+
+P1 IF TIME REMAINS
+Digest emails / SMTP, keyword-only alerts, price tracking chart, comprehensive cross-user sharing, production auth.
+
+OUT OF SCOPE FOR 24H
+Browser extension, billing, team roles, production SaaS, mobile app, OCR visual semantic understanding, arbitrary CAPTCHA solving, bypassing anti-bot, AI one-liners, per-page RSS, full cross-tenant access-control.
+
+SUCCESS METRICS
+- 0 alerts for first baseline; 1 alert for same confirmed change despite repeated check.
+- At least one repeatable meaningful text change captured and diffed.
+- Timestamp/counter noise-only change does not create version when explicitly configured to ignore.
+- Error/blocked pages never replace last good baseline.
+- Scheduler runs 2 or more repeated checks in demonstration with compressed fixture interval override ONLY in test mode; production min interval remains 15min.
+- Screenshot picker can add a usable watch selector for a fixture element.
+- No browser process leak or frozen UI on check failure; bounded execution and retry.
+
+PRODUCT RULES
+Sensitivity: HIGH alerts on any substantive monitored text change; MEDIUM needs change lasting 2 consecutive successful observations or explicit user-trigger confirm; LOW needs persistence and materiality threshold (e.g. changed token count >= 5). Preserve all versions for changed normalized hashes, but gate alerts on sensitivity. Important one-number changes must be allowed by high sensitivity; don't assume similarity score alone means unimportant.
+Missing watched selector: WARN and retain baseline (not a new version).
+HTTP timeout/5xx/DNS failure/CAPTCHA: mark check ERROR/BLOCKED and keep baseline.
+First successful capture creates version 1; no notification.
+Every successful changed normalized content creates version, even if screenshot similar; visual diffs supplemental.

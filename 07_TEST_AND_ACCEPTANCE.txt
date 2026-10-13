@@ -1,0 +1,26 @@
+TEST PLAN & ACCEPTANCE CHECKLIST
+AUTOMATED: pytest backend; frontend typecheck/build; Playwright UI smoke if time. Include local fixture with deterministic buttons/endpoints to change price, timestamp, stock, and simulate error/challenge. Tests must NOT depend on scraping third-party sites.
+
+T01 Create monitor (valid public URL), reject invalid scheme, invalid interval, private IP and localhost target. Fixture uses dedicated trusted test route.
+T02 Manual run queued and completes; baseline v1, no alert; screenshot valid PNG; last_checked set.
+T03 Repeat identical fixture content -> unchanged run, versions count unchanged.
+T04 Change price -> v2, highlight diff, last_changed updated, side-by-side valid screenshots.
+T05 Change timestamp/counter only under configured ignore selector -> versions count unchanged.
+T06 Add watch selector for price, modify unrelated banner -> unchanged; modify price -> changed.
+T07 Missing watch selector -> warning/error, old baseline preserved.
+T08 HTTP500, DNS/timeout, challenge page -> error/blocked, NOT new version; UI still responsive.
+T09 Scheduler eventually enqueues due checks, no overlapping duplicate same fetch key, retry only transient failures with cap. Test fast schedule enabled only fixture TEST_MODE.
+T10 Notification outbox uniqueness: same version/channel delivered once even after retry; baseline never alerts; notifications disabled if no destination.
+T11 Screenshot selector overlay coordinates align when image is scaled down.
+T12 SSRF defenses: reject 127.0.0.1, ::1, RFC1918, link-local, credentials, unsafe redirects, DNS-resolve-to-private; reject blocked ports. Test mode fixture is separately controlled.
+T13 Two-version compare works for nonadjacent versions, missing image gracefully handled.
+T14 `npm run build`, frontend typecheck, `pytest`, alembic upgrade, smoke script all pass.
+T15 Browser closes on exception; no stuck running checks after timeout; check rows show terminal status.
+T16 Cross-browser full-screen UI at desktop size and narrow width; no clipping of input or overflow.
+
+GATE REPORT MUST INCLUDE
+- PASS/FAIL/N/A each relevant test ID; stdout summary and failing stack traces
+- commands with exit codes, file paths and migration revision
+- screenshot paths (if applicable)
+- honest limitations, known bugs and security concerns
+- no claim of completed functionality without demonstrated execution

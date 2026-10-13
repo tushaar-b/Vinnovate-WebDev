@@ -26,10 +26,13 @@ from app.schemas.monitors import (
     VersionSummary,
     VersionDetails,
     VersionListResponse,
+    VersionComparisonResponse,
+    TextDiffItem,
 )
 from app.services.security import validate_target_url, canonicalize_url
 from app.services.checker import execute_check
-from app.services.storage import get_screenshot_path
+from app.services.storage import get_screenshot_path, save_diff_screenshot
+from app.services.diff import compute_text_diff, compute_screenshot_diff
 
 router = APIRouter(tags=["Monitors"])
 
@@ -380,3 +383,144 @@ def get_version_screenshot(version_id: uuid.UUID, db: Session = Depends(get_db))
         )
 
     return FileResponse(path=safe_path, media_type="image/png")
+
+
+@router.get("/monitors/{monitor_id}/compare", response_model=VersionComparisonResponse)
+def compare_versions(
+    monitor_id: uuid.UUID,
+    from_version_id: uuid.UUID = Query(..., alias="from", description="Base / older version UUID"),
+    to_version_id: uuid.UUID = Query(..., alias="to", description="Target / newer version UUID"),
+    db: Session = Depends(get_db),
+):
+    # Verify monitor exists
+    monitor = db.query(Monitor).filter(Monitor.id == monitor_id).first()
+    if not monitor:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"error": {"code": "NOT_FOUND", "message": "Monitor not found."}},
+        )
+
+    # Fetch both versions and verify they belong to this monitor
+    v_old = (
+        db.query(Version)
+        .filter(Version.monitor_id == monitor_id, Version.id == from_version_id)
+        .first()
+    )
+    v_new = (
+        db.query(Version)
+        .filter(Version.monitor_id == monitor_id, Version.id == to_version_id)
+        .first()
+    )
+
+    if not v_old or not v_new:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={
+                "error": {
+                    "code": "NOT_FOUND",
+                    "message": "One or both requested versions not found for this monitor.",
+                }
+            },
+        )
+
+    # Compute text diff
+    text_diff_raw = compute_text_diff(v_old.normalized_text, v_new.normalized_text)
+    text_diff = [TextDiffItem(**item) for item in text_diff_raw]
+
+    # Compute visual diff if screenshot files exist
+    image_old_url = f"/api/versions/{v_old.id}/screenshot"
+    image_new_url = f"/api/versions/{v_new.id}/screenshot"
+    image_diff_url: Optional[str] = None
+    change_ratio = 0.0
+
+    old_path = get_screenshot_path(v_old.screenshot_path)
+    new_path = get_screenshot_path(v_new.screenshot_path)
+
+    if old_path and new_path:
+        try:
+            diff_filename = f"diff_{v_old.id}_{v_new.id}.png"
+            diff_rel_path = f"{monitor_id}/{diff_filename}"
+            existing_diff = get_screenshot_path(diff_rel_path)
+
+            if existing_diff:
+                image_diff_url = f"/api/monitors/{monitor_id}/diff-image/{v_old.id}/{v_new.id}"
+            else:
+                with open(old_path, "rb") as f1, open(new_path, "rb") as f2:
+                    diff_png_bytes, change_ratio = compute_screenshot_diff(f1.read(), f2.read())
+                save_diff_screenshot(monitor_id, v_old.id, v_new.id, diff_png_bytes)
+                image_diff_url = f"/api/monitors/{monitor_id}/diff-image/{v_old.id}/{v_new.id}"
+        except Exception:
+            # Fall back gracefully if image computation fails
+            image_diff_url = None
+
+    old_details = VersionDetails(
+        id=v_old.id,
+        monitor_id=v_old.monitor_id,
+        sequence_number=v_old.sequence_number,
+        captured_at=v_old.captured_at,
+        content_hash=v_old.content_hash,
+        screenshot_url=image_old_url,
+        short_preview=v_old.normalized_text[:250].strip() if v_old.normalized_text else "",
+        normalized_text=v_old.normalized_text,
+    )
+
+    new_details = VersionDetails(
+        id=v_new.id,
+        monitor_id=v_new.monitor_id,
+        sequence_number=v_new.sequence_number,
+        captured_at=v_new.captured_at,
+        content_hash=v_new.content_hash,
+        screenshot_url=image_new_url,
+        short_preview=v_new.normalized_text[:250].strip() if v_new.normalized_text else "",
+        normalized_text=v_new.normalized_text,
+    )
+
+    return VersionComparisonResponse(
+        old_version=old_details,
+        new_version=new_details,
+        text_diff=text_diff,
+        image_old_url=image_old_url,
+        image_new_url=image_new_url,
+        image_diff_url=image_diff_url,
+        change_ratio=change_ratio,
+    )
+
+
+@router.get("/monitors/{monitor_id}/diff-image/{old_id}/{new_id}")
+def get_diff_image(
+    monitor_id: uuid.UUID,
+    old_id: uuid.UUID,
+    new_id: uuid.UUID,
+    db: Session = Depends(get_db),
+):
+    diff_rel_path = f"{monitor_id}/diff_{old_id}_{new_id}.png"
+    safe_path = get_screenshot_path(diff_rel_path)
+    if not safe_path:
+        # Generate on the fly if needed
+        v_old = db.query(Version).filter(Version.monitor_id == monitor_id, Version.id == old_id).first()
+        v_new = db.query(Version).filter(Version.monitor_id == monitor_id, Version.id == new_id).first()
+        if not v_old or not v_new:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={"error": {"code": "NOT_FOUND", "message": "Versions not found."}},
+            )
+        old_path = get_screenshot_path(v_old.screenshot_path)
+        new_path = get_screenshot_path(v_new.screenshot_path)
+        if not old_path or not new_path:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={"error": {"code": "NOT_FOUND", "message": "Screenshots not found on disk."}},
+            )
+        with open(old_path, "rb") as f1, open(new_path, "rb") as f2:
+            diff_png_bytes, _ = compute_screenshot_diff(f1.read(), f2.read())
+        save_diff_screenshot(monitor_id, old_id, new_id, diff_png_bytes)
+        safe_path = get_screenshot_path(diff_rel_path)
+
+    if not safe_path:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"error": {"code": "NOT_FOUND", "message": "Diff image could not be loaded."}},
+        )
+
+    return FileResponse(path=safe_path, media_type="image/png")
+

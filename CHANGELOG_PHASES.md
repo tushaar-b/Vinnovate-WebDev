@@ -26,3 +26,20 @@
 - Authored automated test suite (`backend/tests/test_phase1.py`) with 12 new automated tests covering SSRF, CRUD, Playwright capture, screenshot persistence, and error classification. All 14 tests passing.
 - Verified frontend production build with zero TypeScript errors.
 - Captured proof screenshots for Dashboard, Monitor Details, and Add Monitor Modal in `REPORTS/screenshots/`.
+
+## Phase 2: Version History, Text Diff & Visual Change Detection
+- Implemented robust text diffing engine (`app/services/diff.py`) utilizing Python's `difflib.SequenceMatcher` producing structured change blocks (`equal`, `add`, `remove`).
+- Built visual diffing engine (`app/services/diff.py`) with Pillow:
+  - Safely normalizes disparate image modes and dimensions using padded bounding canvases.
+  - Highlights per-pixel changes above noise threshold using a vibrant semi-transparent red overlay against a dimmed base.
+  - Computes exact change ratio metric.
+  - Caches and serves visual diff artifacts at `/api/monitors/{monitor_id}/diff-image/{old_id}/{new_id}`.
+- Implemented version comparison API endpoint `GET /api/monitors/{monitor_id}/compare?from=<uuid>&to=<uuid>` returning structured text additions/removals, image URLs, visual diff overlay URL, and change ratios across any two versions.
+- Added database row-level locking (`with_for_update()`) in `app/services/checker.py` to prevent duplicate sequence numbers and race conditions during concurrent check runs.
+- Enhanced deterministic test fixture (`app/api/fixture.py`) with configurable product price, product title, stock availability, timestamp noise, and visitor counter noise query parameters.
+- Built interactive frontend comparison interface:
+  - `VersionCompare.tsx`: version selector between any two arbitrary or nonadjacent snapshots, text diff view with syntax-highlighted additions (`+`) and removals (`-`), side-by-side screenshot comparisons, and visual overlay diff view.
+  - Enhanced version timeline in `MonitorDetails.tsx` displaying version sequence numbers, timestamps, SHA-256 hashes, short text previews, and one-click quick comparison launcher.
+- Added comprehensive automated test suite (`backend/tests/test_phase2.py`) testing baseline creation, unchanged check idempotency, price changes, title/availability changes, HTTP 500 / anti-bot baseline preservation, nonadjacent two-version comparisons, and concurrency uniqueness constraints.
+- Verified all 21 backend automated tests passing and frontend production build succeeding.
+

@@ -48,13 +48,23 @@ def execute_check(check_run_id: uuid.UUID) -> None:
         try:
             result = capture_page(monitor.url, is_fixture=is_fixture)
 
-            # Query existing latest version for this monitor
+            # Atomically lock monitor row to serialize version creation and sequence numbering
+            # This guarantees concurrent checks cannot create duplicate sequence numbers or duplicate versions
+            locked_monitor = (
+                db.query(Monitor)
+                .filter(Monitor.id == monitor.id)
+                .with_for_update()
+                .first()
+            )
+
+            # Query existing latest version for this monitor within locked transaction
             latest_version = (
                 db.query(Version)
                 .filter(Version.monitor_id == monitor.id)
                 .order_by(Version.sequence_number.desc())
                 .first()
             )
+
 
             if latest_version is None:
                 # FIRST SUCCESSFUL CHECK: Create baseline version

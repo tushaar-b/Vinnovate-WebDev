@@ -88,4 +88,10 @@ export const api = {
     const res = await fetch(`${BASE_URL}/api/monitors/${monitorId}/versions/${versionId}`);
     return handleResponse<VersionDetail>(res);
   },
+
+  async compareVersions(monitorId: string, fromId: string, toId: string) {
+    const res = await fetch(`${BASE_URL}/api/monitors/${monitorId}/compare?from=${fromId}&to=${toId}`);
+    return handleResponse<import('../types').VersionComparison>(res);
+  },
 };
+

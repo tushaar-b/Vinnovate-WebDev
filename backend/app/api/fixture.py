@@ -9,8 +9,10 @@ router = APIRouter(prefix="/fixture", tags=["Test Fixtures"])
 def fixture_product(
     price: str = Query("4999", description="Product price"),
     title: str = Query("AcuTime Precision Chronometer 400", description="Product title"),
+    availability: str = Query("In Stock (Ships in 24 hours)", description="Product availability"),
     banner: str = Query("Special Edition Launch - Limited Availability", description="Banner text"),
     timestamp: str = Query("2026-10-14 00:00:00 UTC", description="Rendered noise timestamp"),
+    visitors: str = Query("142", description="Visitor counter noise"),
 ):
     html_content = f"""<!DOCTYPE html>
 <html lang="en">
@@ -22,6 +24,7 @@ def fixture_product(
         .container {{ max-width: 800px; margin: 0 auto; background: #fff; padding: 32px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }}
         .banner {{ background: #eff6ff; color: #1d4ed8; padding: 12px 16px; border-radius: 8px; font-size: 14px; margin-bottom: 24px; }}
         .timestamp {{ color: #6b7280; font-size: 12px; margin-top: 4px; }}
+        .visitor-counter {{ color: #9333ea; font-size: 12px; margin-top: 4px; font-weight: 500; }}
         h1 {{ font-size: 28px; margin: 0 0 16px 0; color: #0f172a; }}
         .price {{ font-size: 32px; font-weight: 700; color: #16a34a; margin-bottom: 16px; }}
         .description {{ font-size: 16px; line-height: 1.6; color: #334155; margin-bottom: 24px; }}
@@ -33,10 +36,11 @@ def fixture_product(
         <div class="banner" id="banner">
             <div>{banner}</div>
             <div class="timestamp" id="timestamp">System Clock: {timestamp}</div>
+            <div class="visitor-counter" id="visitor-counter">Live Viewers: {visitors}</div>
         </div>
         <h1 id="product-title">{title}</h1>
         <div class="price" id="price">${price}</div>
-        <div class="stock" id="stock-status">In Stock (Ships in 24 hours)</div>
+        <div class="stock" id="stock-status">{availability}</div>
         <div class="description" id="product-desc">
             Engineered with aerospace-grade titanium and precision Swiss movement. 
             Calibrated for extreme environments and high durability.
@@ -46,6 +50,7 @@ def fixture_product(
 </html>
 """
     return HTMLResponse(content=html_content)
+
 
 
 @router.get("/error500")

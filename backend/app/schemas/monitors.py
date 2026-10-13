@@ -149,3 +149,19 @@ class VersionDetails(BaseModel):
 
 class VersionListResponse(BaseModel):
     items: List[VersionSummary]
+
+
+class TextDiffItem(BaseModel):
+    kind: str  # "equal", "add", "remove"
+    text: str
+
+
+class VersionComparisonResponse(BaseModel):
+    old_version: VersionDetails
+    new_version: VersionDetails
+    text_diff: List[TextDiffItem]
+    image_old_url: str
+    image_new_url: str
+    image_diff_url: Optional[str] = None
+    change_ratio: float = 0.0
+

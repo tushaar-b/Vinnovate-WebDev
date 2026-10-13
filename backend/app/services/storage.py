@@ -46,3 +46,18 @@ def get_screenshot_path(relative_path: str) -> Optional[Path]:
     if target_path.exists() and target_path.is_file():
         return target_path
     return None
+
+
+def save_diff_screenshot(monitor_id: uuid.UUID, old_version_id: uuid.UUID, new_version_id: uuid.UUID, diff_bytes: bytes) -> str:
+    """
+    Saves visual diff PNG bytes to data/screenshots/<monitor_id>/diff_<old_version_id>_<new_version_id>.png
+    """
+    monitor_dir = get_screenshot_directory(monitor_id)
+    filename = f"diff_{old_version_id}_{new_version_id}.png"
+    target_file = monitor_dir / filename
+
+    with open(target_file, "wb") as f:
+        f.write(diff_bytes)
+
+    return f"{monitor_id}/{filename}"
+

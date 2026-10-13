@@ -48,8 +48,10 @@ lerna-debug.log*
 postgres_data/
 redis_data/
 data/
+REPORTS/*.txt
 !REPORTS/screenshots/
 *.log
+
 
 # OS & Editors
 .DS_Store

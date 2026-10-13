@@ -73,3 +73,19 @@ export interface CreateMonitorInput {
   interval_minutes: number;
   sensitivity: SensitivityLevel;
 }
+
+export interface TextDiffItem {
+  kind: 'equal' | 'add' | 'remove';
+  text: string;
+}
+
+export interface VersionComparison {
+  old_version: VersionDetail;
+  new_version: VersionDetail;
+  text_diff: TextDiffItem[];
+  image_old_url: string;
+  image_new_url: string;
+  image_diff_url?: string | null;
+  change_ratio: number;
+}
+

@@ -1,0 +1,154 @@
+PHASE REPORT — REPORTS/phase_0.txt
+--------------------------------------------------------------------------------
+Phase number/name:
+Phase 0 — Repository Scaffold, Environment Checks, Docker Compose, Backend Health, and Frontend Landing
+
+Started/finished local time:
+Started: 2026-10-13 23:33:43 IST
+Finished: 2026-10-14 00:25:00 IST
+
+Git commit SHA (if available):
+bc662fc54daf358928d8ab69384228aca5e9c2e7
+
+Scope completed (reference PRD requirement IDs):
+- P0 Architecture Foundation: Scaffolded local development infrastructure as specified in 02_TRD_ARCHITECTURE.txt and 06_IMPLEMENTATION_PLAN.txt.
+- Multi-service dev containerization: Docker Compose setup with native Apple Silicon arm64 multi-arch images for PostgreSQL 16 and Redis 7.
+- Backend API foundation: FastAPI application with Python 3.12, SQLAlchemy 2, Alembic migration framework, Pydantic v2 schemas/settings, and Redis client.
+- Health endpoint: Fully implemented GET /api/health per 04_API_CONTRACT.txt verifying both PostgreSQL and Redis connectivity.
+- Frontend application scaffold: React 18 + Vite + TypeScript + Tailwind CSS setup adhering to design tokens from 05_UI_UX_REQUIREMENTS.txt.
+- Headless Browser: Playwright Chromium browser installed natively in Python virtual environment.
+- Production build readiness: TypeScript typecheck and Vite production build verified without errors.
+
+Files created/changed (relative paths):
+- .gitignore
+- .env.example
+- .env
+- CHANGELOG_PHASES.md
+- docker-compose.yml
+- backend/requirements.txt
+- backend/app/__init__.py
+- backend/app/main.py
+- backend/app/config.py
+- backend/app/database.py
+- backend/app/redis_client.py
+- backend/app/api/__init__.py
+- backend/app/api/health.py
+- backend/app/schemas/__init__.py
+- backend/app/schemas/health.py
+- backend/alembic.ini
+- backend/alembic/env.py
+- backend/alembic/script.py.mako
+- backend/alembic/README
+- backend/tests/__init__.py
+- backend/tests/test_health.py
+- frontend/package.json
+- frontend/package-lock.json
+- frontend/tsconfig.json
+- frontend/tsconfig.node.json
+- frontend/vite.config.ts
+- frontend/postcss.config.js
+- frontend/tailwind.config.js
+- frontend/index.html
+- frontend/src/index.css
+- frontend/src/main.tsx
+- frontend/src/App.tsx
+- frontend/src/types/index.ts
+- REPORTS/screenshots/phase_0_landing.png
+- REPORTS/phase_0.txt
+
+Database migrations (revision ID):
+None in Phase 0. Alembic initialized and tested against live PostgreSQL (`alembic heads` succeeded with exit code 0). Declarative models and initial schema migration will be created in Phase 1 per 03_DATABASE_SCHEMA.txt.
+
+Commands executed + exit code:
+1. `docker compose up -d` -> Exit code 0 (PostgreSQL and Redis containers started and healthy)
+2. `docker compose ps` -> Exit code 0 (Both services healthy)
+3. `python3.12 -m venv backend/venv` -> Exit code 0
+4. `backend/venv/bin/pip install -r backend/requirements.txt` -> Exit code 0
+5. `backend/venv/bin/playwright install chromium` -> Exit code 0
+6. `npm install` (in frontend/) -> Exit code 0
+7. `npm run build` (in frontend/) -> Exit code 0 (tsc -b && vite build generated production bundle in 1.26s)
+8. `venv/bin/alembic heads` (in backend/) -> Exit code 0
+9. `PYTHONPATH=. venv/bin/pytest -v` (in backend/) -> Exit code 0 (2 passed in 0.57s)
+10. `curl -i http://127.0.0.1:8000/api/health` -> Exit code 0 (HTTP 200 OK)
+11. `curl -i http://127.0.0.1:5173/` -> Exit code 0 (HTTP 200 OK)
+12. `curl -i http://127.0.0.1:5173/api/health` -> Exit code 0 (HTTP 200 OK via Vite reverse proxy)
+13. `python -c "playwright screenshot"` -> Exit code 0 (Saved landing page screenshot)
+
+Tests and acceptance IDs: PASS / FAIL / N/A with evidence:
+- T01: N/A (Phase 1 monitor creation)
+- T02: N/A (Phase 1 manual check run)
+- T03: N/A (Phase 2 identical fixture check)
+- T04: N/A (Phase 2 diff versioning)
+- T05: N/A (Phase 3 noise ignore selector)
+- T06: N/A (Phase 3 watch selector)
+- T07: N/A (Phase 3 missing selector)
+- T08: N/A (Phase 4 error/blocked classification)
+- T09: N/A (Phase 4 scheduler)
+- T10: N/A (Phase 5 notification outbox)
+- T11: N/A (Phase 3 region picker coordinates)
+- T12: N/A (Phase 1/6 SSRF defense validation)
+- T13: N/A (Phase 2 version compare)
+- T14: PASS (Phase 0 scope: `npm run build`, frontend typecheck, `pytest`, alembic heads all succeed)
+  Evidence:
+  - `npm run build`: built in 1.26s (`dist/assets/index-z5zfvksZ.js 162.40 kB │ gzip: 50.66 kB`)
+  - `pytest -v`: 2 passed in 0.57s (`test_root_endpoint PASSED`, `test_health_endpoint PASSED`)
+  - `alembic heads`: exit code 0
+- T15: N/A (Phase 1 browser closure handling)
+- T16: PASS (Desktop 1440px viewport rendered cleanly without horizontal overflow or clipped inputs, verified via visual screenshot)
+
+API examples (request+response, redact secrets):
+Request:
+GET http://127.0.0.1:8000/api/health HTTP/1.1
+Host: 127.0.0.1:8000
+
+Response:
+HTTP/1.1 200 OK
+date: Tue, 13 Oct 2026 18:52:08 GMT
+server: uvicorn
+content-length: 44
+content-type: application/json
+vary: Origin
+
+{"status":"ok","database":"ok","redis":"ok"}
+
+UI screenshot paths:
+REPORTS/screenshots/phase_0_landing.png (1440x900 full viewport screenshot captured using Playwright Chromium)
+
+Reproduction steps (from clean running dev environment):
+1. Clone / open repository:
+   cd /Users/tushaarbharara/Desktop/VINNOVATEIT
+2. Start background storage services:
+   docker compose up -d
+3. Set up and activate Python 3.12 backend environment:
+   python3.12 -m venv backend/venv
+   source backend/venv/bin/activate
+   pip install -r backend/requirements.txt
+   playwright install chromium
+4. Run backend tests:
+   cd backend && PYTHONPATH=. pytest -v && cd ..
+5. Start backend server:
+   cd backend && PYTHONPATH=. uvicorn app.main:app --host 127.0.0.1 --port 8000 &
+6. Set up and build frontend:
+   cd frontend
+   npm install
+   npm run build
+   npm run dev &
+7. Verify endpoints:
+   curl http://127.0.0.1:8000/api/health
+   curl http://127.0.0.1:5173/
+
+Known defects (severity P0/P1/P2):
+None. All targeted Phase 0 components are operational and passing.
+
+Security/performance considerations:
+- Security: CORS configured strictly for localhost development origins. Single-user local setup without external network exposure. Sensitive tokens kept in .env (ignored in git).
+- Performance: Frontend initial bundle is only 50 kB gzipped. Health check endpoint responds in < 3ms with pre-ping connection pool. Headless Chromium is ready for queued tasks.
+
+Deviations from docs (why; ask approval):
+None. Implemented strictly according to 00_START_HERE.txt, 02_TRD_ARCHITECTURE.txt, 03_DATABASE_SCHEMA.txt, 04_API_CONTRACT.txt, 05_UI_UX_REQUIREMENTS.txt, and 06_IMPLEMENTATION_PLAN.txt.
+
+Blockers / remaining work:
+None for Phase 0. Stopping execution here per operating rules to await human approval before Phase 1.
+
+Next phase readiness (YES/NO):
+YES

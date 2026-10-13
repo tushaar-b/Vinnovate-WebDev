@@ -442,16 +442,17 @@ def compare_versions(
             diff_rel_path = f"{monitor_id}/{diff_filename}"
             existing_diff = get_screenshot_path(diff_rel_path)
 
-            if existing_diff:
-                image_diff_url = f"/api/monitors/{monitor_id}/diff-image/{v_old.id}/{v_new.id}"
-            else:
-                with open(old_path, "rb") as f1, open(new_path, "rb") as f2:
-                    diff_png_bytes, change_ratio = compute_screenshot_diff(f1.read(), f2.read())
+            with open(old_path, "rb") as f1, open(new_path, "rb") as f2:
+                diff_png_bytes, change_ratio = compute_screenshot_diff(f1.read(), f2.read())
+
+            if not existing_diff:
                 save_diff_screenshot(monitor_id, v_old.id, v_new.id, diff_png_bytes)
-                image_diff_url = f"/api/monitors/{monitor_id}/diff-image/{v_old.id}/{v_new.id}"
+
+            image_diff_url = f"/api/monitors/{monitor_id}/diff-image/{v_old.id}/{v_new.id}"
         except Exception:
             # Fall back gracefully if image computation fails
             image_diff_url = None
+
 
     old_details = VersionDetails(
         id=v_old.id,

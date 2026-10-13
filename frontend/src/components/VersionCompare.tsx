@@ -43,6 +43,15 @@ export const VersionCompare: React.FC<VersionCompareProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'text' | 'visual' | 'side-by-side'>('text');
 
+  const formatChangePercent = (ratio: number): string => {
+    if (ratio === 0) return '0.00%';
+    const pct = ratio * 100;
+    if (pct < 0.01) {
+      return `${pct.toFixed(4)}%`;
+    }
+    return `${pct.toFixed(2)}%`;
+  };
+
   const fetchComparison = async (from: string, to: string) => {
     if (!from || !to) return;
     setLoading(true);
@@ -57,6 +66,7 @@ export const VersionCompare: React.FC<VersionCompareProps> = ({
       setLoading(false);
     }
   };
+
 
   useEffect(() => {
     if (fromId && toId) {
@@ -193,9 +203,10 @@ export const VersionCompare: React.FC<VersionCompareProps> = ({
             </span>
             {comparison.change_ratio > 0 && (
               <span className="text-[#64748B] text-[11px] font-mono">
-                Visual change: {(comparison.change_ratio * 100).toFixed(2)}%
+                Visual change: {formatChangePercent(comparison.change_ratio)}
               </span>
             )}
+
           </div>
         )}
       </div>
@@ -315,9 +326,10 @@ export const VersionCompare: React.FC<VersionCompareProps> = ({
                   </div>
                   {comparison.change_ratio !== undefined && (
                     <span className="text-[#64748B] text-[11px] font-mono">
-                      Delta: {(comparison.change_ratio * 100).toFixed(2)}%
+                      Delta: {formatChangePercent(comparison.change_ratio)}
                     </span>
                   )}
+
                 </div>
 
                 <div className="p-4 flex items-center justify-center bg-slate-100 min-h-[380px]">

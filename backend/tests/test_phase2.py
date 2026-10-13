@@ -473,3 +473,114 @@ def test_arbitrary_localhost_and_ports_remain_strictly_blocked():
     assert safe is False
     assert "prohibited or private" in reason.lower()
 
+
+# -----------------------------------------------------------------------------
+# 7. Regression Tests: Change Ratio Precision & Concurrent Check Deduplication
+# -----------------------------------------------------------------------------
+
+def test_visual_diff_change_ratio_accuracy():
+    """
+    Observation 1 Regression Test:
+    Ensures compute_screenshot_diff calculates accurate change ratios
+    even for small nonzero pixel changes.
+    """
+    from PIL import Image
+    from io import BytesIO
+
+    # Create two 100x100 white images
+    img1 = Image.new("RGBA", (100, 100), (255, 255, 255, 255))
+    img2 = Image.new("RGBA", (100, 100), (255, 255, 255, 255))
+
+    # Mutate a 10x10 square (100 pixels out of 10,000 = 1% = ratio 0.01)
+    for x in range(10):
+        for y in range(10):
+            img2.putpixel((x, y), (0, 0, 0, 255))
+
+    buf1 = BytesIO()
+    img1.save(buf1, format="PNG")
+    buf2 = BytesIO()
+    img2.save(buf2, format="PNG")
+
+    diff_bytes, ratio = compute_screenshot_diff(buf1.getvalue(), buf2.getvalue())
+    assert len(diff_bytes) > 0
+    assert abs(ratio - 0.01) < 0.001
+
+    # Mutate just 1 pixel out of 10,000 = 0.0001 (0.01%)
+    img3 = Image.new("RGBA", (100, 100), (255, 255, 255, 255))
+    img3.putpixel((0, 0), (0, 0, 0, 255))
+    buf3 = BytesIO()
+    img3.save(buf3, format="PNG")
+
+    _, small_ratio = compute_screenshot_diff(buf1.getvalue(), buf3.getvalue())
+    assert small_ratio > 0.0
+    assert abs(small_ratio - 0.0001) < 0.00005
+
+
+def test_concurrent_checks_cannot_create_duplicate_versions(monkeypatch):
+    """
+    Observation 3 Regression Test:
+    Simulates concurrent execution of check runs capturing identical content.
+    Enforces that even when two checks execute concurrently, only one version is created,
+    and the second check resolves as UNCHANGED.
+    """
+    import concurrent.futures
+    monkeypatch.setattr(settings, "TEST_MODE", True)
+
+    db = SessionLocal()
+    try:
+        url = f"http://127.0.0.1:{settings.API_PORT}/fixture/product?price=7777"
+        monitor = Monitor(
+            name="Concurrent Check Deduplication Test",
+            url=url,
+            canonical_url=canonicalize_url(url),
+            interval_minutes=15,
+            sensitivity=SensitivityEnum.MEDIUM,
+            enabled=True,
+        )
+        db.add(monitor)
+        db.commit()
+        db.refresh(monitor)
+
+        # Baseline check first
+        res_base = client.post(f"/api/monitors/{monitor.id}/checks")
+        assert res_base.status_code == 202
+
+        db.expire_all()
+        versions_base = db.query(Version).filter(Version.monitor_id == monitor.id).all()
+        assert len(versions_base) == 1
+
+        # Now enqueue two separate check runs for identical content
+        check1_id = uuid.uuid4()
+        check2_id = uuid.uuid4()
+        c1 = CheckRun(id=check1_id, monitor_id=monitor.id, job_id=f"job-{uuid.uuid4().hex[:10]}", state=CheckRunStateEnum.QUEUED)
+        c2 = CheckRun(id=check2_id, monitor_id=monitor.id, job_id=f"job-{uuid.uuid4().hex[:10]}", state=CheckRunStateEnum.QUEUED)
+        db.add_all([c1, c2])
+        db.commit()
+
+        # Execute both checks concurrently via thread pool
+        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+            futures = [
+                executor.submit(execute_check, check1_id),
+                executor.submit(execute_check, check2_id),
+            ]
+            concurrent.futures.wait(futures)
+
+        db.expire_all()
+        check1 = db.query(CheckRun).filter(CheckRun.id == check1_id).first()
+        check2 = db.query(CheckRun).filter(CheckRun.id == check2_id).first()
+
+        # Both checks must have succeeded as UNCHANGED (since content matches baseline)
+        assert check1.state == CheckRunStateEnum.UNCHANGED
+        assert check2.state == CheckRunStateEnum.UNCHANGED
+
+        # Version count must remain exactly 1!
+        versions_after = db.query(Version).filter(Version.monitor_id == monitor.id).all()
+        assert len(versions_after) == 1
+
+        # Clean up
+        db.delete(monitor)
+        db.commit()
+    finally:
+        db.close()
+
+

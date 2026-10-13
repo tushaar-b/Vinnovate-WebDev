@@ -9,6 +9,7 @@ from sqlalchemy import func
 from app.database import get_db
 from app.models.models import (
     Monitor,
+    MonitorRule,
     CheckRun,
     Version,
     CheckRunStateEnum,
@@ -28,13 +29,19 @@ from app.schemas.monitors import (
     VersionListResponse,
     VersionComparisonResponse,
     TextDiffItem,
+    MonitorRuleSchema,
+    MonitorRulesUpdateRequest,
+    PickerResponse,
+    PickerElement,
 )
 from app.services.security import validate_target_url, canonicalize_url
 from app.services.checker import execute_check
+from app.services.browser import capture_page
 from app.services.storage import get_screenshot_path, save_diff_screenshot
 from app.services.diff import compute_text_diff, compute_screenshot_diff
 
 router = APIRouter(tags=["Monitors"])
+
 
 
 def get_monitor_versions_count(db: Session, monitor_id: uuid.UUID) -> int:
@@ -524,4 +531,98 @@ def get_diff_image(
         )
 
     return FileResponse(path=safe_path, media_type="image/png")
+
+
+@router.get("/monitors/{monitor_id}/picker", response_model=PickerResponse)
+def get_monitor_picker(monitor_id: uuid.UUID, db: Session = Depends(get_db)):
+    """
+    Returns screenshot URL, dimensions, and element rect overlays for the visual region picker.
+    Uses the latest successful capture or runs an explicit safe capture to get DOM bounding boxes.
+    """
+    monitor = db.query(Monitor).filter(Monitor.id == monitor_id).first()
+    if not monitor:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"error": {"code": "NOT_FOUND", "message": "Monitor not found."}},
+        )
+
+    # Find latest version to serve its screenshot
+    latest_version = (
+        db.query(Version)
+        .filter(Version.monitor_id == monitor_id)
+        .order_by(Version.sequence_number.desc())
+        .first()
+    )
+
+    is_fixture = "/fixture" in monitor.url
+    capture = capture_page(monitor.url, is_fixture=is_fixture, extract_elements=True)
+
+    screenshot_url = f"/api/versions/{latest_version.id}/screenshot" if latest_version else ""
+    if not screenshot_url:
+        # If no version yet, temporarily save screenshot for picker preview
+        temp_id = uuid.uuid4()
+        from app.services.storage import save_screenshot
+        save_screenshot(monitor.id, temp_id, capture.screenshot_bytes)
+        screenshot_url = f"/api/versions/{temp_id}/screenshot"
+
+    elements = [
+        PickerElement(
+            selector=el["selector"],
+            label=el["label"],
+            x=el["x"],
+            y=el["y"],
+            width=el["width"],
+            height=el["height"],
+        )
+        for el in (capture.elements or [])
+    ]
+
+    return PickerResponse(
+        screenshot_url=screenshot_url,
+        width=1440,
+        height=900,
+        elements=elements,
+    )
+
+
+@router.put("/monitors/{monitor_id}/rules", response_model=List[MonitorRuleSchema])
+def update_monitor_rules(
+    monitor_id: uuid.UUID,
+    payload: MonitorRulesUpdateRequest,
+    db: Session = Depends(get_db),
+):
+    """
+    Atomically replaces monitor watch and ignore rules.
+    """
+    monitor = db.query(Monitor).filter(Monitor.id == monitor_id).first()
+    if not monitor:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"error": {"code": "NOT_FOUND", "message": "Monitor not found."}},
+        )
+
+    # Delete existing rules for this monitor
+    db.query(MonitorRule).filter(MonitorRule.monitor_id == monitor_id).delete()
+
+    created_rules = []
+    for r in payload.rules:
+        sel = r.css_selector.strip()
+        if not sel:
+            continue
+        new_rule = MonitorRule(
+            id=uuid.uuid4(),
+            monitor_id=monitor_id,
+            rule_type=r.rule_type,
+            css_selector=sel,
+            label=r.label.strip() if r.label else None,
+        )
+        db.add(new_rule)
+        created_rules.append(new_rule)
+
+    db.commit()
+    for rule in created_rules:
+        db.refresh(rule)
+
+    return created_rules
+
 

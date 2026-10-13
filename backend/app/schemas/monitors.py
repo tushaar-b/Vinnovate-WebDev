@@ -42,6 +42,16 @@ class MonitorUpdate(BaseModel):
         return v
 
 
+class MonitorRuleInput(BaseModel):
+    rule_type: RuleTypeEnum
+    css_selector: str
+    label: Optional[str] = None
+
+
+class MonitorRulesUpdateRequest(BaseModel):
+    rules: List[MonitorRuleInput]
+
+
 class MonitorRuleSchema(BaseModel):
     id: uuid.UUID
     monitor_id: uuid.UUID
@@ -51,6 +61,23 @@ class MonitorRuleSchema(BaseModel):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class PickerElement(BaseModel):
+    selector: str
+    label: str
+    x: float
+    y: float
+    width: float
+    height: float
+
+
+class PickerResponse(BaseModel):
+    screenshot_url: str
+    width: int
+    height: int
+    elements: List[PickerElement]
+
 
 
 class MonitorSummary(BaseModel):

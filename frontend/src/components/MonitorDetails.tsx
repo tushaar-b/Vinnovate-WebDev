@@ -11,10 +11,13 @@ import {
   Terminal,
   Layers,
   GitCompare,
+  Crosshair,
 } from 'lucide-react';
 import { MonitorDetail, CheckRun, VersionSummary } from '../types';
 import { api } from '../services/api';
 import { VersionCompare } from './VersionCompare';
+import { RegionPicker } from './RegionPicker';
+
 
 
 
@@ -36,9 +39,10 @@ export const MonitorDetails: React.FC<MonitorDetailsProps> = ({
   const [checking, setChecking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedVersion, setSelectedVersion] = useState<VersionSummary | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'compare'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'compare' | 'rules'>('overview');
   const [compareFromId, setCompareFromId] = useState<string>('');
   const [compareToId, setCompareToId] = useState<string>('');
+
 
 
   const loadData = async () => {
@@ -235,10 +239,31 @@ export const MonitorDetails: React.FC<MonitorDetailsProps> = ({
           <GitCompare className="w-3.5 h-3.5" />
           <span>Compare Versions ({versions.length})</span>
         </button>
+
+        <button
+          onClick={() => setActiveTab('rules')}
+          className={`flex items-center space-x-2 px-4 py-2 text-xs font-semibold rounded-lg transition-all ${
+            activeTab === 'rules'
+              ? 'bg-blue-600 text-white shadow-sm'
+              : 'text-[#64748B] hover:text-[#0F172A] hover:bg-slate-100'
+          }`}
+        >
+          <Crosshair className="w-3.5 h-3.5" />
+          <span>Region Rules & Picker ({monitor.rules?.length || 0})</span>
+        </button>
       </div>
 
-      {/* Main Content: Overview vs Compare */}
-      {activeTab === 'compare' ? (
+      {/* Main Content: Overview vs Compare vs Rules */}
+      {activeTab === 'rules' ? (
+        <RegionPicker
+          monitorId={monitorId}
+          initialRules={monitor.rules || []}
+          onRulesSaved={(updated) => {
+            setMonitor({ ...monitor, rules: updated });
+            loadData();
+          }}
+        />
+      ) : activeTab === 'compare' ? (
         <VersionCompare
           monitorId={monitorId}
           versions={versions}
@@ -248,6 +273,7 @@ export const MonitorDetails: React.FC<MonitorDetailsProps> = ({
       ) : (
         /* Main Grid */
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
           {/* Left Column: Screenshot & Extracted Content (2 cols) */}
           <div className="lg:col-span-2 space-y-6">
             {/* Display Selected or Latest Screenshot Card */}

@@ -43,10 +43,11 @@ def execute_check(check_run_id: uuid.UUID) -> None:
         check_run.attempt += 1
         db.commit()
 
-        # Execute browser capture
+        # Execute browser capture with monitor rules applied
         is_fixture = "/fixture" in monitor.url
         try:
-            result = capture_page(monitor.url, is_fixture=is_fixture)
+            result = capture_page(monitor.url, is_fixture=is_fixture, rules=monitor.rules)
+
 
             # Atomically lock monitor row to serialize version creation and sequence numbering
             # This guarantees concurrent checks cannot create duplicate sequence numbers or duplicate versions

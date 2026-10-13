@@ -93,5 +93,23 @@ export const api = {
     const res = await fetch(`${BASE_URL}/api/monitors/${monitorId}/compare?from=${fromId}&to=${toId}`);
     return handleResponse<import('../types').VersionComparison>(res);
   },
+
+  async getPicker(monitorId: string): Promise<import('../types').PickerData> {
+    const res = await fetch(`${BASE_URL}/api/monitors/${monitorId}/picker`);
+    return handleResponse<import('../types').PickerData>(res);
+  },
+
+  async updateRules(
+    monitorId: string,
+    rules: { rule_type: 'watch' | 'ignore'; css_selector: string; label?: string }[]
+  ): Promise<import('../types').MonitorRule[]> {
+    const res = await fetch(`${BASE_URL}/api/monitors/${monitorId}/rules`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rules }),
+    });
+    return handleResponse<import('../types').MonitorRule[]>(res);
+  },
 };
+
 

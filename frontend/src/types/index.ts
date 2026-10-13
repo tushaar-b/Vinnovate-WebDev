@@ -89,3 +89,20 @@ export interface VersionComparison {
   change_ratio: number;
 }
 
+export interface PickerElement {
+  selector: string;
+  label: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export interface PickerData {
+  screenshot_url: string;
+  width: number;
+  height: number;
+  elements: PickerElement[];
+}
+
+

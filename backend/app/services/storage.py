@@ -1,0 +1,48 @@
+import os
+import uuid
+from pathlib import Path
+from typing import Optional
+from app.config import settings
+
+
+def get_screenshot_directory(monitor_id: uuid.UUID) -> Path:
+    """Returns the base storage directory for a specific monitor's screenshots."""
+    base_dir = Path(settings.DATA_DIR).resolve()
+    monitor_dir = base_dir / str(monitor_id)
+    monitor_dir.mkdir(parents=True, exist_ok=True)
+    return monitor_dir
+
+
+def save_screenshot(monitor_id: uuid.UUID, version_id: uuid.UUID, screenshot_bytes: bytes) -> str:
+    """
+    Saves screenshot PNG bytes to data/screenshots/<monitor_id>/<version_id>.png
+    Returns the relative safe path stored in the database.
+    """
+    monitor_dir = get_screenshot_directory(monitor_id)
+    filename = f"{version_id}.png"
+    target_file = monitor_dir / filename
+
+    with open(target_file, "wb") as f:
+        f.write(screenshot_bytes)
+
+    # Return relative path
+    return f"{monitor_id}/{filename}"
+
+
+def get_screenshot_path(relative_path: str) -> Optional[Path]:
+    """
+    Resolves relative screenshot path and enforces path traversal prevention.
+    Path must strictly match <uuid>/<uuid>.png.
+    """
+    base_dir = Path(settings.DATA_DIR).resolve()
+    target_path = (base_dir / relative_path).resolve()
+
+    # Enforce path traversal protection: target must be inside base_dir
+    try:
+        target_path.relative_to(base_dir)
+    except ValueError:
+        return None
+
+    if target_path.exists() and target_path.is_file():
+        return target_path
+    return None

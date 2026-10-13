@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     DATA_DIR: str = Field(default="data/screenshots")
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=(".env", "../.env"),
         env_file_encoding="utf-8",
         extra="ignore",
     )

@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.api import api_router
+from app.api.fixture import router as fixture_router
 
 
 @asynccontextmanager
@@ -36,6 +37,8 @@ app.add_middleware(
 
 # Include core API routes
 app.include_router(api_router)
+# Include fixture routes for deterministic local testing
+app.include_router(fixture_router)
 
 
 @app.get("/", tags=["Root"])

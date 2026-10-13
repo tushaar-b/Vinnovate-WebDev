@@ -48,7 +48,7 @@ lerna-debug.log*
 postgres_data/
 redis_data/
 data/
-screenshots/
+!REPORTS/screenshots/
 *.log
 
 # OS & Editors

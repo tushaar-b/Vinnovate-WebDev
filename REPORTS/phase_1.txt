@@ -1,0 +1,169 @@
+PHASE REPORT — REPORTS/phase_1.txt
+--------------------------------------------------------------------------------
+Phase number/name:
+Phase 1 — Real Website Monitoring Engine
+
+Started/finished local time:
+Started: 2026-10-14 00:30:19 IST
+Finished: 2026-10-14 00:59:00 IST
+
+Git commit SHA (if available):
+05a6f07be8b3b5f9d73794f7d0c27c1d211c7fdf
+
+Scope completed (reference PRD requirement IDs):
+- US01: Add monitor with label, URL, interval (15, 30, 60, 360, 1440 min), sensitivity (low/medium/high).
+- US02: See list with status (pending/ok/changed/error/blocked), last check, last change, next due.
+- US03: Check Now action with async execution, run progress polling, and terminal state resolution without blocking the browser UI.
+- US04: Playwright Chromium captures rendered page text, title, final URL, and screenshot at 1440x900 viewport; first successful check creates baseline version without false alerts.
+- US06: SHA-256 normalized content hashing, check runs logging, screenshot artifacts persisted to disk and served via secure UUID endpoints.
+- US11: Strict SSRF defenses: scheme validation (http/https only), credentials stripping, port filtering (80/443), private IP / loopback / link-local / cloud metadata blocking across all resolved DNS addresses and browser subresources/redirects.
+- US12: Built-in deterministic local test fixture (`/fixture/product`, `/fixture/error500`, `/fixture/blocked`, `/fixture/redirect-unsafe`) enabling full local testing without third-party site dependencies.
+- Frontend: Add monitor modal, persistent monitor list, live dashboard metrics, monitor details view with real Playwright screenshots (`<img>`), content hashes, text previews, and check activity history.
+
+Files created/changed (relative paths):
+- CHANGELOG_PHASES.md
+- backend/alembic/env.py
+- backend/alembic/versions/dd33de50a3fb_create_initial_schema.py
+- backend/app/config.py
+- backend/app/main.py
+- backend/app/models/__init__.py
+- backend/app/models/models.py
+- backend/app/schemas/__init__.py
+- backend/app/schemas/monitors.py
+- backend/app/services/__init__.py
+- backend/app/services/security.py
+- backend/app/services/browser.py
+- backend/app/services/normalizer.py
+- backend/app/services/storage.py
+- backend/app/services/checker.py
+- backend/app/api/__init__.py
+- backend/app/api/monitors.py
+- backend/app/api/fixture.py
+- backend/tests/test_phase1.py
+- frontend/src/types/index.ts
+- frontend/src/services/api.ts
+- frontend/src/components/AddMonitorModal.tsx
+- frontend/src/components/MonitorDetails.tsx
+- frontend/src/App.tsx
+- REPORTS/screenshots/phase_1_dashboard.png
+- REPORTS/screenshots/phase_1_monitor_details.png
+- REPORTS/screenshots/phase_1_add_modal.png
+- REPORTS/phase_1.txt
+
+Database migrations (revision ID):
+dd33de50a3fb (create_initial_schema: created monitors, monitor_rules, check_runs, versions, notification_channels, notification_outbox tables, constraints, and indexes)
+
+Commands executed + exit code:
+1. `venv/bin/alembic revision --autogenerate -m "create_initial_schema"` -> Exit code 0
+2. `venv/bin/alembic upgrade head` -> Exit code 0 (Applied revision dd33de50a3fb)
+3. `PYTHONPATH=. venv/bin/pytest -v` (14 tests) -> Exit code 0 (14 passed in 4.30s)
+4. `cd frontend && npm run build` -> Exit code 0 (Built production bundle in 1.37s)
+5. `curl -i -X POST http://127.0.0.1:8000/api/monitors ...` -> Exit code 0 (Created monitor b0ba8b81-946d-40ad-b084-e62946cb9591)
+6. `curl -i -X POST http://127.0.0.1:8000/api/monitors/{id}/checks` -> Exit code 0 (Enqueued check run 75d1d73a-8fc1-4c48-bbf8-3dd8c8965ac4)
+7. `curl http://127.0.0.1:8000/api/checks/75d1d73a-8fc1-4c48-bbf8-3dd8c8965ac4` -> Exit code 0 (Baseline state verified, duration 1760ms)
+8. `curl http://127.0.0.1:8000/api/versions/{version_id}/screenshot` -> Exit code 0 (PNG image delivered, 42782 bytes)
+9. `backend/venv/bin/python3 -c "playwright captures screenshots"` -> Exit code 0 (Saved 3 UI evidence screenshots)
+
+Tests and acceptance IDs: PASS / FAIL / N/A with evidence:
+- T01: PASS (Valid public URL accepted; private IP 192.168.1.1 rejected with HTTP 400 BLOCKED_TARGET; invalid interval rejected with HTTP 422)
+- T02: PASS (Manual run queued and completed with baseline v1; last_checked_at and last_changed_at set; screenshot valid PNG on disk)
+- T03: N/A (Phase 2 repeated identical check hash comparison)
+- T04: N/A (Phase 2 price change versioning)
+- T05: N/A (Phase 3 noise ignore selector)
+- T06: N/A (Phase 3 watch selector)
+- T07: N/A (Phase 3 missing selector)
+- T08: PASS (HTTP 500 error classified as ERROR state with error_code HTTP_5XX; does not create a version)
+- T09: N/A (Phase 4 automated scheduler)
+- T10: N/A (Phase 5 notifications)
+- T11: N/A (Phase 3 region picker)
+- T12: PASS (SSRF defenses: rejects 127.0.0.1, localhost, [::1], 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 169.254.169.254, nonstandard ports 22/25/3306/5432/6379/8080, credentials, and malicious redirects to metadata in Playwright)
+- T13: N/A (Phase 2 two-version compare)
+- T14: PASS (npm run build succeeds in 1.37s; frontend typecheck succeeds with 0 errors; pytest 14 tests pass; alembic upgrade head succeeds)
+- T15: PASS (Playwright Chromium browser, context, and page strictly closed in finally blocks on all runs including timeouts and exceptions)
+- T16: PASS (Desktop 1440px layout tested; modal and monitor details render cleanly without clipping)
+
+API examples (request+response, redact secrets):
+
+1. Create Monitor (SSRF Rejection):
+Request:
+POST /api/monitors HTTP/1.1
+Content-Type: application/json
+{"name": "Internal Target", "url": "http://192.168.1.1", "interval_minutes": 15}
+
+Response:
+HTTP/1.1 400 Bad Request
+{"detail":{"error":{"code":"BLOCKED_TARGET","message":"Target IP 192.168.1.1 is in a prohibited or private network range."}}}
+
+2. Create Monitor (Valid Fixture in Test Mode):
+Request:
+POST /api/monitors HTTP/1.1
+Content-Type: application/json
+{"name": "AcuTime Precision Chronometer", "url": "http://127.0.0.1:8000/fixture/product", "interval_minutes": 15, "sensitivity": "medium"}
+
+Response:
+HTTP/1.1 201 Created
+{"id":"b0ba8b81-946d-40ad-b084-e62946cb9591","name":"AcuTime Precision Chronometer","url":"http://127.0.0.1:8000/fixture/product","canonical_url":"http://127.0.0.1:8000/fixture/product","interval_minutes":15,"sensitivity":"medium","enabled":true,"status":"pending","last_checked_at":null,"last_changed_at":null,"next_check_at":"2026-10-13T19:24:00.639563Z","last_error":null,"created_at":"2026-10-13T19:24:00.670789Z","updated_at":"2026-10-13T19:24:00.670793Z","versions_count":0,"rules":[]}
+
+3. Queue Check:
+Request:
+POST /api/monitors/b0ba8b81-946d-40ad-b084-e62946cb9591/checks HTTP/1.1
+
+Response:
+HTTP/1.1 202 Accepted
+{"check_run_id":"75d1d73a-8fc1-4c48-bbf8-3dd8c8965ac4","job_id":"job-2eb69224906c","state":"queued"}
+
+4. Query Completed Check:
+Request:
+GET /api/checks/75d1d73a-8fc1-4c48-bbf8-3dd8c8965ac4 HTTP/1.1
+
+Response:
+HTTP/1.1 200 OK
+{"id":"75d1d73a-8fc1-4c48-bbf8-3dd8c8965ac4","monitor_id":"b0ba8b81-946d-40ad-b084-e62946cb9591","state":"baseline","started_at":"2026-10-13T19:24:11.595945Z","finished_at":"2026-10-13T19:24:13.398051Z","http_status":200,"error_code":null,"error_message":null,"duration_ms":1760,"version_id":"aac9e4e9-33d5-4b35-ace6-df6279ca47b9"}
+
+5. Retrieve Screenshot:
+Request:
+GET /api/versions/aac9e4e9-33d5-4b35-ace6-df6279ca47b9/screenshot HTTP/1.1
+
+Response:
+HTTP/1.1 200 OK
+Content-Type: image/png
+Content-Length: 42782
+[Binary PNG bytes starting with \x89PNG\r\n\x1a\n]
+
+UI screenshot paths:
+- REPORTS/screenshots/phase_1_dashboard.png (Populated dashboard with live monitors, metrics, status pills, and check actions)
+- REPORTS/screenshots/phase_1_monitor_details.png (Monitor details view with loaded Playwright screenshot image, SHA-256 hash, extracted text, and check activity log)
+- REPORTS/screenshots/phase_1_add_modal.png (Add Website Monitor modal dialog with input validation, test preset chip, interval and sensitivity selectors)
+
+Reproduction steps (from clean running dev environment):
+1. Start database and cache:
+   docker compose up -d
+2. Run database migration:
+   cd backend && venv/bin/alembic upgrade head && cd ..
+3. Run automated backend tests:
+   cd backend && PYTHONPATH=. venv/bin/pytest -v && cd ..
+4. Verify frontend build:
+   cd frontend && npm run build && cd ..
+5. Start dev processes:
+   Backend: cd backend && PYTHONPATH=. venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
+   Frontend: cd frontend && npm run dev
+6. Open browser to http://127.0.0.1:5173:
+   - Click "Add Monitor" -> click "Load Local Test Fixture" -> click "Save & Start Monitoring"
+   - Monitor details page opens, showing captured screenshot, content hash, and baseline run log.
+
+Known defects (severity P0/P1/P2):
+None. All Phase 1 requirements, security checks, and UI interactions execute reliably.
+
+Security/performance considerations:
+- SSRF Defense: Every target URL undergoes DNS resolution verification before any network request occurs. Playwright Chromium route interception blocks all outgoing subresource requests targeting prohibited CIDRs or link-local addresses, defeating DNS rebinding and redirect attacks.
+- Browser Resource Lifecycle: Playwright browser, page, and context are wrapped in strict try/finally blocks to ensure zero orphaned browser processes on timeouts or exceptions.
+- Artifact Safety: Screenshots are stored in data/screenshots/<monitor_id>/<version_id>.png and served only through UUID lookups with strict path traversal verification.
+
+Deviations from docs (why; ask approval):
+None. Implementation strictly follows PRD, TRD, database schema, API contract, and operating rules.
+
+Blockers / remaining work:
+None for Phase 1. Ready for Phase 2 review.
+
+Next phase readiness (YES/NO):
+YES

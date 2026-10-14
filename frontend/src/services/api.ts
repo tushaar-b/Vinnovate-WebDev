@@ -110,6 +110,54 @@ export const api = {
     });
     return handleResponse<import('../types').MonitorRule[]>(res);
   },
+
+  async getNotificationSettings(): Promise<Record<string, import('../types').NotificationChannel>> {
+    const res = await fetch(`${BASE_URL}/api/settings/notifications`);
+    return handleResponse<Record<string, import('../types').NotificationChannel>>(res);
+  },
+
+  async updateNotificationSettings(
+    channelType: string,
+    payload: { enabled: boolean; configuration: Record<string, any> }
+  ): Promise<import('../types').NotificationChannel> {
+    const res = await fetch(`${BASE_URL}/api/settings/notifications/${channelType}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    return handleResponse<import('../types').NotificationChannel>(res);
+  },
+
+  async testNotification(
+    channelType: string,
+    configuration?: Record<string, any>
+  ): Promise<{ success: boolean; message: string; channel_type: string }> {
+    const res = await fetch(`${BASE_URL}/api/settings/notifications/${channelType}/test`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ configuration }),
+    });
+    return handleResponse<{ success: boolean; message: string; channel_type: string }>(res);
+  },
+
+  async getNotificationOutbox(limit: number = 50, state?: string): Promise<import('../types').NotificationOutboxItem[]> {
+    const query = new URLSearchParams({ limit: String(limit) });
+    if (state && state !== 'all') query.append('state', state);
+    const res = await fetch(`${BASE_URL}/api/notifications/outbox?${query.toString()}`);
+    return handleResponse<import('../types').NotificationOutboxItem[]>(res);
+  },
+
+  async getActivity(
+    limit: number = 50,
+    eventType?: string,
+    monitorId?: string
+  ): Promise<{ items: import('../types').ActivityItem[]; total: number }> {
+    const query = new URLSearchParams({ limit: String(limit) });
+    if (eventType && eventType !== 'all') query.append('event_type', eventType);
+    if (monitorId) query.append('monitor_id', monitorId);
+    const res = await fetch(`${BASE_URL}/api/activity?${query.toString()}`);
+    return handleResponse<{ items: import('../types').ActivityItem[]; total: number }>(res);
+  },
 };
 
 

@@ -88,15 +88,23 @@ def enqueue_check(
         db.refresh(check_run)
 
         # Enqueue into durable Redis RQ queue
-        q = get_queue("checks", is_async=force_async)
-        q.enqueue(
-            "app.services.checker.execute_check_job",
-            str(check_run.id),
-            job_id=job_id,
-            job_timeout=60,
-            result_ttl=3600,
-            failure_ttl=86400,
-        )
+        try:
+            q = get_queue("checks", is_async=force_async)
+            q.enqueue(
+                "app.services.checker.execute_check_job",
+                str(check_run.id),
+                job_id=job_id,
+                job_timeout=60,
+                result_ttl=3600,
+                failure_ttl=86400,
+            )
+        except Exception as e:
+            check_run.state = CheckRunStateEnum.ERROR
+            check_run.error_code = "REDIS_ENQUEUE_FAILED"
+            check_run.error_message = f"Failed to enqueue check run into Redis: {str(e)}"
+            check_run.finished_at = utc_now()
+            db.commit()
+            raise
 
         return check_run
     finally:

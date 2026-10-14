@@ -16,10 +16,11 @@ logging.basicConfig(
 logger = logging.getLogger("worker")
 
 
-def recover_abandoned_jobs():
+def recover_abandoned_jobs(auto_requeue: bool = False):
     """
     On worker startup, scan for check runs stuck in RUNNING state
-    due to ungraceful worker termination or crash, and mark them as ERROR.
+    due to ungraceful worker termination or crash, and mark them as ERROR
+    or safely retry without duplicate version creation.
     """
     db = SessionLocal()
     try:
@@ -30,9 +31,24 @@ def recover_abandoned_jobs():
         ).all()
         for run in abandoned_runs:
             logger.warning(f"Recovering abandoned run {run.id} for monitor {run.monitor_id}")
-            run.state = CheckRunStateEnum.ERROR
-            run.error_message = "Worker process interrupted or crashed during check execution"
-            run.finished_at = datetime.now(timezone.utc)
+            if auto_requeue and run.attempt < 2:
+                run.state = CheckRunStateEnum.QUEUED
+                run.error_message = "Worker process interrupted; automatically requeued for safe retry."
+                db.commit()
+                try:
+                    from app.services.queue import get_queue
+                    q = get_queue("checks")
+                    q.enqueue(
+                        "app.services.checker.execute_check_job",
+                        str(run.id),
+                        job_id=f"retry-{run.job_id}",
+                    )
+                except Exception as eq_err:
+                    logger.error(f"Failed to requeue job {run.id}: {eq_err}")
+            else:
+                run.state = CheckRunStateEnum.ERROR
+                run.error_message = "Worker process interrupted or crashed during check execution"
+                run.finished_at = datetime.now(timezone.utc)
         db.commit()
     except Exception as e:
         logger.error(f"Error recovering abandoned jobs: {e}")

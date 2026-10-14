@@ -17,18 +17,21 @@ import { MonitorDetail, CheckRun, VersionSummary } from '../types';
 import { api } from '../services/api';
 import { VersionCompare } from './VersionCompare';
 import { RegionPicker } from './RegionPicker';
+import { ConfirmModal } from './ConfirmModal';
 
 
 
 
 interface MonitorDetailsProps {
   monitorId: string;
+  initialTab?: 'overview' | 'compare' | 'rules';
   onBack: () => void;
   onDeleted: () => void;
 }
 
 export const MonitorDetails: React.FC<MonitorDetailsProps> = ({
   monitorId,
+  initialTab = 'overview',
   onBack,
   onDeleted,
 }) => {
@@ -39,9 +42,11 @@ export const MonitorDetails: React.FC<MonitorDetailsProps> = ({
   const [checking, setChecking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedVersion, setSelectedVersion] = useState<VersionSummary | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'compare' | 'rules'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'compare' | 'rules'>(initialTab);
   const [compareFromId, setCompareFromId] = useState<string>('');
   const [compareToId, setCompareToId] = useState<string>('');
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
 
 
@@ -98,14 +103,21 @@ export const MonitorDetails: React.FC<MonitorDetailsProps> = ({
     }
   };
 
-  const handleDelete = async () => {
-    if (window.confirm(`Are you sure you want to delete monitor "${monitor?.name}"?`)) {
-      try {
-        await api.deleteMonitor(monitorId);
-        onDeleted();
-      } catch (err: unknown) {
-        alert(err instanceof Error ? err.message : 'Failed to delete');
-      }
+  const handleDelete = () => {
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    setDeleteLoading(true);
+    try {
+      await api.deleteMonitor(monitorId);
+      setIsDeleteModalOpen(false);
+      onDeleted();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to delete monitor');
+      setIsDeleteModalOpen(false);
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -531,6 +543,18 @@ export const MonitorDetails: React.FC<MonitorDetailsProps> = ({
         </div>
       </div>
     )}
+
+    {/* Confirmation Dialog for Destructive Action */}
+    <ConfirmModal
+      isOpen={isDeleteModalOpen}
+      title="Delete Monitor"
+      message={`Are you sure you want to delete "${monitor?.name}"? This action cannot be undone and will remove all version history, check runs, rules, and outbox logs.`}
+      confirmText="Yes, Delete Monitor"
+      confirmVariant="danger"
+      loading={deleteLoading}
+      onConfirm={handleConfirmDelete}
+      onCancel={() => setIsDeleteModalOpen(false)}
+    />
   </div>
 );
 };

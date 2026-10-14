@@ -225,7 +225,28 @@ def execute_check(check_run_id: uuid.UUID) -> None:
             locked_monitor.next_check_at = utc_now() + timedelta(minutes=locked_monitor.interval_minutes)
             locked_monitor.last_error = None
 
-        db.commit()
+            # Generate change summary for alerts
+            prev_t = latest_version.normalized_text.strip() if latest_version else ""
+            new_t = result.normalized_text.strip()
+            if prev_t == new_t:
+                summary = "Visual presentation or layout changed."
+            elif len(prev_t) < 80 and len(new_t) < 80:
+                summary = f"Changed from '{prev_t}' to '{new_t}'"
+            else:
+                summary = f"Content updated ({len(new_t)} chars, previous {len(prev_t)} chars)."
+
+            db.commit()
+
+            # Enqueue notification outbox entries for confirmed CHANGED result
+            from app.services.notifier import create_outbox_entries_for_changed_version
+            create_outbox_entries_for_changed_version(
+                db=db,
+                monitor=locked_monitor,
+                version=version,
+                change_summary=summary,
+            )
+        else:
+            db.commit()
 
     except SecurityValidationError as e:
         check_run.state = CheckRunStateEnum.BLOCKED

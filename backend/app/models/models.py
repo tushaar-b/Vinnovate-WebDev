@@ -55,6 +55,7 @@ class CheckRunStateEnum(str, enum.Enum):
 class ChannelTypeEnum(str, enum.Enum):
     DISCORD = "discord"
     TELEGRAM = "telegram"
+    EMAIL = "email"
 
 
 class OutboxStateEnum(str, enum.Enum):
@@ -199,7 +200,7 @@ class NotificationChannel(Base):
     monitor_id = Column(
         UUID(as_uuid=True),
         ForeignKey("monitors.id", ondelete="CASCADE"),
-        nullable=False,
+        nullable=True,
     )
     channel_type = Column(
         SAEnum(ChannelTypeEnum, name="channel_type_enum"),
@@ -240,6 +241,10 @@ class NotificationOutbox(Base):
     last_error = Column(Text, nullable=True)
     sent_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
+
+    monitor = relationship("Monitor")
+    version = relationship("Version")
+    channel = relationship("NotificationChannel")
 
     __table_args__ = (
         UniqueConstraint("monitor_id", "version_id", "channel_id", name="uq_outbox_monitor_version_channel"),

@@ -105,4 +105,43 @@ export interface PickerData {
   elements: PickerElement[];
 }
 
+export interface NotificationChannel {
+  id: string;
+  monitor_id?: string | null;
+  channel_type: string;
+  enabled: boolean;
+  configuration: Record<string, any>;
+  created_at: string;
+}
+
+export interface NotificationOutboxItem {
+  id: string;
+  monitor_id: string;
+  monitor_name: string;
+  monitor_url: string;
+  version_id: string;
+  channel_id: string;
+  channel_type: string;
+  state: 'pending' | 'sending' | 'sent' | 'failed';
+  attempts: number;
+  last_error?: string | null;
+  sent_at?: string | null;
+  created_at: string;
+}
+
+export interface ActivityItem {
+  id: string;
+  event_type: string;
+  status: string;
+  monitor_id: string;
+  monitor_name: string;
+  monitor_url: string;
+  timestamp: string;
+  title: string;
+  summary: string;
+  version_id?: string | null;
+  comparison_url?: string | null;
+  metadata?: Record<string, any>;
+}
+
 

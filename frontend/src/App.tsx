@@ -18,6 +18,8 @@ import { HealthStatus, MonitorSummary, CreateMonitorInput } from './types';
 import { api } from './services/api';
 import { AddMonitorModal } from './components/AddMonitorModal';
 import { MonitorDetails } from './components/MonitorDetails';
+import { ActivityView } from './components/ActivityView';
+import { SettingsView } from './components/SettingsView';
 
 export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'monitors' | 'activity' | 'settings'>('dashboard');
@@ -31,6 +33,7 @@ export const App: React.FC = () => {
   // Navigation & Modal State
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
   const [selectedMonitorId, setSelectedMonitorId] = useState<string | null>(null);
+  const [monitorInitialTab, setMonitorInitialTab] = useState<'overview' | 'compare' | 'rules'>('overview');
   const [checkingIds, setCheckingIds] = useState<Record<string, boolean>>({});
 
   const fetchHealthData = async () => {
@@ -68,8 +71,18 @@ export const App: React.FC = () => {
       const match = hash.match(/^#monitors\/([0-9a-fA-F-]+)/);
       if (match) {
         setSelectedMonitorId(match[1]);
+      } else if (hash === '#activity') {
+        setSelectedMonitorId(null);
+        setActiveTab('activity');
+      } else if (hash === '#settings') {
+        setSelectedMonitorId(null);
+        setActiveTab('settings');
+      } else if (hash === '#monitors') {
+        setSelectedMonitorId(null);
+        setActiveTab('monitors');
       } else if (!hash || hash === '#' || hash === '#dashboard') {
         setSelectedMonitorId(null);
+        setActiveTab('dashboard');
       }
     };
 
@@ -83,12 +96,13 @@ export const App: React.FC = () => {
     };
   }, []);
 
-  const handleSelectMonitor = (id: string | null) => {
+  const handleSelectMonitor = (id: string | null, tab: 'overview' | 'compare' | 'rules' = 'overview') => {
     setSelectedMonitorId(id);
+    setMonitorInitialTab(tab);
     if (id) {
       window.location.hash = `#monitors/${id}`;
     } else {
-      window.location.hash = '';
+      window.location.hash = activeTab === 'dashboard' ? '' : `#${activeTab}`;
     }
   };
 
@@ -173,6 +187,7 @@ export const App: React.FC = () => {
                     onClick={() => {
                       handleSelectMonitor(null);
                       setActiveTab(item.id as typeof activeTab);
+                      window.location.hash = item.id === 'dashboard' ? '' : `#${item.id}`;
                     }}
                     className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                       isActive 
@@ -236,6 +251,7 @@ export const App: React.FC = () => {
         {selectedMonitorId ? (
           <MonitorDetails
             monitorId={selectedMonitorId}
+            initialTab={monitorInitialTab}
             onBack={() => {
               handleSelectMonitor(null);
               fetchMonitorsData();
@@ -245,6 +261,12 @@ export const App: React.FC = () => {
               fetchMonitorsData();
             }}
           />
+        ) : activeTab === 'activity' ? (
+          <ActivityView
+            onNavigateToMonitor={(id, tab) => handleSelectMonitor(id, (tab as any) || 'overview')}
+          />
+        ) : activeTab === 'settings' ? (
+          <SettingsView />
         ) : (
           <>
             {/* Header & Status */}

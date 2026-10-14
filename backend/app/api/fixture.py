@@ -53,6 +53,7 @@ def fixture_product(
 
 
 
+@router.get("/error-500")
 @router.get("/error500")
 def fixture_error500():
     return Response(content="Internal Server Error Simulated", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)

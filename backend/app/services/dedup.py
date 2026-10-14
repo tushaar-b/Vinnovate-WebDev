@@ -98,8 +98,22 @@ class SharedFetchService:
         Returns: (visible_text, normalized_text, content_hash)
         Raises BrowserCaptureError if any configured watch selector is missing in the DOM.
         """
-        watch_selectors = [r.css_selector.strip() for r in (rules or []) if getattr(r, "rule_type", "") == "watch" and r.css_selector.strip()]
-        ignore_selectors = [r.css_selector.strip() for r in (rules or []) if getattr(r, "rule_type", "") == "ignore" and r.css_selector.strip()]
+        watch_selectors = [
+            (r["css_selector"] if isinstance(r, dict) else r.css_selector).strip()
+            for r in (rules or [])
+            if (
+                str(r.get("rule_type", "") if isinstance(r, dict) else getattr(r, "rule_type", "")).lower().endswith("watch")
+            )
+            and (r["css_selector"] if isinstance(r, dict) else r.css_selector).strip()
+        ]
+        ignore_selectors = [
+            (r["css_selector"] if isinstance(r, dict) else r.css_selector).strip()
+            for r in (rules or [])
+            if (
+                str(r.get("rule_type", "") if isinstance(r, dict) else getattr(r, "rule_type", "")).lower().endswith("ignore")
+            )
+            and (r["css_selector"] if isinstance(r, dict) else r.css_selector).strip()
+        ]
 
         with sync_playwright() as p:
             browser = p.chromium.launch(
@@ -119,7 +133,7 @@ class SharedFetchService:
                     if count == 0:
                         browser.close()
                         raise BrowserCaptureError(
-                            f"Configured watch selector '{ws}' not found on the page.",
+                            f"Watched element selector '{ws}' not found on target page.",
                             error_code="MISSING_SELECTOR",
                         )
                 except BrowserCaptureError:
@@ -142,7 +156,7 @@ class SharedFetchService:
                             } catch (e) {}
                         }
                     }
-                    return clone.innerText || clone.textContent || "";
+                    return clone.innerText || "";
                 }
 
                 if (watchRules && watchRules.length > 0) {

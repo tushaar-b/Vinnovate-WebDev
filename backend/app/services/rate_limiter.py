@@ -24,7 +24,7 @@ class DomainRateLimiter:
     def __init__(self, redis_conn=None):
         self.r = redis_conn or redis_client
 
-    def acquire_domain_lock(self, domain: str, timeout_seconds: int = 25) -> bool:
+    def acquire_domain_lock(self, domain: str, timeout_seconds: int = 90) -> bool:
         """
         Attempts to acquire an exclusive concurrency lock for a domain.
         Prevents multiple workers from hitting the same domain simultaneously.

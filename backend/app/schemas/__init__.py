@@ -13,6 +13,13 @@ from app.schemas.monitors import (
     VersionListResponse,
     MonitorRuleSchema,
 )
+from app.schemas.notifications import (
+    NotificationChannelResponse,
+    NotificationSettingsResponse,
+    TestNotificationResponse,
+    NotificationOutboxItemResponse,
+)
+from app.schemas.activity import ActivityItem, ActivityListResponse
 
 __all__ = [
     "HealthResponse",
@@ -28,4 +35,10 @@ __all__ = [
     "VersionDetails",
     "VersionListResponse",
     "MonitorRuleSchema",
+    "NotificationChannelResponse",
+    "NotificationSettingsResponse",
+    "TestNotificationResponse",
+    "NotificationOutboxItemResponse",
+    "ActivityItem",
+    "ActivityListResponse",
 ]

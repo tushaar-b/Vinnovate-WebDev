@@ -60,7 +60,8 @@ export const App: React.FC = () => {
   useEffect(() => {
     fetchHealthData();
     fetchMonitorsData();
-    const interval = setInterval(fetchHealthData, 15000);
+    const healthInterval = setInterval(fetchHealthData, 15000);
+    const monitorInterval = setInterval(fetchMonitorsData, 10000);
 
     const parseHash = () => {
       const hash = window.location.hash;
@@ -76,7 +77,8 @@ export const App: React.FC = () => {
     window.addEventListener('hashchange', parseHash);
 
     return () => {
-      clearInterval(interval);
+      clearInterval(healthInterval);
+      clearInterval(monitorInterval);
       window.removeEventListener('hashchange', parseHash);
     };
   }, []);
@@ -380,6 +382,7 @@ export const App: React.FC = () => {
                         <th className="px-6 py-3">Status</th>
                         <th className="px-6 py-3">Interval</th>
                         <th className="px-6 py-3">Last Checked</th>
+                        <th className="px-6 py-3">Next Scheduled</th>
                         <th className="px-6 py-3">Versions</th>
                         <th className="px-6 py-3 text-right">Actions</th>
                       </tr>
@@ -430,6 +433,12 @@ export const App: React.FC = () => {
                               {m.last_checked_at
                                 ? new Date(m.last_checked_at).toLocaleTimeString()
                                 : 'Pending'}
+                            </td>
+
+                            <td className="px-6 py-4 text-[#64748B]">
+                              {m.next_check_at
+                                ? new Date(m.next_check_at).toLocaleTimeString()
+                                : '---'}
                             </td>
 
                             <td className="px-6 py-4 text-[#0F172A] font-medium">

@@ -87,6 +87,7 @@ class Monitor(Base):
     last_changed_at = Column(DateTime(timezone=True), nullable=True)
     next_check_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
     last_error = Column(Text, nullable=True)
+    rebaseline_needed = Column(Boolean, nullable=False, default=False)
     created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
     updated_at = Column(
         DateTime(timezone=True), nullable=False, default=utc_now, onupdate=utc_now

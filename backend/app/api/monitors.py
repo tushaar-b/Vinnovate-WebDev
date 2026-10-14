@@ -38,6 +38,7 @@ from pathlib import Path
 from app.config import settings
 from app.services.security import validate_target_url, canonicalize_url, SecurityValidationError
 from app.services.checker import execute_check
+from app.services.queue import enqueue_check
 from app.services.browser import capture_page, BrowserCaptureError
 from app.services.storage import (
     get_screenshot_path,
@@ -240,7 +241,6 @@ def delete_monitor(monitor_id: uuid.UUID, db: Session = Depends(get_db)):
 )
 def queue_manual_check(
     monitor_id: uuid.UUID,
-    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
 ):
     monitor = db.query(Monitor).filter(Monitor.id == monitor_id).first()
@@ -250,25 +250,11 @@ def queue_manual_check(
             detail={"error": {"code": "NOT_FOUND", "message": "Monitor not found."}},
         )
 
-    check_run_id = uuid.uuid4()
-    job_id = f"job-{uuid.uuid4().hex[:12]}"
-
-    check_run = CheckRun(
-        id=check_run_id,
-        monitor_id=monitor.id,
-        job_id=job_id,
-        state=CheckRunStateEnum.QUEUED,
-        attempt=0,
-    )
-    db.add(check_run)
-    db.commit()
-
-    # Enqueue background task (asynchronous, non-blocking)
-    background_tasks.add_task(execute_check, check_run_id)
+    check_run = enqueue_check(monitor_id=monitor.id, is_manual=True, db=db)
 
     return CheckEnqueueResponse(
-        check_run_id=check_run_id,
-        job_id=job_id,
+        check_run_id=check_run.id,
+        job_id=check_run.job_id or f"job-{check_run.id}",
         state="queued",
     )
 
@@ -677,6 +663,7 @@ def update_monitor_rules(
         db.add(new_rule)
         created_rules.append(new_rule)
 
+    monitor.rebaseline_needed = True
     db.commit()
     for rule in created_rules:
         db.refresh(rule)

@@ -18,6 +18,7 @@ class CaptureResult:
     http_status: int
     duration_ms: int
     elements: Optional[List[Dict[str, Any]]] = None
+    raw_html: Optional[str] = None
 
 
 class BrowserCaptureError(Exception):
@@ -109,6 +110,12 @@ def capture_page(
             if response:
                 response_status[0] = response.status
         except PlaywrightTimeoutError:
+            if redirect_blocked:
+                blocked_url, reason = redirect_blocked[0]
+                raise SecurityValidationError(
+                    f"Redirect or request to prohibited destination '{blocked_url}' was blocked: {reason}",
+                    code="BLOCKED_TARGET",
+                )
             raise BrowserCaptureError(
                 f"Navigation timed out after {timeout_ms / 1000} seconds.",
                 error_code="TIMEOUT",
@@ -285,6 +292,13 @@ def capture_page(
 
         duration_ms = int((time.time() - start_time) * 1000)
 
+        # Capture raw HTML for shared-fetch deduplication
+        raw_html = ""
+        try:
+            raw_html = page.content()
+        except Exception:
+            pass
+
         return CaptureResult(
             title=title,
             final_url=final_url,
@@ -295,6 +309,7 @@ def capture_page(
             http_status=final_http_status,
             duration_ms=duration_ms,
             elements=elements_data,
+            raw_html=raw_html,
         )
 
 

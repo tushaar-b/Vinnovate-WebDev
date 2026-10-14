@@ -67,6 +67,10 @@ export const MonitorDetails: React.FC<MonitorDetailsProps> = ({
 
   useEffect(() => {
     loadData();
+    const pollTimer = setInterval(() => {
+      loadData();
+    }, 5000);
+    return () => clearInterval(pollTimer);
   }, [monitorId]);
 
   // Handle manual "Check Now"
@@ -133,6 +137,8 @@ export const MonitorDetails: React.FC<MonitorDetailsProps> = ({
 
   const latestVersion = versions.length > 0 ? versions[0] : null;
   const displayVersion = selectedVersion || latestVersion;
+  const activeCheck = checks.find((c) => c.state === 'queued' || c.state === 'running');
+  const isCheckingOrActive = checking || !!activeCheck;
 
   return (
 
@@ -165,7 +171,7 @@ export const MonitorDetails: React.FC<MonitorDetailsProps> = ({
                 {monitor.status}
               </span>
             </div>
-            <div className="flex items-center space-x-2 text-xs text-[#64748B] mt-1">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-[#64748B] mt-1">
               <a
                 href={monitor.url}
                 target="_blank"
@@ -176,9 +182,11 @@ export const MonitorDetails: React.FC<MonitorDetailsProps> = ({
                 <ExternalLink className="w-3 h-3" />
               </a>
               <span>•</span>
-              <span>Check interval: every {monitor.interval_minutes}m</span>
+              <span>Every {monitor.interval_minutes}m</span>
               <span>•</span>
-              <span className="capitalize">Sensitivity: {monitor.sensitivity}</span>
+              <span>Last Check: {monitor.last_checked_at ? new Date(monitor.last_checked_at).toLocaleTimeString() : 'Never'}</span>
+              <span>•</span>
+              <span>Next Check: {monitor.next_check_at ? new Date(monitor.next_check_at).toLocaleTimeString() : 'Pending'}</span>
             </div>
           </div>
         </div>
@@ -186,11 +194,17 @@ export const MonitorDetails: React.FC<MonitorDetailsProps> = ({
         <div className="flex items-center space-x-2.5">
           <button
             onClick={handleCheckNow}
-            disabled={checking}
+            disabled={isCheckingOrActive}
             className="inline-flex items-center space-x-1.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-semibold px-3.5 py-2 rounded-lg shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${checking ? 'animate-spin' : ''}`} />
-            <span>{checking ? 'Executing Check...' : 'Check Now'}</span>
+            <RefreshCw className={`w-3.5 h-3.5 ${isCheckingOrActive ? 'animate-spin' : ''}`} />
+            <span>
+              {activeCheck?.state === 'queued'
+                ? 'Queued in Worker...'
+                : isCheckingOrActive
+                ? 'Running Check...'
+                : 'Check Now'}
+            </span>
           </button>
 
           <button
@@ -202,6 +216,34 @@ export const MonitorDetails: React.FC<MonitorDetailsProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Live Queued or Running Worker Banner */}
+      {activeCheck && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-3.5 flex items-center justify-between text-blue-900 text-xs shadow-sm">
+          <div className="flex items-center space-x-2.5">
+            <RefreshCw className="w-4 h-4 animate-spin text-blue-600" />
+            <div>
+              <span className="font-semibold">
+                {activeCheck.state === 'queued'
+                  ? 'Check is queued in worker job queue'
+                  : 'Check is executing in Playwright worker...'}
+              </span>
+              <span className="ml-2 text-[11px] text-blue-700 font-mono">
+                Run ID: {activeCheck.id.slice(0, 8)}
+              </span>
+            </div>
+          </div>
+          <span
+            className={`px-2.5 py-0.5 rounded-full text-[10px] uppercase font-bold border ${
+              activeCheck.state === 'queued'
+                ? 'bg-amber-100 text-amber-800 border-amber-300'
+                : 'bg-blue-100 text-blue-800 border-blue-300'
+            }`}
+          >
+            {activeCheck.state}
+          </span>
+        </div>
+      )}
 
       {/* Error or Blocked Banner */}
       {monitor.last_error && (
@@ -442,24 +484,32 @@ export const MonitorDetails: React.FC<MonitorDetailsProps> = ({
                   <div key={c.id} className="p-3 rounded-lg bg-slate-50 border border-[#E2E8F0] text-xs">
                     <div className="flex items-center justify-between mb-1">
                       <span
-                        className={`font-semibold uppercase text-[10px] px-2 py-0.5 rounded-full ${
-                          c.state === 'baseline'
-                            ? 'bg-emerald-100 text-emerald-800'
-                            : c.state === 'unchanged'
-                            ? 'bg-slate-200 text-slate-800'
-                            : c.state === 'changed'
-                            ? 'bg-blue-100 text-blue-800'
-                            : c.state === 'blocked'
-                            ? 'bg-amber-100 text-amber-800'
+                        className={`font-semibold uppercase text-[10px] px-2 py-0.5 rounded-full border ${
+                          c.state === 'queued'
+                            ? 'bg-amber-50 text-amber-800 border-amber-300'
+                            : c.state === 'running'
+                            ? 'bg-blue-50 text-blue-800 border-blue-300'
+                            : c.state === 'baseline' || c.state === 'unchanged' || c.state === 'changed'
+                            ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
                             : c.state === 'error'
-                            ? 'bg-rose-100 text-rose-800'
-                            : 'bg-indigo-100 text-indigo-800'
+                            ? 'bg-rose-50 text-rose-800 border-rose-300'
+                            : c.state === 'blocked'
+                            ? 'bg-amber-50 text-amber-800 border-amber-300'
+                            : 'bg-slate-100 text-slate-800 border-slate-300'
                         }`}
                       >
-                        {c.state}
+                        {c.state === 'queued'
+                          ? 'QUEUED'
+                          : c.state === 'running'
+                          ? 'RUNNING'
+                          : c.state === 'baseline' || c.state === 'unchanged' || c.state === 'changed'
+                          ? `SUCCESSFUL (${c.state})`
+                          : c.state === 'error' || c.state === 'blocked'
+                          ? `FAILED (${c.state})`
+                          : c.state}
                       </span>
                       <span className="text-[10px] text-[#64748B]">
-                        {c.finished_at ? new Date(c.finished_at).toLocaleTimeString() : 'Running'}
+                        {c.finished_at ? new Date(c.finished_at).toLocaleTimeString() : c.state === 'running' ? 'In Progress' : 'Queued'}
                       </span>
                     </div>
 

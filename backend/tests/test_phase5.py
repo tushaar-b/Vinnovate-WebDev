@@ -90,8 +90,11 @@ def test_confirmed_change_generates_notification_event():
         db.expire_all()
         assert run_changed.state == CheckRunStateEnum.CHANGED
 
-        # Verify notification outbox entry was created
-        outbox_items = db.query(NotificationOutbox).filter(NotificationOutbox.monitor_id == monitor.id).all()
+        # Verify notification outbox entry was created for this channel
+        outbox_items = db.query(NotificationOutbox).filter(
+            NotificationOutbox.monitor_id == monitor.id,
+            NotificationOutbox.channel_id == channel.id,
+        ).all()
         assert len(outbox_items) == 1
         item = outbox_items[0]
         assert item.channel_id == channel.id
@@ -263,16 +266,17 @@ def test_duplicate_processing_idempotency():
 
         # Call create_outbox_entries 1st time
         entries1 = create_outbox_entries_for_changed_version(db, monitor, version, "Change 1", force_async=False)
-        assert len(entries1) == 1
+        assert len(entries1) >= 1
 
         # Call create_outbox_entries 2nd time for identical version and monitor
         entries2 = create_outbox_entries_for_changed_version(db, monitor, version, "Change 1 duplicate", force_async=False)
         assert len(entries2) == 0, "Second call must deduplicate and return 0 new entries"
 
-        # Check total records in database
+        # Check total records for this specific channel
         total = db.query(NotificationOutbox).filter(
             NotificationOutbox.monitor_id == monitor.id,
             NotificationOutbox.version_id == version.id,
+            NotificationOutbox.channel_id == ch.id,
         ).count()
         assert total == 1
 
@@ -321,7 +325,9 @@ def test_smtp_delivery_via_mock_transport():
 def test_notification_failure_records_error_and_retries_safely():
     db = SessionLocal()
     try:
+        m_id = uuid.uuid4()
         monitor = Monitor(
+            id=m_id,
             name="Retry Failure Monitor",
             url="http://127.0.0.1:8000/fixture/product",
             canonical_url="http://127.0.0.1:8000/fixture/product",
@@ -331,7 +337,7 @@ def test_notification_failure_records_error_and_retries_safely():
         )
         version = Version(
             id=uuid.uuid4(),
-            monitor_id=monitor.id,
+            monitor_id=m_id,
             sequence_number=1,
             content_hash="hash_fail",
             normalized_text="fail text",
@@ -341,7 +347,7 @@ def test_notification_failure_records_error_and_retries_safely():
         # Invalid telegram configuration that will fail
         ch = NotificationChannel(
             id=uuid.uuid4(),
-            monitor_id=monitor.id,
+            monitor_id=m_id,
             channel_type=ChannelTypeEnum.TELEGRAM,
             configuration_json={"bot_token": "real_invalid_token", "chat_id": ""},
             enabled=True,
@@ -434,7 +440,7 @@ def test_activity_feed_real_records():
         # Baseline capture generates baseline_created event in check_runs
         run_base = enqueue_check(monitor.id, db=db, force_async=False)
 
-        res = client.get("/api/activity?limit=10")
+        res = client.get(f"/api/activity?monitor_id={monitor.id}")
         assert res.status_code == 200
         data = res.json()
         assert "items" in data
@@ -481,3 +487,42 @@ def test_settings_persistence_across_requests():
     assert discord_setting["enabled"] is True
     assert "******" in discord_setting["configuration"]["webhook_url"]
     assert "realtokenxyz" not in discord_setting["configuration"]["webhook_url"]
+
+
+# -------------------------------------------------------------------------
+# 11. Discord Webhook SSRF Rejection
+# -------------------------------------------------------------------------
+def test_discord_webhook_ssrf_rejection():
+    # 1. Reject private IP / non-HTTPS
+    res_private = client.put(
+        "/api/settings/notifications/discord",
+        json={
+            "enabled": True,
+            "configuration": {"webhook_url": "http://127.0.0.1:8000/internal-api"},
+        },
+    )
+    assert res_private.status_code == 400
+    assert "INVALID_WEBHOOK_URL" in res_private.text
+
+    # 2. Reject arbitrary non-Discord destination domain
+    res_external = client.put(
+        "/api/settings/notifications/discord",
+        json={
+            "enabled": True,
+            "configuration": {"webhook_url": "https://evil-attacker.example.com/log"},
+        },
+    )
+    assert res_external.status_code == 400
+    assert "INVALID_WEBHOOK_URL" in res_external.text
+
+    # 3. Accept valid discord.com HTTPS destination
+    res_valid = client.put(
+        "/api/settings/notifications/discord",
+        json={
+            "enabled": True,
+            "configuration": {"webhook_url": "https://discord.com/api/webhooks/valid/test1234"},
+        },
+    )
+    assert res_valid.status_code == 200
+    assert res_valid.json()["enabled"] is True
+

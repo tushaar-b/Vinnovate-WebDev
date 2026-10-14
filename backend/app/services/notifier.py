@@ -20,10 +20,31 @@ from app.models.models import (
     utc_now,
 )
 
+from urllib.parse import urlparse
+
 logger = logging.getLogger("notifications")
 
 # In-memory test delivery sink for automated tests verification
 test_delivery_sink: List[Dict[str, Any]] = []
+
+
+def validate_discord_webhook_url(webhook_url: str) -> None:
+    """Validates Discord webhook URL to prevent SSRF and non-Discord destinations."""
+    if not webhook_url:
+        raise ValueError("Discord webhook_url is required.")
+
+    parsed = urlparse(webhook_url.strip())
+    if parsed.scheme.lower() != "https":
+        raise ValueError("Discord webhook URL must use HTTPS scheme.")
+
+    hostname = (parsed.hostname or "").lower()
+    allowed_domains = ("discord.com", "discordapp.com")
+    if not any(hostname == d or hostname.endswith("." + d) for d in allowed_domains):
+        if not (settings.TEST_MODE and (hostname in ("mock", "localhost", "test") or "mock" in hostname)):
+            raise ValueError(
+                f"Invalid Discord webhook destination '{hostname}'. "
+                "Only official discord.com and discordapp.com endpoints are allowed."
+            )
 
 
 def build_comparison_url(monitor_id: uuid.UUID) -> str:
@@ -40,10 +61,9 @@ def dispatch_discord(
     comparison_url: str,
 ) -> None:
     """Delivers Discord embed via webhook."""
-    if not webhook_url:
-        raise ValueError("Discord webhook_url is required.")
+    validate_discord_webhook_url(webhook_url)
 
-    if settings.TEST_MODE and "discord.com" not in webhook_url:
+    if settings.TEST_MODE and ("mock" in webhook_url or not webhook_url.startswith("https://discord.com/api/webhooks/real_")):
         # Mock delivery sink for test suite
         test_delivery_sink.append({
             "channel": "discord",

@@ -179,6 +179,7 @@ def execute_check(check_run_id: uuid.UUID) -> None:
             locked_monitor.last_changed_at = utc_now()
             locked_monitor.next_check_at = utc_now() + timedelta(minutes=locked_monitor.interval_minutes)
             locked_monitor.last_error = None
+            db.commit()
 
         elif latest_version.content_hash == result.content_hash:
             # UNCHANGED: Content hash matches previous version
@@ -192,6 +193,7 @@ def execute_check(check_run_id: uuid.UUID) -> None:
             locked_monitor.last_checked_at = utc_now()
             locked_monitor.next_check_at = utc_now() + timedelta(minutes=locked_monitor.interval_minutes)
             locked_monitor.last_error = None
+            db.commit()
 
         else:
             # CHANGED: Content hash differs from previous version
@@ -245,8 +247,6 @@ def execute_check(check_run_id: uuid.UUID) -> None:
                 version=version,
                 change_summary=summary,
             )
-        else:
-            db.commit()
 
     except SecurityValidationError as e:
         check_run.state = CheckRunStateEnum.BLOCKED

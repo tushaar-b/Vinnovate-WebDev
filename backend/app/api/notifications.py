@@ -102,10 +102,15 @@ def update_notification_settings(
         new_token = new_cfg.get("bot_token", "").strip()
         if not new_token or "******" in new_token:
             new_cfg["bot_token"] = existing_cfg.get("bot_token", "")
-    elif ch_type == "email":
-        new_pw = new_cfg.get("smtp_password", "").strip()
-        if not new_pw or "******" in new_pw:
-            new_cfg["smtp_password"] = existing_cfg.get("smtp_password", "")
+    if ch_type == "discord" and payload.enabled and new_cfg.get("webhook_url"):
+        from app.services.notifier import validate_discord_webhook_url
+        try:
+            validate_discord_webhook_url(new_cfg["webhook_url"])
+        except ValueError as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={"error": {"code": "INVALID_WEBHOOK_URL", "message": str(e)}},
+            )
 
     channel.configuration_json = new_cfg
     channel.enabled = payload.enabled

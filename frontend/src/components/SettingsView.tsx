@@ -3,7 +3,7 @@ import { api } from '../services/api';
 import { NotificationChannel, NotificationOutboxItem } from '../types';
 
 export const SettingsView: React.FC = () => {
-  const [settings, setSettings] = useState<Record<string, NotificationChannel>>({});
+  const [, setSettings] = useState<Record<string, NotificationChannel>>({});
   const [outboxItems, setOutboxItems] = useState<NotificationOutboxItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [outboxLoading, setOutboxLoading] = useState(false);

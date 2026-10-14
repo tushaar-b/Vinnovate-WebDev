@@ -61,3 +61,25 @@ def save_diff_screenshot(monitor_id: uuid.UUID, old_version_id: uuid.UUID, new_v
 
     return f"{monitor_id}/{filename}"
 
+
+def save_picker_screenshot(monitor_id: uuid.UUID, screenshot_bytes: bytes) -> str:
+    """
+    Saves picker preview screenshot PNG bytes to data/screenshots/<monitor_id>/picker.png
+    """
+    monitor_dir = get_screenshot_directory(monitor_id)
+    filename = "picker.png"
+    target_file = monitor_dir / filename
+
+    with open(target_file, "wb") as f:
+        f.write(screenshot_bytes)
+
+    return f"{monitor_id}/{filename}"
+
+
+def get_picker_screenshot_path(monitor_id: uuid.UUID) -> Optional[Path]:
+    """
+    Retrieves the path to the picker screenshot if it exists on disk.
+    """
+    return get_screenshot_path(f"{monitor_id}/picker.png")
+
+

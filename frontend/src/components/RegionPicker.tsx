@@ -31,6 +31,8 @@ export const RegionPicker: React.FC<RegionPickerProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
+  const [imageError, setImageError] = useState<boolean>(false);
+
   const [rules, setRules] = useState<{ rule_type: 'watch' | 'ignore'; css_selector: string; label?: string }[]>(
     initialRules.map((r) => ({
       rule_type: r.rule_type,
@@ -50,6 +52,7 @@ export const RegionPicker: React.FC<RegionPickerProps> = ({
   const loadPickerData = async () => {
     setLoading(true);
     setError(null);
+    setImageError(false);
     try {
       const data = await api.getPicker(monitorId);
       setPickerData(data);
@@ -63,6 +66,16 @@ export const RegionPicker: React.FC<RegionPickerProps> = ({
   useEffect(() => {
     loadPickerData();
   }, [monitorId]);
+
+  useEffect(() => {
+    setRules(
+      initialRules.map((r) => ({
+        rule_type: r.rule_type,
+        css_selector: r.css_selector,
+        label: r.label || undefined,
+      }))
+    );
+  }, [initialRules]);
 
   // Recalculate overlay coordinate scaling on image resize
   const updateScale = () => {
@@ -83,12 +96,21 @@ export const RegionPicker: React.FC<RegionPickerProps> = ({
 
   const handleAddRule = (selector: string, label: string, mode: 'watch' | 'ignore') => {
     if (!selector.trim()) return;
-    if (rules.some((r) => r.css_selector === selector.trim())) {
-      setError(`Rule for selector "${selector}" already exists.`);
+    const trimmed = selector.trim();
+    const existingIndex = rules.findIndex((r) => r.css_selector === trimmed);
+    if (existingIndex !== -1) {
+      if (rules[existingIndex].rule_type !== mode) {
+        const updated = [...rules];
+        updated[existingIndex] = { ...updated[existingIndex], rule_type: mode };
+        setRules(updated);
+        setError(null);
+      } else {
+        setError(`Rule for selector "${trimmed}" is already active as ${mode.toUpperCase()}.`);
+      }
       return;
     }
     setError(null);
-    setRules([...rules, { rule_type: mode, css_selector: selector.trim(), label: label.trim() || undefined }]);
+    setRules([...rules, { rule_type: mode, css_selector: trimmed, label: label.trim() || undefined }]);
   };
 
   const handleRemoveRule = (index: number) => {
@@ -187,13 +209,43 @@ export const RegionPicker: React.FC<RegionPickerProps> = ({
               </div>
             )}
 
-            {pickerData?.screenshot_url && (
+            {!loading && (error || !pickerData?.screenshot_url || imageError) && (
+              <div className="p-8 text-center flex flex-col items-center justify-center max-w-md mx-auto text-white z-20">
+                <div className="w-12 h-12 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center mb-3 text-rose-400">
+                  <AlertCircle className="w-6 h-6" />
+                </div>
+                <h4 className="text-sm font-semibold text-white">
+                  {imageError ? 'Screenshot failed to render' : 'Target page preview unavailable'}
+                </h4>
+                <p className="text-xs text-slate-400 mt-1 mb-4 leading-relaxed">
+                  {error || 'Unable to capture or display the screenshot artifact. You can retry loading or enter CSS selectors manually below.'}
+                </p>
+                <button
+                  onClick={() => {
+                    setImageError(false);
+                    loadPickerData();
+                  }}
+                  className="inline-flex items-center space-x-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-all"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  <span>Retry Capture</span>
+                </button>
+              </div>
+            )}
+
+            {!imageError && pickerData?.screenshot_url && (
               <div className="relative w-full">
                 <img
                   ref={imgRef}
                   src={pickerData.screenshot_url}
                   alt="Picker target screenshot"
-                  onLoad={updateScale}
+                  onLoad={() => {
+                    setImageError(false);
+                    updateScale();
+                  }}
+                  onError={() => {
+                    setImageError(true);
+                  }}
                   className="w-full h-auto block select-none"
                 />
 

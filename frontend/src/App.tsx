@@ -61,13 +61,39 @@ export const App: React.FC = () => {
     fetchHealthData();
     fetchMonitorsData();
     const interval = setInterval(fetchHealthData, 15000);
-    return () => clearInterval(interval);
+
+    const parseHash = () => {
+      const hash = window.location.hash;
+      const match = hash.match(/^#monitors\/([0-9a-fA-F-]+)/);
+      if (match) {
+        setSelectedMonitorId(match[1]);
+      } else if (!hash || hash === '#' || hash === '#dashboard') {
+        setSelectedMonitorId(null);
+      }
+    };
+
+    parseHash();
+    window.addEventListener('hashchange', parseHash);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('hashchange', parseHash);
+    };
   }, []);
+
+  const handleSelectMonitor = (id: string | null) => {
+    setSelectedMonitorId(id);
+    if (id) {
+      window.location.hash = `#monitors/${id}`;
+    } else {
+      window.location.hash = '';
+    }
+  };
 
   const handleCreateMonitor = async (input: CreateMonitorInput) => {
     const created = await api.createMonitor(input);
     await fetchMonitorsData();
-    setSelectedMonitorId(created.id);
+    handleSelectMonitor(created.id);
   };
 
   const handleCheckNow = async (id: string, e?: React.MouseEvent) => {
@@ -118,7 +144,7 @@ export const App: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-8">
             <div 
-              onClick={() => setSelectedMonitorId(null)}
+              onClick={() => handleSelectMonitor(null)}
               className="flex items-center space-x-3 cursor-pointer"
             >
               <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-sm">
@@ -143,7 +169,7 @@ export const App: React.FC = () => {
                   <button
                     key={item.id}
                     onClick={() => {
-                      setSelectedMonitorId(null);
+                      handleSelectMonitor(null);
                       setActiveTab(item.id as typeof activeTab);
                     }}
                     className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
@@ -209,11 +235,11 @@ export const App: React.FC = () => {
           <MonitorDetails
             monitorId={selectedMonitorId}
             onBack={() => {
-              setSelectedMonitorId(null);
+              handleSelectMonitor(null);
               fetchMonitorsData();
             }}
             onDeleted={() => {
-              setSelectedMonitorId(null);
+              handleSelectMonitor(null);
               fetchMonitorsData();
             }}
           />
@@ -364,7 +390,7 @@ export const App: React.FC = () => {
                         return (
                           <tr
                             key={m.id}
-                            onClick={() => setSelectedMonitorId(m.id)}
+                            onClick={() => handleSelectMonitor(m.id)}
                             className="hover:bg-slate-50/80 cursor-pointer transition-colors"
                           >
                             <td className="px-6 py-4">

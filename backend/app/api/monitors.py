@@ -34,10 +34,18 @@ from app.schemas.monitors import (
     PickerResponse,
     PickerElement,
 )
-from app.services.security import validate_target_url, canonicalize_url
+from pathlib import Path
+from app.config import settings
+from app.services.security import validate_target_url, canonicalize_url, SecurityValidationError
 from app.services.checker import execute_check
-from app.services.browser import capture_page
-from app.services.storage import get_screenshot_path, save_diff_screenshot
+from app.services.browser import capture_page, BrowserCaptureError
+from app.services.storage import (
+    get_screenshot_path,
+    save_diff_screenshot,
+    save_screenshot,
+    save_picker_screenshot,
+    get_picker_screenshot_path,
+)
 from app.services.diff import compute_text_diff, compute_screenshot_diff
 
 router = APIRouter(tags=["Monitors"])
@@ -377,6 +385,11 @@ def get_version_details(
 def get_version_screenshot(version_id: uuid.UUID, db: Session = Depends(get_db)):
     v = db.query(Version).filter(Version.id == version_id).first()
     if not v:
+        # Check if the screenshot was saved under any monitor directory (e.g. temporary preview)
+        base_dir = Path(settings.DATA_DIR).resolve()
+        matches = list(base_dir.glob(f"*/{version_id}.png"))
+        if matches and matches[0].is_file():
+            return FileResponse(path=matches[0], media_type="image/png")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail={"error": {"code": "NOT_FOUND", "message": "Version not found."}},
@@ -533,11 +546,11 @@ def get_diff_image(
     return FileResponse(path=safe_path, media_type="image/png")
 
 
-@router.get("/monitors/{monitor_id}/picker", response_model=PickerResponse)
-def get_monitor_picker(monitor_id: uuid.UUID, db: Session = Depends(get_db)):
+@router.get("/monitors/{monitor_id}/picker/screenshot")
+def get_monitor_picker_screenshot(monitor_id: uuid.UUID, db: Session = Depends(get_db)):
     """
-    Returns screenshot URL, dimensions, and element rect overlays for the visual region picker.
-    Uses the latest successful capture or runs an explicit safe capture to get DOM bounding boxes.
+    Returns the visual region picker screenshot for a monitor.
+    Uses the latest picker capture or latest version screenshot artifact.
     """
     monitor = db.query(Monitor).filter(Monitor.id == monitor_id).first()
     if not monitor:
@@ -546,7 +559,43 @@ def get_monitor_picker(monitor_id: uuid.UUID, db: Session = Depends(get_db)):
             detail={"error": {"code": "NOT_FOUND", "message": "Monitor not found."}},
         )
 
-    # Find latest version to serve its screenshot
+    # 1. Check if dedicated picker screenshot exists
+    safe_path = get_picker_screenshot_path(monitor.id)
+    if safe_path and safe_path.is_file():
+        return FileResponse(path=safe_path, media_type="image/png")
+
+    # 2. Check if latest version has a screenshot
+    latest_version = (
+        db.query(Version)
+        .filter(Version.monitor_id == monitor_id)
+        .order_by(Version.sequence_number.desc())
+        .first()
+    )
+    if latest_version and latest_version.screenshot_path:
+        v_path = get_screenshot_path(latest_version.screenshot_path)
+        if v_path and v_path.is_file():
+            return FileResponse(path=v_path, media_type="image/png")
+
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail={"error": {"code": "NOT_FOUND", "message": "Screenshot artifact not found for this monitor."}},
+    )
+
+
+@router.get("/monitors/{monitor_id}/picker", response_model=PickerResponse)
+def get_monitor_picker(monitor_id: uuid.UUID, db: Session = Depends(get_db)):
+    """
+    Returns screenshot URL, dimensions, and element rect overlays for the visual region picker.
+    Guarantees that the returned DOM bounding boxes and screenshot originate from the same
+    page render, viewport (1440x900), and scroll position.
+    """
+    monitor = db.query(Monitor).filter(Monitor.id == monitor_id).first()
+    if not monitor:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"error": {"code": "NOT_FOUND", "message": "Monitor not found."}},
+        )
+
     latest_version = (
         db.query(Version)
         .filter(Version.monitor_id == monitor_id)
@@ -555,15 +604,23 @@ def get_monitor_picker(monitor_id: uuid.UUID, db: Session = Depends(get_db)):
     )
 
     is_fixture = "/fixture" in monitor.url
-    capture = capture_page(monitor.url, is_fixture=is_fixture, extract_elements=True)
+    try:
+        capture = capture_page(monitor.url, is_fixture=is_fixture, extract_elements=True)
+    except (BrowserCaptureError, SecurityValidationError) as e:
+        err_msg = getattr(e, "message", str(e))
+        err_code = getattr(e, "code", getattr(e, "error_code", "CAPTURE_FAILED"))
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail={"error": {"code": err_code, "message": f"Failed to load target webpage for picker: {err_msg}"}},
+        )
 
-    screenshot_url = f"/api/versions/{latest_version.id}/screenshot" if latest_version else ""
-    if not screenshot_url:
-        # If no version yet, temporarily save screenshot for picker preview
-        temp_id = uuid.uuid4()
-        from app.services.storage import save_screenshot
-        save_screenshot(monitor.id, temp_id, capture.screenshot_bytes)
-        screenshot_url = f"/api/versions/{temp_id}/screenshot"
+    # Save the screenshot from this exact capture to guarantee alignment
+    save_picker_screenshot(monitor.id, capture.screenshot_bytes)
+    if latest_version:
+        save_screenshot(monitor.id, latest_version.id, capture.screenshot_bytes)
+        screenshot_url = f"/api/versions/{latest_version.id}/screenshot"
+    else:
+        screenshot_url = f"/api/monitors/{monitor.id}/picker/screenshot"
 
     elements = [
         PickerElement(
@@ -583,6 +640,7 @@ def get_monitor_picker(monitor_id: uuid.UUID, db: Session = Depends(get_db)):
         height=900,
         elements=elements,
     )
+
 
 
 @router.put("/monitors/{monitor_id}/rules", response_model=List[MonitorRuleSchema])

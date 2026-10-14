@@ -296,8 +296,14 @@ def test_picker_api_returns_elements_and_rules_put_endpoint(monkeypatch):
 
         assert data["width"] == 1440
         assert data["height"] == 900
-        assert data["screenshot_url"].startswith("/api/versions/")
+        assert data["screenshot_url"].startswith("/api/")
         assert len(data["elements"]) > 0
+
+        # Verify returned screenshot_url resolves to HTTP 200 with valid PNG bytes
+        res_img = client.get(data["screenshot_url"])
+        assert res_img.status_code == 200
+        assert res_img.headers["content-type"] == "image/png"
+        assert res_img.content.startswith(b"\x89PNG\r\n\x1a\n")
 
         # Element rect checks
         first_el = data["elements"][0]
@@ -331,6 +337,176 @@ def test_picker_api_returns_elements_and_rules_put_endpoint(monkeypatch):
         assert len(db_rules) == 2
 
         # Clean up
+        db.delete(monitor)
+        db.commit()
+    finally:
+        db.close()
+
+
+# -----------------------------------------------------------------------------
+# 5. Regression Tests for Region Picker & Failure Handling
+# -----------------------------------------------------------------------------
+
+def test_picker_screenshot_and_bounding_boxes_alignment_without_prior_version(monkeypatch):
+    """
+    Regression Test:
+    Ensures GET /api/monitors/{id}/picker returns valid screenshot URL and aligned bounding boxes
+    even when the monitor has NO prior versions.
+    Validates that:
+    1. screenshot_url returns HTTP 200 and valid PNG image bytes.
+    2. PNG dimensions match 1440x900 viewport.
+    3. All DOM bounding box coordinates are strictly within viewport boundaries.
+    """
+    import io
+    from PIL import Image
+
+    monkeypatch.setattr(settings, "TEST_MODE", True)
+
+    db = SessionLocal()
+    try:
+        url = f"http://127.0.0.1:{settings.API_PORT}/fixture/product"
+        monitor = Monitor(
+            name="Fresh Monitor Without Baseline",
+            url=url,
+            canonical_url=canonicalize_url(url),
+            interval_minutes=15,
+            sensitivity=SensitivityEnum.MEDIUM,
+            enabled=True,
+        )
+        db.add(monitor)
+        db.commit()
+        db.refresh(monitor)
+
+        # Monitor has 0 versions
+        assert len(monitor.versions) == 0
+
+        # Request picker data
+        res_picker = client.get(f"/api/monitors/{monitor.id}/picker")
+        assert res_picker.status_code == 200
+        picker_data = res_picker.json()
+
+        assert picker_data["width"] == 1440
+        assert picker_data["height"] == 900
+        assert picker_data["screenshot_url"].startswith("/api/")
+
+        # Verify screenshot URL returns HTTP 200 and valid PNG bytes
+        res_screenshot = client.get(picker_data["screenshot_url"])
+        assert res_screenshot.status_code == 200
+        assert res_screenshot.headers["content-type"] == "image/png"
+        assert res_screenshot.content.startswith(b"\x89PNG\r\n\x1a\n")
+
+        # Verify actual image dimensions
+        img = Image.open(io.BytesIO(res_screenshot.content))
+        assert img.width == 1440
+        assert img.height == 900
+
+        # Verify bounding box elements fall within screenshot dimensions
+        elements = picker_data["elements"]
+        assert len(elements) > 0
+        for el in elements:
+            assert el["width"] > 0
+            assert el["height"] > 0
+            assert 0 <= el["x"] <= 1440
+            assert 0 <= el["y"] <= 900
+            assert el["x"] + el["width"] <= 1440
+            assert el["y"] + el["height"] <= 900
+
+        # Also verify dedicated picker screenshot endpoint
+        res_dedicated = client.get(f"/api/monitors/{monitor.id}/picker/screenshot")
+        assert res_dedicated.status_code == 200
+        assert res_dedicated.headers["content-type"] == "image/png"
+
+        db.delete(monitor)
+        db.commit()
+    finally:
+        db.close()
+
+
+def test_watch_ignore_rules_persist_across_monitor_reloads(monkeypatch):
+    """
+    Regression Test:
+    Ensures that watch and ignore rules configured via PUT /api/monitors/{id}/rules
+    persist and are properly returned when re-fetching the monitor via GET /api/monitors/{id}.
+    """
+    monkeypatch.setattr(settings, "TEST_MODE", True)
+
+    db = SessionLocal()
+    try:
+        url = f"http://127.0.0.1:{settings.API_PORT}/fixture/product"
+        monitor = Monitor(
+            name="Rules Persistence Monitor",
+            url=url,
+            canonical_url=canonicalize_url(url),
+            interval_minutes=30,
+            sensitivity=SensitivityEnum.MEDIUM,
+            enabled=True,
+        )
+        db.add(monitor)
+        db.commit()
+        db.refresh(monitor)
+
+        # Save rules: 1 watch rule (#price) and 1 ignore rule (#timestamp)
+        payload = {
+            "rules": [
+                {"rule_type": "watch", "css_selector": "#price", "label": "Watch Product Price"},
+                {"rule_type": "ignore", "css_selector": "#timestamp", "label": "Ignore System Clock"},
+            ]
+        }
+        res_put = client.put(f"/api/monitors/{monitor.id}/rules", json=payload)
+        assert res_put.status_code == 200
+
+        # Reload monitor via GET /api/monitors/{id}
+        res_get = client.get(f"/api/monitors/{monitor.id}")
+        assert res_get.status_code == 200
+        monitor_detail = res_get.json()
+
+        assert len(monitor_detail["rules"]) == 2
+        rule_map = {r["css_selector"]: r for r in monitor_detail["rules"]}
+        assert "#price" in rule_map
+        assert rule_map["#price"]["rule_type"] == "watch"
+        assert rule_map["#price"]["label"] == "Watch Product Price"
+        assert "#timestamp" in rule_map
+        assert rule_map["#timestamp"]["rule_type"] == "ignore"
+        assert rule_map["#timestamp"]["label"] == "Ignore System Clock"
+
+        db.delete(monitor)
+        db.commit()
+    finally:
+        db.close()
+
+
+def test_picker_failure_states_handled_without_blank_panel(monkeypatch):
+    """
+    Regression Test:
+    When a monitor points to an unreachable or error page,
+    GET /api/monitors/{id}/picker returns a clean structured error (HTTP 502)
+    rather than an unhandled 500 server crash.
+    """
+    monkeypatch.setattr(settings, "TEST_MODE", True)
+
+    db = SessionLocal()
+    try:
+        # Fixture returning 500 error
+        url = f"http://127.0.0.1:{settings.API_PORT}/fixture/error500"
+        monitor = Monitor(
+            name="Error Target Monitor",
+            url=url,
+            canonical_url=canonicalize_url(url),
+            interval_minutes=15,
+            sensitivity=SensitivityEnum.MEDIUM,
+            enabled=True,
+        )
+        db.add(monitor)
+        db.commit()
+        db.refresh(monitor)
+
+        res_picker = client.get(f"/api/monitors/{monitor.id}/picker")
+        assert res_picker.status_code == 502
+        err_json = res_picker.json()
+        assert "detail" in err_json
+        assert "error" in err_json["detail"]
+        assert "Failed to load target webpage for picker" in err_json["detail"]["error"]["message"]
+
         db.delete(monitor)
         db.commit()
     finally:

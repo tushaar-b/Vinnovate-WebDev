@@ -217,6 +217,12 @@ def capture_page(
         normalized = normalize_text(raw_text)
         content_hash = calculate_content_hash(normalized)
 
+        # Ensure scroll is reset to (0,0) so screenshot and bounding box coordinates align perfectly
+        try:
+            page.evaluate("() => window.scrollTo(0, 0)")
+        except Exception:
+            pass
+
         # Capture screenshot
         screenshot_bytes = page.screenshot(type="png", full_page=False)
 

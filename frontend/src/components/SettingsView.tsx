@@ -223,7 +223,7 @@ export const SettingsView: React.FC = () => {
       <div>
         <h2 className="text-xl font-bold text-slate-900">Notification Settings</h2>
         <p className="text-sm text-slate-500 mt-1">
-          Configure external alert channels. Sensitive tokens and passwords are encrypted and never exposed in plaintext.
+          Configure external alert channels. Sensitive tokens and passwords are encrypted at rest using authenticated AES encryption and securely masked in the UI.
         </p>
       </div>
 

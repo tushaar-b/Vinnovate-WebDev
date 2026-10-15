@@ -1,4 +1,5 @@
 import os
+from typing import Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field
 
@@ -20,6 +21,7 @@ class Settings(BaseSettings):
     )
     REDIS_URL: str = Field(default="redis://localhost:6379/0")
     DATA_DIR: str = Field(default=str(BACKEND_DIR / "data" / "screenshots"))
+    ENCRYPTION_KEY: Optional[str] = Field(default=None)
 
     model_config = SettingsConfigDict(
         env_file=(".env", "../.env"),

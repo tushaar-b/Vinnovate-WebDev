@@ -19,32 +19,17 @@ from app.models.models import (
     ChannelTypeEnum,
     utc_now,
 )
-
-from urllib.parse import urlparse
+from app.services.security import (
+    validate_discord_webhook_url,
+    validate_telegram_config,
+    sanitize_error_message,
+    decrypt_channel_config,
+)
 
 logger = logging.getLogger("notifications")
 
 # In-memory test delivery sink for automated tests verification
 test_delivery_sink: List[Dict[str, Any]] = []
-
-
-def validate_discord_webhook_url(webhook_url: str) -> None:
-    """Validates Discord webhook URL to prevent SSRF and non-Discord destinations."""
-    if not webhook_url:
-        raise ValueError("Discord webhook_url is required.")
-
-    parsed = urlparse(webhook_url.strip())
-    if parsed.scheme.lower() != "https":
-        raise ValueError("Discord webhook URL must use HTTPS scheme.")
-
-    hostname = (parsed.hostname or "").lower()
-    allowed_domains = ("discord.com", "discordapp.com")
-    if not any(hostname == d or hostname.endswith("." + d) for d in allowed_domains):
-        if not (settings.TEST_MODE and (hostname in ("mock", "localhost", "test") or "mock" in hostname)):
-            raise ValueError(
-                f"Invalid Discord webhook destination '{hostname}'. "
-                "Only official discord.com and discordapp.com endpoints are allowed."
-            )
 
 
 def build_comparison_url(monitor_id: uuid.UUID) -> str:
@@ -60,7 +45,7 @@ def dispatch_discord(
     timestamp: datetime,
     comparison_url: str,
 ) -> None:
-    """Delivers Discord embed via webhook."""
+    """Delivers Discord embed via webhook with SSRF and error protections."""
     validate_discord_webhook_url(webhook_url)
 
     if settings.TEST_MODE and ("mock" in webhook_url or not webhook_url.startswith("https://discord.com/api/webhooks/real_")):
@@ -92,9 +77,13 @@ def dispatch_discord(
         ],
     }
 
-    with httpx.Client(timeout=10.0) as client:
-        resp = client.post(webhook_url, json=payload)
-        resp.raise_for_status()
+    try:
+        with httpx.Client(timeout=httpx.Timeout(10.0, connect=5.0), follow_redirects=False) as client:
+            resp = client.post(webhook_url, json=payload)
+            resp.raise_for_status()
+    except Exception as e:
+        sanitized = sanitize_error_message(str(e), secrets=[webhook_url])
+        raise RuntimeError(sanitized) from None
 
 
 def dispatch_telegram(
@@ -106,9 +95,8 @@ def dispatch_telegram(
     timestamp: datetime,
     comparison_url: str,
 ) -> None:
-    """Delivers Telegram message via Bot API."""
-    if not bot_token or not chat_id:
-        raise ValueError("Telegram bot_token and chat_id are required.")
+    """Delivers Telegram message via Bot API with validation and error protection."""
+    validate_telegram_config(bot_token, chat_id)
 
     if settings.TEST_MODE and not bot_token.startswith("real_"):
         # Mock delivery sink for test suite
@@ -139,9 +127,13 @@ def dispatch_telegram(
         "disable_web_page_preview": False,
     }
 
-    with httpx.Client(timeout=10.0) as client:
-        resp = client.post(url, json=payload)
-        resp.raise_for_status()
+    try:
+        with httpx.Client(timeout=httpx.Timeout(10.0, connect=5.0), follow_redirects=False) as client:
+            resp = client.post(url, json=payload)
+            resp.raise_for_status()
+    except Exception as e:
+        sanitized = sanitize_error_message(str(e), secrets=[bot_token, url])
+        raise RuntimeError(sanitized) from None
 
 
 def dispatch_email(
@@ -241,10 +233,11 @@ def send_test_notification(channel_type: str, config: Dict[str, Any]) -> Tuple[b
     now = utc_now()
     summary = "This is a test notification confirming your channel configuration works properly."
     comparison_url = "http://localhost:5173/#settings"
+    decrypted_config = decrypt_channel_config(ch_type, config)
 
     try:
         if ch_type == "discord":
-            webhook_url = config.get("webhook_url")
+            webhook_url = decrypted_config.get("webhook_url")
             if not webhook_url:
                 return False, "Discord webhook URL is required."
             dispatch_discord(
@@ -258,8 +251,8 @@ def send_test_notification(channel_type: str, config: Dict[str, Any]) -> Tuple[b
             return True, "Discord test notification sent successfully."
 
         elif ch_type == "telegram":
-            bot_token = config.get("bot_token")
-            chat_id = config.get("chat_id")
+            bot_token = decrypted_config.get("bot_token")
+            chat_id = decrypted_config.get("chat_id")
             if not bot_token or not chat_id:
                 return False, "Telegram bot_token and chat_id are required."
             dispatch_telegram(
@@ -275,7 +268,7 @@ def send_test_notification(channel_type: str, config: Dict[str, Any]) -> Tuple[b
 
         elif ch_type == "email":
             dispatch_email(
-                config=config,
+                config=decrypted_config,
                 monitor_name="Test Notification",
                 monitor_url="https://example.com",
                 change_summary=summary,
@@ -288,8 +281,14 @@ def send_test_notification(channel_type: str, config: Dict[str, Any]) -> Tuple[b
             return False, f"Unsupported channel type: {channel_type}"
 
     except Exception as e:
-        logger.error(f"Test notification failure for {channel_type}: {e}", exc_info=True)
-        return False, f"Delivery failed: {str(e)}"
+        secrets_to_strip = [
+            decrypted_config.get("webhook_url"),
+            decrypted_config.get("bot_token"),
+            decrypted_config.get("smtp_password"),
+        ]
+        sanitized = sanitize_error_message(str(e), secrets=secrets_to_strip)
+        logger.error(f"Test notification failure for {channel_type}: {sanitized}")
+        return False, f"Delivery failed: {sanitized}"
 
 
 def create_outbox_entries_for_changed_version(
@@ -421,8 +420,8 @@ def process_outbox_entry(
 
         target_summary = change_summary or f"Version {version.sequence_number} detected content changes."
         target_cmp_url = comparison_url or build_comparison_url(monitor.id)
-        config = channel.configuration_json or {}
         ch_type = channel.channel_type.value.lower() if hasattr(channel.channel_type, "value") else str(channel.channel_type).lower()
+        config = decrypt_channel_config(ch_type, channel.configuration_json or {})
 
         # Dispatch delivery
         if ch_type == "discord":
@@ -468,8 +467,13 @@ def process_outbox_entry(
 
     except Exception as e:
         db.rollback()
-        error_msg = str(e)
-        logger.warning(f"Delivery attempt {outbox.attempts} failed for outbox {outbox_id}: {error_msg}")
+        secrets_to_strip = [
+            config.get("webhook_url") if isinstance(config, dict) else None,
+            config.get("bot_token") if isinstance(config, dict) else None,
+            config.get("smtp_password") if isinstance(config, dict) else None,
+        ]
+        sanitized_error = sanitize_error_message(str(e), secrets=secrets_to_strip)
+        logger.warning(f"Delivery attempt {outbox.attempts} failed for outbox {outbox_id}: {sanitized_error}")
 
         # Refresh outbox record
         outbox = db.query(NotificationOutbox).filter(NotificationOutbox.id == outbox_id).first()
@@ -477,7 +481,7 @@ def process_outbox_entry(
             # Bounded retries: up to 3 attempts
             if outbox.attempts < 3 and not settings.TEST_MODE:
                 outbox.state = OutboxStateEnum.PENDING
-                outbox.last_error = f"Attempt {outbox.attempts} failed: {error_msg}"
+                outbox.last_error = f"Attempt {outbox.attempts} failed: {sanitized_error}"
                 db.commit()
                 # Exponential backoff: 5s, 15s
                 delay = 5 * (2 ** (outbox.attempts - 1))
@@ -492,7 +496,7 @@ def process_outbox_entry(
                 )
             else:
                 outbox.state = OutboxStateEnum.FAILED
-                outbox.last_error = f"Max retries reached ({outbox.attempts} attempts). Last error: {error_msg}"
+                outbox.last_error = f"Max retries reached ({outbox.attempts} attempts). Last error: {sanitized_error}"
                 db.commit()
     finally:
         db.close()

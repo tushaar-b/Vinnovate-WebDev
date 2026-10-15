@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 from typing import Optional, Dict, Any
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 def mask_secret(value: Optional[str]) -> Optional[str]:
@@ -76,3 +76,11 @@ class NotificationOutboxItemResponse(BaseModel):
     last_error: Optional[str] = None
     sent_at: Optional[datetime] = None
     created_at: datetime
+
+    @field_validator("last_error", mode="before")
+    @classmethod
+    def sanitize_err(cls, v: Optional[str]) -> Optional[str]:
+        if not v:
+            return v
+        from app.services.security import sanitize_error_message
+        return sanitize_error_message(v)

@@ -14,6 +14,7 @@ from app.models.models import (
     NotificationChannel,
 )
 from app.schemas.activity import ActivityItem, ActivityListResponse
+from app.services.security import sanitize_error_message
 
 router = APIRouter(prefix="/activity", tags=["activity"])
 
@@ -129,7 +130,7 @@ def get_activity_feed(
                 monitor_url=mon.url,
                 timestamp=ts,
                 title="Monitoring Failed",
-                summary=r.error_message or f"Check failed with error: {r.error_code or 'UNKNOWN'}",
+                summary=sanitize_error_message(r.error_message) or f"Check failed with error: {r.error_code or 'UNKNOWN'}",
                 version_id=None,
                 comparison_url=f"#monitors/{mon.id}",
                 metadata={"error_code": r.error_code, "http_status": r.http_status},
@@ -146,7 +147,7 @@ def get_activity_feed(
                 monitor_url=mon.url,
                 timestamp=ts,
                 title="Monitoring Blocked",
-                summary=r.error_message or "Request blocked by SSRF or security policy.",
+                summary=sanitize_error_message(r.error_message) or "Request blocked by SSRF or security policy.",
                 version_id=None,
                 comparison_url=f"#monitors/{mon.id}",
                 metadata={"error_code": r.error_code, "http_status": r.http_status},
@@ -178,6 +179,7 @@ def get_activity_feed(
             )
             items.append(item)
         elif o.state == OutboxStateEnum.FAILED:
+            sanitized_err = sanitize_error_message(o.last_error) if o.last_error else "Delivery error"
             item = ActivityItem(
                 id=f"outbox-{o.id}",
                 event_type="alert_failed",
@@ -187,10 +189,10 @@ def get_activity_feed(
                 monitor_url=mon.url,
                 timestamp=ts,
                 title=f"Alert Failed ({ch_type.capitalize()})",
-                summary=f"Failed to deliver notification via {ch_type}: {o.last_error or 'Delivery error'}",
+                summary=f"Failed to deliver notification via {ch_type}: {sanitized_err}",
                 version_id=o.version_id,
                 comparison_url=f"#monitors/{mon.id}",
-                metadata={"channel_type": ch_type, "attempts": o.attempts, "error": o.last_error},
+                metadata={"channel_type": ch_type, "attempts": o.attempts, "error": sanitized_err},
             )
             items.append(item)
 
@@ -200,7 +202,12 @@ def get_activity_feed(
     # Filter by event_type or status if specified
     if event_type and event_type != "all":
         evt_lower = event_type.lower()
-        items = [i for i in items if i.event_type == evt_lower or i.status == evt_lower]
+        if evt_lower in ("alert_delivered", "alerts", "alert"):
+            items = [i for i in items if i.event_type in ("alert_delivered", "alert_failed")]
+        elif evt_lower in ("monitoring_failed", "errors", "error"):
+            items = [i for i in items if i.event_type in ("monitoring_failed", "alert_failed") or i.status in ("error", "failed")]
+        else:
+            items = [i for i in items if i.event_type == evt_lower or i.status == evt_lower]
 
     limited = items[:limit]
     return ActivityListResponse(items=limited, total=len(limited))

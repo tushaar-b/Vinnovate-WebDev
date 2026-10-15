@@ -526,3 +526,259 @@ def test_discord_webhook_ssrf_rejection():
     assert res_valid.status_code == 200
     assert res_valid.json()["enabled"] is True
 
+
+# -------------------------------------------------------------------------
+# 12. Notification Error Secret Leakage Regression Test (TASK 1)
+# -------------------------------------------------------------------------
+def test_error_message_sanitization_discord_and_telegram_secrets():
+    from app.services.security import sanitize_error_message
+
+    fake_secret = "TopSecretWebhookToken9876543210XYZ"
+    discord_url_with_secret = f"https://discord.com/api/webhooks/1234567890/{fake_secret}"
+
+    # 1. Test raw exception string sanitization
+    raw_httpx_exc = f"Client error '404 Not Found' for url '{discord_url_with_secret}'"
+    sanitized = sanitize_error_message(raw_httpx_exc, secrets=[fake_secret, discord_url_with_secret])
+    assert fake_secret not in sanitized
+    assert "[REDACTED]" in sanitized
+    assert "https://discord.com/api/webhooks/1234567890/[REDACTED]" in sanitized
+
+    # 2. Test Telegram bot token sanitization
+    fake_tg_token = "123456789:ABCdefGhI_jkLmNoPqRsTuVwXyZ123456789"
+    raw_tg_exc = f"Client error '401 Unauthorized' for url 'https://api.telegram.org/bot{fake_tg_token}/sendMessage'"
+    sanitized_tg = sanitize_error_message(raw_tg_exc, secrets=[fake_tg_token])
+    assert fake_tg_token not in sanitized_tg
+    assert "https://api.telegram.org/bot[REDACTED]/sendMessage" in sanitized_tg
+
+    # 3. Test embedded credentials sanitization
+    raw_auth_exc = "Failed to connect to https://app_user:SuperSecretPassword123@smtp.mailprovider.com:587"
+    sanitized_auth = sanitize_error_message(raw_auth_exc)
+    assert "SuperSecretPassword123" not in sanitized_auth
+    assert "app_user:[REDACTED]@smtp.mailprovider.com:587" in sanitized_auth
+
+    # 4. Verify historical stored error sanitization via API endpoints
+    db = SessionLocal()
+    try:
+        m_id = uuid.uuid4()
+        mon = Monitor(
+            id=m_id,
+            name="Sanitization API Test",
+            url="http://127.0.0.1:8000/fixture/product",
+            canonical_url="http://127.0.0.1:8000/fixture/product",
+            interval_minutes=15,
+            sensitivity=SensitivityEnum.MEDIUM,
+            enabled=True,
+        )
+        db.add(mon)
+
+        v_id = uuid.uuid4()
+        ver = Version(
+            id=v_id,
+            monitor_id=m_id,
+            sequence_number=1,
+            content_hash="hash_san",
+            normalized_text="san text",
+            screenshot_path="data/screenshots/test.png",
+        )
+        db.add(ver)
+
+        ch_id = uuid.uuid4()
+        ch = NotificationChannel(
+            id=ch_id,
+            monitor_id=m_id,
+            channel_type=ChannelTypeEnum.DISCORD,
+            configuration_json={"webhook_url": discord_url_with_secret},
+            enabled=True,
+        )
+        db.add(ch)
+
+        # Deliberately store an error that contains the secret token (simulating historical unsanitized row)
+        outbox_id = uuid.uuid4()
+        historical_raw_error = f"Max retries reached. Last error: Client error '400 Bad Request' for url '{discord_url_with_secret}'"
+        outbox_entry = NotificationOutbox(
+            id=outbox_id,
+            monitor_id=m_id,
+            version_id=v_id,
+            channel_id=ch_id,
+            state=OutboxStateEnum.FAILED,
+            attempts=3,
+            last_error=historical_raw_error,
+        )
+        db.add(outbox_entry)
+        db.commit()
+
+        # Query Outbox API: verify fake_secret is completely absent from API JSON response
+        outbox_res = client.get("/api/notifications/outbox")
+        assert outbox_res.status_code == 200
+        outbox_data = outbox_res.json()
+        matching_outbox = next((item for item in outbox_data if item["id"] == str(outbox_id)), None)
+        assert matching_outbox is not None
+        assert fake_secret not in matching_outbox["last_error"]
+        assert "[REDACTED]" in matching_outbox["last_error"]
+
+        # Query Activity API: verify fake_secret is completely absent from Activity JSON response
+        activity_res = client.get(f"/api/activity?monitor_id={m_id}")
+        assert activity_res.status_code == 200
+        act_data = activity_res.json()
+        act_item = next((item for item in act_data["items"] if item["id"] == f"outbox-{outbox_id}"), None)
+        assert act_item is not None
+        assert fake_secret not in act_item["summary"]
+        assert fake_secret not in str(act_item.get("metadata", {}))
+        assert "[REDACTED]" in act_item["summary"]
+
+        db.delete(mon)
+        db.commit()
+    finally:
+        db.close()
+
+
+# -------------------------------------------------------------------------
+# 13. Actual Credential Storage Security at Rest (TASK 2)
+# -------------------------------------------------------------------------
+def test_credentials_encrypted_at_rest_in_postgres():
+    db = SessionLocal()
+    try:
+        secret_webhook = "https://discord.com/api/webhooks/987654321/SecretTokenAtRest999"
+
+        # 1. Update settings via PUT endpoint
+        put_res = client.put(
+            "/api/settings/notifications/discord",
+            json={
+                "enabled": True,
+                "configuration": {"webhook_url": secret_webhook},
+            },
+        )
+        assert put_res.status_code == 200
+
+        # 2. Inspect database row directly in PostgreSQL: verify it is NOT stored as plaintext
+        db.expire_all()
+        ch = db.query(NotificationChannel).filter(
+            NotificationChannel.monitor_id.is_(None),
+            NotificationChannel.channel_type == ChannelTypeEnum.DISCORD,
+        ).first()
+        assert ch is not None
+        stored_cfg = ch.configuration_json
+        assert "webhook_url" in stored_cfg
+
+        # Must be encrypted using authenticated encryption prefix
+        assert stored_cfg["webhook_url"].startswith("enc:v1:")
+        assert "SecretTokenAtRest999" not in stored_cfg["webhook_url"]
+        assert "987654321" not in stored_cfg["webhook_url"]
+
+        # 3. GET /api/settings/notifications: verify secret is masked
+        get_res = client.get("/api/settings/notifications")
+        assert get_res.status_code == 200
+        discord_cfg = get_res.json()["discord"]["configuration"]
+        assert "SecretTokenAtRest999" not in discord_cfg["webhook_url"]
+        assert "******" in discord_cfg["webhook_url"]
+
+        # 4. Verify updating with masked placeholder preserves the existing encrypted secret
+        put_masked = client.put(
+            "/api/settings/notifications/discord",
+            json={
+                "enabled": True,
+                "configuration": {"webhook_url": discord_cfg["webhook_url"]},
+            },
+        )
+        assert put_masked.status_code == 200
+
+        db.expire_all()
+        ch_after = db.query(NotificationChannel).filter(
+            NotificationChannel.monitor_id.is_(None),
+            NotificationChannel.channel_type == ChannelTypeEnum.DISCORD,
+        ).first()
+        from app.services.security import decrypt_channel_config
+        decrypted = decrypt_channel_config("discord", ch_after.configuration_json)
+        assert decrypted["webhook_url"] == secret_webhook
+
+    finally:
+        db.close()
+
+
+def test_encryption_plaintext_compatibility_and_functions():
+    from app.services.security import (
+        encrypt_credential,
+        decrypt_credential,
+        encrypt_channel_config,
+        decrypt_channel_config,
+    )
+
+    # 1. Encrypt and decrypt round trip
+    raw_secret = "smtp_super_secret_pw_123"
+    enc = encrypt_credential(raw_secret)
+    assert enc.startswith("enc:v1:")
+    assert raw_secret not in enc
+    dec = decrypt_credential(enc)
+    assert dec == raw_secret
+
+    # 2. Backwards compatibility: plaintext legacy value is preserved safely
+    legacy_plaintext = "https://discord.com/api/webhooks/mock/legacy"
+    assert decrypt_credential(legacy_plaintext) == legacy_plaintext
+
+    # 3. Channel config encrypt / decrypt
+    config = {
+        "smtp_host": "smtp.example.com",
+        "smtp_port": 587,
+        "smtp_password": "super_secret_password",
+    }
+    enc_config = encrypt_channel_config("email", config)
+    assert enc_config["smtp_password"].startswith("enc:v1:")
+    assert enc_config["smtp_host"] == "smtp.example.com"
+
+    dec_config = decrypt_channel_config("email", enc_config)
+    assert dec_config["smtp_password"] == "super_secret_password"
+    assert dec_config["smtp_host"] == "smtp.example.com"
+
+
+# -------------------------------------------------------------------------
+# 14. Destination Safety & SSRF Rejection (TASK 3)
+# -------------------------------------------------------------------------
+def test_discord_and_telegram_destination_safety():
+    from app.services.security import (
+        validate_discord_webhook_url,
+        validate_telegram_config,
+    )
+
+    # 1. Deceptive subdomain / suffix rejection
+    bad_urls = [
+        "https://discord.com.attacker.com/api/webhooks/123/token",
+        "https://evil-discord.com/api/webhooks/123/token",
+        "https://user:pass@discord.com/api/webhooks/123/token",
+        "https://discord.com:8443/api/webhooks/123/token",
+        "https://discord.com/login",
+        "https://discord.com/api/v10/users/@me",
+        "http://discord.com/api/webhooks/123/token",
+        "ftp://discord.com/api/webhooks/123/token",
+    ]
+    for bad_url in bad_urls:
+        with pytest.raises(ValueError):
+            validate_discord_webhook_url(bad_url)
+
+    # 2. Telegram parameter injection / path traversal rejection
+    bad_telegram_tokens = [
+        "../../etc/passwd",
+        "token/with/slashes",
+        "token with spaces",
+        "token\nwith\nnewlines",
+        "token?query=param",
+        "token#fragment",
+    ]
+    for bad_tok in bad_telegram_tokens:
+        with pytest.raises(ValueError):
+            validate_telegram_config(bad_tok, "12345678")
+
+    # 3. Bad chat IDs
+    bad_chat_ids = [
+        "chat/with/slashes",
+        "chat with space",
+        "../../id",
+    ]
+    for bad_id in bad_chat_ids:
+        with pytest.raises(ValueError):
+            validate_telegram_config("123456789:ABCdefGhI_validtoken123", bad_id)
+
+    # 4. Valid official endpoints pass
+    validate_discord_webhook_url("https://discord.com/api/webhooks/1234567890/tokenABCdef123")
+    validate_telegram_config("123456789:ABCdefGhI_validtoken123", "-100123456789")
+    validate_telegram_config("123456789:ABCdefGhI_validtoken123", "@my_telegram_channel")
+

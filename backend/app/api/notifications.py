@@ -22,6 +22,13 @@ from app.schemas.notifications import (
     sanitize_channel_config,
 )
 from app.services.notifier import send_test_notification
+from app.services.security import (
+    sanitize_error_message,
+    encrypt_channel_config,
+    decrypt_channel_config,
+    validate_discord_webhook_url,
+    validate_telegram_config,
+)
 
 router = APIRouter(tags=["notifications"])
 
@@ -56,11 +63,12 @@ def get_or_create_global_channel(
 
 @router.get("/settings/notifications", response_model=Dict[str, NotificationChannelResponse])
 def get_notification_settings(db: Session = Depends(get_db)):
-    """Returns global notification channels with credentials securely masked."""
+    """Returns global notification channels with credentials decrypted then securely masked."""
     result = {}
     for ch_type in ["discord", "telegram", "email"]:
         ch = get_or_create_global_channel(db, ch_type)
-        sanitized_cfg = sanitize_channel_config(ch_type, ch.configuration_json or {})
+        decrypted_cfg = decrypt_channel_config(ch_type, ch.configuration_json or {})
+        sanitized_cfg = sanitize_channel_config(ch_type, decrypted_cfg)
         result[ch_type] = NotificationChannelResponse(
             id=ch.id,
             monitor_id=ch.monitor_id,
@@ -80,7 +88,9 @@ def update_notification_settings(
 ):
     """
     Updates configuration and toggle for global notification channel.
-    Preserves existing secrets if updated configuration supplies a masked or blank secret.
+    - Preserves existing secrets if updated configuration supplies a masked or blank secret.
+    - Validates destination URLs and token formats.
+    - Encrypts credentials at rest with authenticated AES encryption before database persistence.
     """
     ch_type = channel_type.lower()
     if ch_type not in ["discord", "telegram", "email"]:
@@ -90,7 +100,7 @@ def update_notification_settings(
         )
 
     channel = get_or_create_global_channel(db, ch_type)
-    existing_cfg = dict(channel.configuration_json or {})
+    existing_cfg = decrypt_channel_config(ch_type, channel.configuration_json or {})
     new_cfg = dict(payload.configuration or {})
 
     # Merge secrets safely: do not overwrite real secrets with masked placeholders
@@ -98,21 +108,36 @@ def update_notification_settings(
         new_val = new_cfg.get("webhook_url", "").strip()
         if not new_val or "******" in new_val:
             new_cfg["webhook_url"] = existing_cfg.get("webhook_url", "")
+        if payload.enabled and new_cfg.get("webhook_url"):
+            try:
+                validate_discord_webhook_url(new_cfg["webhook_url"])
+            except ValueError as e:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail={"error": {"code": "INVALID_WEBHOOK_URL", "message": str(e)}},
+                )
+
     elif ch_type == "telegram":
         new_token = new_cfg.get("bot_token", "").strip()
         if not new_token or "******" in new_token:
             new_cfg["bot_token"] = existing_cfg.get("bot_token", "")
-    if ch_type == "discord" and payload.enabled and new_cfg.get("webhook_url"):
-        from app.services.notifier import validate_discord_webhook_url
-        try:
-            validate_discord_webhook_url(new_cfg["webhook_url"])
-        except ValueError as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail={"error": {"code": "INVALID_WEBHOOK_URL", "message": str(e)}},
-            )
+        if payload.enabled and new_cfg.get("bot_token"):
+            try:
+                validate_telegram_config(new_cfg.get("bot_token", ""), new_cfg.get("chat_id", ""))
+            except ValueError as e:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail={"error": {"code": "INVALID_TELEGRAM_CONFIG", "message": str(e)}},
+                )
 
-    channel.configuration_json = new_cfg
+    elif ch_type == "email":
+        new_pass = new_cfg.get("smtp_password", "").strip()
+        if not new_pass or "******" in new_pass:
+            new_cfg["smtp_password"] = existing_cfg.get("smtp_password", "")
+
+    # Encrypt sensitive credentials at rest
+    encrypted_cfg = encrypt_channel_config(ch_type, new_cfg)
+    channel.configuration_json = encrypted_cfg
     channel.enabled = payload.enabled
     db.commit()
     db.refresh(channel)
@@ -122,7 +147,7 @@ def update_notification_settings(
         monitor_id=channel.monitor_id,
         channel_type=ch_type,
         enabled=channel.enabled,
-        configuration=sanitize_channel_config(ch_type, channel.configuration_json or {}),
+        configuration=sanitize_channel_config(ch_type, new_cfg),
         created_at=channel.created_at,
     )
 
@@ -139,7 +164,7 @@ def test_channel_notification(
     """
     ch_type = channel_type.lower()
     channel = get_or_create_global_channel(db, ch_type)
-    existing_cfg = dict(channel.configuration_json or {})
+    existing_cfg = decrypt_channel_config(ch_type, channel.configuration_json or {})
 
     input_cfg = (payload.configuration if payload and payload.configuration else {})
     merged_cfg = dict(existing_cfg)
@@ -151,7 +176,7 @@ def test_channel_notification(
     success, msg = send_test_notification(ch_type, merged_cfg)
     return TestNotificationResponse(
         success=success,
-        message=msg,
+        message=sanitize_error_message(msg),
         channel_type=ch_type,
     )
 
@@ -162,7 +187,7 @@ def list_notification_outbox(
     state: Optional[str] = Query(None),
     db: Session = Depends(get_db),
 ):
-    """Returns notification delivery history with monitor metadata."""
+    """Returns notification delivery history with sanitized error messages and monitor metadata."""
     query = db.query(NotificationOutbox).order_by(NotificationOutbox.created_at.desc())
     if state:
         try:
@@ -197,7 +222,7 @@ def list_notification_outbox(
                 channel_type=ch_type,
                 state=it.state.value if hasattr(it.state, "value") else str(it.state),
                 attempts=it.attempts,
-                last_error=it.last_error,
+                last_error=sanitize_error_message(it.last_error),
                 sent_at=it.sent_at,
                 created_at=it.created_at,
             )
@@ -216,7 +241,10 @@ def get_monitor_channels(monitor_id: uuid.UUID, db: Session = Depends(get_db)):
             monitor_id=c.monitor_id,
             channel_type=c.channel_type.value,
             enabled=c.enabled,
-            configuration=sanitize_channel_config(c.channel_type.value, c.configuration_json or {}),
+            configuration=sanitize_channel_config(
+                c.channel_type.value,
+                decrypt_channel_config(c.channel_type.value, c.configuration_json or {}),
+            ),
             created_at=c.created_at,
         )
         for c in channels

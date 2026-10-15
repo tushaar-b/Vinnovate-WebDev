@@ -268,20 +268,46 @@ def sanitize_error_message(text: Optional[str], secrets: Optional[List[str]] = N
 # -------------------------------------------------------------------------
 # Credential Encryption at Rest (Authenticated Symmetric Encryption)
 # -------------------------------------------------------------------------
+# Credential Encryption at Rest (Authenticated Symmetric Encryption)
+# -------------------------------------------------------------------------
+# KEY ROTATION & RECOVERY ARCHITECTURE & LIMITATIONS:
+# 1. Symmetric Key: Uses authenticated Fernet AES-128-CBC + HMAC-SHA256.
+# 2. Key Loss: If ENCRYPTION_KEY is lost without a backup, encrypted credentials
+#    CANNOT be recovered. New credentials can be re-entered through the Settings UI.
+# 3. Key Rotation: To rotate an encryption key:
+#    a. Read all NotificationChannel records using the old key.
+#    b. Decrypt credentials in-memory using decrypt_channel_config().
+#    c. Set ENCRYPTION_KEY to the new key and call reset_fernet_cache().
+#    d. Re-encrypt credentials using encrypt_channel_config() and save.
+# 4. Startup Safety: If ENCRYPTION_KEY is missing or invalid when encrypted
+#    data already exists in the database, application and worker startup aborts
+#    safely with a clear RuntimeError to prevent data corruption.
+# -------------------------------------------------------------------------
 _fernet_singleton: Optional[Fernet] = None
 _fernet_initialized: bool = False
+_current_key_str: Optional[str] = None
+
+
+def reset_fernet_cache() -> None:
+    """Resets cached Fernet singleton (used for key rotation and test fixtures)."""
+    global _fernet_singleton, _fernet_initialized, _current_key_str
+    _fernet_singleton = None
+    _fernet_initialized = False
+    _current_key_str = None
 
 
 def get_fernet_instance() -> Optional[Fernet]:
     """
     Returns authenticated symmetric cipher (Fernet AES-128-CBC + HMAC-SHA256).
     Key is derived from ENCRYPTION_KEY environment configuration.
+    Never silently generates a replacement key when key is unconfigured.
     """
-    global _fernet_singleton, _fernet_initialized
-    if _fernet_initialized:
+    global _fernet_singleton, _fernet_initialized, _current_key_str
+    key_str = getattr(settings, "ENCRYPTION_KEY", None)
+    if _fernet_initialized and _current_key_str == key_str:
         return _fernet_singleton
 
-    key_str = getattr(settings, "ENCRYPTION_KEY", None)
+    _current_key_str = key_str
     if not key_str:
         logger.warning(
             "ENCRYPTION_KEY is not configured. Sensitive notification credentials "
@@ -306,6 +332,69 @@ def get_fernet_instance() -> Optional[Fernet]:
     _fernet_singleton = Fernet(derived)
     _fernet_initialized = True
     return _fernet_singleton
+
+
+def validate_encryption_key_at_startup() -> None:
+    """
+    Validates encryption key configuration during application and worker startup:
+    - Confirms configured key can initialize a valid cryptographic cipher.
+    - If encrypted credentials exist in PostgreSQL, confirms the configured key
+      can decrypt them successfully.
+    - Aborts startup safely with a clear RuntimeError if ENCRYPTION_KEY is missing
+      or invalid when encrypted data exists, preventing credential corruption.
+    """
+    from app.database import SessionLocal
+    from app.models.models import NotificationChannel
+
+    key_str = getattr(settings, "ENCRYPTION_KEY", None)
+
+    # Check database for existing encrypted credentials
+    db = SessionLocal()
+    encrypted_samples: List[str] = []
+    try:
+        channels = db.query(NotificationChannel).all()
+        for ch in channels:
+            cfg = ch.configuration_json or {}
+            for v in cfg.values():
+                if isinstance(v, str) and v.startswith(ENC_PREFIX):
+                    encrypted_samples.append(v)
+    except Exception as db_err:
+        logger.warning(f"Could not inspect database channels during startup key verification: {db_err}")
+    finally:
+        db.close()
+
+    has_encrypted_data = len(encrypted_samples) > 0
+
+    if not key_str:
+        if has_encrypted_data:
+            raise RuntimeError(
+                "CRITICAL CONFIGURATION ERROR: Encrypted notification credentials exist in PostgreSQL, "
+                "but ENCRYPTION_KEY is not configured in .env. Application startup aborted to prevent "
+                "credential corruption or silent delivery failures."
+            )
+        logger.warning(
+            "ENCRYPTION_KEY is not configured. Sensitive notification credentials "
+            "will be stored without encryption-at-rest."
+        )
+        return
+
+    # Key is provided: verify Fernet initialization
+    fernet = get_fernet_instance()
+    if not fernet:
+        raise RuntimeError(
+            "CRITICAL CONFIGURATION ERROR: Configured ENCRYPTION_KEY is invalid or malformed. "
+            "Unable to initialize cryptographic cipher."
+        )
+
+    # Verify key can decrypt existing stored samples
+    for sample in encrypted_samples:
+        dec = decrypt_credential(sample)
+        if dec == sample or (isinstance(dec, str) and dec.startswith(ENC_PREFIX)):
+            raise RuntimeError(
+                "CRITICAL CONFIGURATION ERROR: Configured ENCRYPTION_KEY cannot decrypt "
+                "existing encrypted credentials in PostgreSQL (key mismatch or corruption). "
+                "Application startup aborted to prevent credential corruption."
+            )
 
 
 ENC_PREFIX = "enc:v1:"

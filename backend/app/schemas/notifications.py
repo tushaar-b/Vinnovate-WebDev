@@ -1,3 +1,4 @@
+import re
 import uuid
 from datetime import datetime
 from typing import Optional, Dict, Any
@@ -9,13 +10,32 @@ def mask_secret(value: Optional[str]) -> Optional[str]:
     if not value:
         return ""
     val_str = str(value).strip()
+    if not val_str:
+        return ""
     if len(val_str) <= 6:
         return "******"
-    if "discord.com/api/webhooks" in val_str:
-        # e.g. https://discord.com/api/webhooks/123456/abcdef...
-        parts = val_str.split("/")
+
+    # Discord webhook URLs: e.g. https://discord.com/api/webhooks/<id>/<token>
+    # Mask the webhook token across all official Discord domains and trailing slash/queries
+    discord_match = re.match(
+        r'^(https?://[^/]+/api/webhooks/[^/?#]+/)[^/?#]+.*$',
+        val_str,
+        re.IGNORECASE,
+    )
+    if discord_match:
+        return f"{discord_match.group(1)}******"
+
+    if "/api/webhooks/" in val_str:
+        clean = val_str.rstrip("/")
+        parts = clean.split("/")
         if len(parts) >= 2:
             return "/".join(parts[:-1]) + "/******"
+
+    # Telegram bot tokens: preserve bot ID, mask secret token portion
+    if ":" in val_str and not val_str.startswith("http"):
+        parts = val_str.split(":", 1)
+        return f"{parts[0]}:******"
+
     return val_str[:4] + "******" + val_str[-3:]
 
 

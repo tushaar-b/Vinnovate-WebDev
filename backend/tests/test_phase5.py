@@ -782,3 +782,145 @@ def test_discord_and_telegram_destination_safety():
     validate_telegram_config("123456789:ABCdefGhI_validtoken123", "-100123456789")
     validate_telegram_config("123456789:ABCdefGhI_validtoken123", "@my_telegram_channel")
 
+
+# -------------------------------------------------------------------------
+# 15. Encryption Key Stability and Startup Abort (FINAL SIGN-OFF)
+# -------------------------------------------------------------------------
+def test_encryption_key_stability_and_startup_abort_on_invalid_key():
+    from app.services.security import (
+        encrypt_credential,
+        decrypt_credential,
+        reset_fernet_cache,
+        validate_encryption_key_at_startup,
+    )
+    from app.config import settings
+
+    original_key = settings.ENCRYPTION_KEY
+    assert original_key is not None, "ENCRYPTION_KEY must be configured for test suite"
+
+    try:
+        # 1. Existing credentials remain decryptable after application restart (simulated via reset_fernet_cache)
+        test_secret = "test_webhook_stability_secret_12345"
+        encrypted = encrypt_credential(test_secret)
+        assert encrypted.startswith("enc:v1:")
+
+        reset_fernet_cache()
+        decrypted = decrypt_credential(encrypted)
+        assert decrypted == test_secret
+
+        # 2. Startup validation passes with the correct key
+        validate_encryption_key_at_startup()
+
+        # 3. Startup fails safely with clear configuration error when key is missing and encrypted data exists
+        settings.ENCRYPTION_KEY = None
+        reset_fernet_cache()
+
+        with pytest.raises(RuntimeError) as exc_missing:
+            validate_encryption_key_at_startup()
+        assert "CRITICAL CONFIGURATION ERROR" in str(exc_missing.value)
+        assert "ENCRYPTION_KEY is not configured" in str(exc_missing.value)
+
+        # 4. Startup fails safely when key is mismatched/invalid and encrypted data exists
+        from cryptography.fernet import Fernet
+        mismatched_key = Fernet.generate_key().decode()
+        settings.ENCRYPTION_KEY = mismatched_key
+        reset_fernet_cache()
+
+        with pytest.raises(RuntimeError) as exc_mismatch:
+            validate_encryption_key_at_startup()
+        assert "CRITICAL CONFIGURATION ERROR" in str(exc_mismatch.value)
+        assert "cannot decrypt existing encrypted credentials" in str(exc_mismatch.value)
+
+    finally:
+        # Restore original valid key
+        settings.ENCRYPTION_KEY = original_key
+        reset_fernet_cache()
+        validate_encryption_key_at_startup()
+
+
+# -------------------------------------------------------------------------
+# 16. Discord Credential Masking & Replacement (FINAL SIGN-OFF)
+# -------------------------------------------------------------------------
+def test_discord_credential_masking_and_placeholder_preservation():
+    from app.schemas.notifications import mask_secret
+
+    # 1. Test mask_secret unit behavior across all official Discord domains and shapes
+    raw_secret = "UltraSecretDiscordTokenABC123XYZ"
+    cases = [
+        f"https://discord.com/api/webhooks/1234567890/{raw_secret}",
+        f"https://discordapp.com/api/webhooks/1234567890/{raw_secret}/",
+        f"https://canary.discord.com/api/webhooks/1234567890/{raw_secret}?wait=true",
+        f"https://ptb.discord.com/api/webhooks/1234567890/{raw_secret}#fragment",
+    ]
+    for c in cases:
+        masked = mask_secret(c)
+        assert raw_secret not in masked, f"Raw secret leaked in {masked}"
+        assert masked.startswith("https://")
+        assert masked.endswith("/******")
+        assert "1234567890" in masked
+
+    # 2. End-to-end API test: Set Discord webhook
+    secret_token_1 = "TokenInitialVersion998877"
+    url_1 = f"https://discord.com/api/webhooks/1122334455/{secret_token_1}"
+
+    put_res1 = client.put(
+        "/api/settings/notifications/discord",
+        json={"enabled": True, "configuration": {"webhook_url": url_1}},
+    )
+    assert put_res1.status_code == 200
+    res_data1 = put_res1.json()
+    assert secret_token_1 not in res_data1["configuration"]["webhook_url"]
+    assert res_data1["configuration"]["webhook_url"] == "https://discord.com/api/webhooks/1122334455/******"
+
+    # 3. GET /api/settings/notifications: never returns complete stored URL
+    get_res = client.get("/api/settings/notifications")
+    assert get_res.status_code == 200
+    discord_view = get_res.json()["discord"]["configuration"]
+    assert secret_token_1 not in discord_view["webhook_url"]
+    assert discord_view["webhook_url"] == "https://discord.com/api/webhooks/1122334455/******"
+
+    # 4. Save with masked placeholder: preserves original credential
+    put_masked = client.put(
+        "/api/settings/notifications/discord",
+        json={"enabled": True, "configuration": {"webhook_url": discord_view["webhook_url"]}},
+    )
+    assert put_masked.status_code == 200
+
+    db = SessionLocal()
+    try:
+        db.expire_all()
+        ch = db.query(NotificationChannel).filter(
+            NotificationChannel.monitor_id.is_(None),
+            NotificationChannel.channel_type == ChannelTypeEnum.DISCORD,
+        ).first()
+        from app.services.security import decrypt_channel_config
+        decrypted = decrypt_channel_config("discord", ch.configuration_json)
+        assert decrypted["webhook_url"] == url_1
+    finally:
+        db.close()
+
+    # 5. Replace with a brand new valid URL: successfully updates
+    secret_token_2 = "TokenReplacedVersion445566"
+    url_2 = f"https://discord.com/api/webhooks/9988776655/{secret_token_2}"
+
+    put_res2 = client.put(
+        "/api/settings/notifications/discord",
+        json={"enabled": True, "configuration": {"webhook_url": url_2}},
+    )
+    assert put_res2.status_code == 200
+    assert secret_token_2 not in put_res2.json()["configuration"]["webhook_url"]
+    assert put_res2.json()["configuration"]["webhook_url"] == "https://discord.com/api/webhooks/9988776655/******"
+
+    db = SessionLocal()
+    try:
+        db.expire_all()
+        ch2 = db.query(NotificationChannel).filter(
+            NotificationChannel.monitor_id.is_(None),
+            NotificationChannel.channel_type == ChannelTypeEnum.DISCORD,
+        ).first()
+        decrypted2 = decrypt_channel_config("discord", ch2.configuration_json)
+        assert decrypted2["webhook_url"] == url_2
+    finally:
+        db.close()
+
+

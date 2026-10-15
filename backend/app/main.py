@@ -11,6 +11,9 @@ from app.api.fixture import router as fixture_router
 async def lifespan(app: FastAPI):
     # Ensure data directory exists
     os.makedirs(settings.DATA_DIR, exist_ok=True)
+    # Validate encryption key and encrypted credential integrity at startup
+    from app.services.security import validate_encryption_key_at_startup
+    validate_encryption_key_at_startup()
     yield
 
 

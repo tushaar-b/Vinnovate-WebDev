@@ -59,6 +59,8 @@ def recover_abandoned_jobs(auto_requeue: bool = False):
 
 def run_worker():
     logger.info("Initializing RQ Worker...")
+    from app.services.security import validate_encryption_key_at_startup
+    validate_encryption_key_at_startup()
     recover_abandoned_jobs()
 
     redis_conn = redis.from_url(settings.REDIS_URL)

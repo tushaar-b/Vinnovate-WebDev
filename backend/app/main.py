@@ -14,25 +14,35 @@ async def lifespan(app: FastAPI):
     # Validate encryption key and encrypted credential integrity at startup
     from app.services.security import validate_encryption_key_at_startup
     validate_encryption_key_at_startup()
+    # Validate production access security at startup
+    from app.services.auth import validate_production_auth_at_startup
+    validate_production_auth_at_startup()
     yield
 
+
+is_prod = settings.ENVIRONMENT.lower() == "production"
 
 app = FastAPI(
     title="Website Change Detector API",
     description="Backend API for autonomous website change detection and visual diffing.",
     version="1.0.0",
     lifespan=lifespan,
+    docs_url=None if is_prod else "/docs",
+    redoc_url=None if is_prod else "/redoc",
+    openapi_url=None if is_prod else "/openapi.json",
 )
 
-# CORS configuration for frontend
+# CORS configuration: strict allowed origins
+configured_origins = [orig.strip() for orig in (settings.ALLOWED_ORIGINS or "").split(",") if orig.strip()]
+if not is_prod:
+    default_dev_origins = ["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:3000", "http://127.0.0.1:3000"]
+    for d in default_dev_origins:
+        if d not in configured_origins:
+            configured_origins.append(d)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-    ],
+    allow_origins=configured_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -40,15 +50,19 @@ app.add_middleware(
 
 # Include core API routes
 app.include_router(api_router)
-# Include fixture routes for deterministic local testing
-app.include_router(fixture_router)
+
+# Include fixture routes only in non-production environments
+if not is_prod:
+    app.include_router(fixture_router)
 
 
 @app.get("/", tags=["Root"])
 def root():
-    return {
+    response = {
         "name": "Website Change Detector API",
-        "version": "1.0.0",
-        "docs_url": "/docs",
+        "status": "active",
         "health_url": "/api/health",
     }
+    if not is_prod:
+        response["docs_url"] = "/docs"
+    return response

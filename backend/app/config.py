@@ -23,6 +23,15 @@ class Settings(BaseSettings):
     DATA_DIR: str = Field(default=str(BACKEND_DIR / "data" / "screenshots"))
     ENCRYPTION_KEY: Optional[str] = Field(default=None)
 
+    # Production Access Control
+    ADMIN_PASSWORD: Optional[str] = Field(default=None)
+    API_KEY: Optional[str] = Field(default=None)
+    AUTH_TOKEN_SECRET: Optional[str] = Field(default=None)
+    ALLOWED_ORIGINS: str = Field(
+        default="http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000"
+    )
+    TEST_AUTH_ENABLED: bool = Field(default=False)
+
     model_config = SettingsConfigDict(
         env_file=(".env", "../.env"),
         env_file_encoding="utf-8",

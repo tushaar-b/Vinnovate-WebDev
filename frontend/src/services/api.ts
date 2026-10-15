@@ -8,9 +8,68 @@ import {
   CreateMonitorInput,
 } from '../types';
 
-const BASE_URL = '';
+// Set VITE_API_URL to the HTTPS API origin at build time in hosted environments.
+const BASE_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+
+let authToken: string = (() => {
+  try {
+    return localStorage.getItem('change_detector_token') || '';
+  } catch {
+    return '';
+  }
+})();
+
+export function setAuthToken(token: string) {
+  authToken = token;
+  try {
+    if (token) {
+      localStorage.setItem('change_detector_token', token);
+    } else {
+      localStorage.removeItem('change_detector_token');
+    }
+  } catch {
+    // ignore storage exceptions
+  }
+}
+
+export function getAuthToken(): string {
+  return authToken;
+}
+
+export function clearAuthToken() {
+  setAuthToken('');
+}
+
+export function attachAuthToMediaUrl(url: string): string {
+  if (!url || !authToken) return url;
+  try {
+    const separator = url.includes('?') ? '&' : '?';
+    return `${url}${separator}token=${encodeURIComponent(authToken)}`;
+  } catch {
+    return url;
+  }
+}
+
+async function apiFetch(path: string, options: RequestInit = {}): Promise<Response> {
+  const headers = new Headers(options.headers || {});
+  if (authToken && !headers.has('Authorization')) {
+    headers.set('Authorization', `Bearer ${authToken}`);
+  }
+  return fetch(`${BASE_URL}${path}`, {
+    ...options,
+    headers,
+  });
+}
 
 async function handleResponse<T>(res: Response): Promise<T> {
+  if (res.status === 401) {
+    clearAuthToken();
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('auth:unauthorized'));
+    }
+    throw new Error('Authentication required or session expired.');
+  }
+
   if (!res.ok) {
     let errorMsg = `HTTP ${res.status}`;
     try {
@@ -29,18 +88,52 @@ async function handleResponse<T>(res: Response): Promise<T> {
 }
 
 export const api = {
+  // Authentication Endpoints
+  async login(password: string): Promise<{ token: string; expires_at: number; user: string }> {
+    const res = await fetch(`${BASE_URL}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password }),
+    });
+    const data = await handleResponse<{ token: string; expires_at: number; user: string }>(res);
+    setAuthToken(data.token);
+    return data;
+  },
+
+  async logout(): Promise<void> {
+    try {
+      await apiFetch('/api/auth/logout', { method: 'POST' });
+    } catch {
+      // ignore
+    } finally {
+      clearAuthToken();
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('auth:logout'));
+      }
+    }
+  },
+
+  async getAuthStatus(): Promise<{ authenticated: boolean; user?: string }> {
+    try {
+      const res = await apiFetch('/api/auth/status');
+      return await handleResponse<{ authenticated: boolean; user?: string }>(res);
+    } catch {
+      return { authenticated: false };
+    }
+  },
+
   async getHealth(): Promise<HealthStatus> {
-    const res = await fetch(`${BASE_URL}/api/health`);
+    const res = await apiFetch('/api/health');
     return handleResponse<HealthStatus>(res);
   },
 
   async getMonitors(): Promise<{ items: MonitorSummary[]; total: number }> {
-    const res = await fetch(`${BASE_URL}/api/monitors`);
+    const res = await apiFetch('/api/monitors');
     return handleResponse<{ items: MonitorSummary[]; total: number }>(res);
   },
 
   async createMonitor(input: CreateMonitorInput): Promise<MonitorDetail> {
-    const res = await fetch(`${BASE_URL}/api/monitors`, {
+    const res = await apiFetch('/api/monitors', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(input),
@@ -49,12 +142,12 @@ export const api = {
   },
 
   async getMonitor(id: string): Promise<MonitorDetail> {
-    const res = await fetch(`${BASE_URL}/api/monitors/${id}`);
+    const res = await apiFetch(`/api/monitors/${id}`);
     return handleResponse<MonitorDetail>(res);
   },
 
   async deleteMonitor(id: string): Promise<void> {
-    const res = await fetch(`${BASE_URL}/api/monitors/${id}`, {
+    const res = await apiFetch(`/api/monitors/${id}`, {
       method: 'DELETE',
     });
     if (!res.ok && res.status !== 204) {
@@ -63,47 +156,70 @@ export const api = {
   },
 
   async queueCheck(id: string): Promise<{ check_run_id: string; job_id: string; state: string }> {
-    const res = await fetch(`${BASE_URL}/api/monitors/${id}/checks`, {
+    const res = await apiFetch(`/api/monitors/${id}/checks`, {
       method: 'POST',
     });
     return handleResponse<{ check_run_id: string; job_id: string; state: string }>(res);
   },
 
   async getChecks(monitorId: string): Promise<{ items: CheckRun[] }> {
-    const res = await fetch(`${BASE_URL}/api/monitors/${monitorId}/checks?limit=50`);
+    const res = await apiFetch(`/api/monitors/${monitorId}/checks?limit=50`);
     return handleResponse<{ items: CheckRun[] }>(res);
   },
 
   async getCheck(checkId: string): Promise<CheckRun> {
-    const res = await fetch(`${BASE_URL}/api/checks/${checkId}`);
+    const res = await apiFetch(`/api/checks/${checkId}`);
     return handleResponse<CheckRun>(res);
   },
 
   async getVersions(monitorId: string): Promise<{ items: VersionSummary[] }> {
-    const res = await fetch(`${BASE_URL}/api/monitors/${monitorId}/versions`);
-    return handleResponse<{ items: VersionSummary[] }>(res);
+    const res = await apiFetch(`/api/monitors/${monitorId}/versions`);
+    const data = await handleResponse<{ items: VersionSummary[] }>(res);
+    data.items = data.items.map(v => ({
+      ...v,
+      screenshot_url: attachAuthToMediaUrl(v.screenshot_url),
+    }));
+    return data;
   },
 
   async getVersion(monitorId: string, versionId: string): Promise<VersionDetail> {
-    const res = await fetch(`${BASE_URL}/api/monitors/${monitorId}/versions/${versionId}`);
-    return handleResponse<VersionDetail>(res);
+    const res = await apiFetch(`/api/monitors/${monitorId}/versions/${versionId}`);
+    const data = await handleResponse<VersionDetail>(res);
+    if (data.screenshot_url) {
+      data.screenshot_url = attachAuthToMediaUrl(data.screenshot_url);
+    }
+    return data;
   },
 
   async compareVersions(monitorId: string, fromId: string, toId: string) {
-    const res = await fetch(`${BASE_URL}/api/monitors/${monitorId}/compare?from=${fromId}&to=${toId}`);
-    return handleResponse<import('../types').VersionComparison>(res);
+    const res = await apiFetch(`/api/monitors/${monitorId}/compare?from=${fromId}&to=${toId}`);
+    const data = await handleResponse<import('../types').VersionComparison>(res);
+    if (data.image_old_url) {
+      data.image_old_url = attachAuthToMediaUrl(data.image_old_url);
+    }
+    if (data.image_new_url) {
+      data.image_new_url = attachAuthToMediaUrl(data.image_new_url);
+    }
+    if (data.image_diff_url) {
+      data.image_diff_url = attachAuthToMediaUrl(data.image_diff_url);
+    }
+    return data;
   },
 
   async getPicker(monitorId: string): Promise<import('../types').PickerData> {
-    const res = await fetch(`${BASE_URL}/api/monitors/${monitorId}/picker`);
-    return handleResponse<import('../types').PickerData>(res);
+    const res = await apiFetch(`/api/monitors/${monitorId}/picker`);
+    const data = await handleResponse<import('../types').PickerData>(res);
+    if (data.screenshot_url) {
+      data.screenshot_url = attachAuthToMediaUrl(data.screenshot_url);
+    }
+    return data;
   },
 
   async updateRules(
     monitorId: string,
     rules: { rule_type: 'watch' | 'ignore'; css_selector: string; label?: string }[]
   ): Promise<import('../types').MonitorRule[]> {
-    const res = await fetch(`${BASE_URL}/api/monitors/${monitorId}/rules`, {
+    const res = await apiFetch(`/api/monitors/${monitorId}/rules`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ rules }),
@@ -112,7 +228,7 @@ export const api = {
   },
 
   async getNotificationSettings(): Promise<Record<string, import('../types').NotificationChannel>> {
-    const res = await fetch(`${BASE_URL}/api/settings/notifications`);
+    const res = await apiFetch('/api/settings/notifications');
     return handleResponse<Record<string, import('../types').NotificationChannel>>(res);
   },
 
@@ -120,7 +236,7 @@ export const api = {
     channelType: string,
     payload: { enabled: boolean; configuration: Record<string, any> }
   ): Promise<import('../types').NotificationChannel> {
-    const res = await fetch(`${BASE_URL}/api/settings/notifications/${channelType}`, {
+    const res = await apiFetch(`/api/settings/notifications/${channelType}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -132,7 +248,7 @@ export const api = {
     channelType: string,
     configuration?: Record<string, any>
   ): Promise<{ success: boolean; message: string; channel_type: string }> {
-    const res = await fetch(`${BASE_URL}/api/settings/notifications/${channelType}/test`, {
+    const res = await apiFetch(`/api/settings/notifications/${channelType}/test`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ configuration }),
@@ -143,7 +259,7 @@ export const api = {
   async getNotificationOutbox(limit: number = 50, state?: string): Promise<import('../types').NotificationOutboxItem[]> {
     const query = new URLSearchParams({ limit: String(limit) });
     if (state && state !== 'all') query.append('state', state);
-    const res = await fetch(`${BASE_URL}/api/notifications/outbox?${query.toString()}`);
+    const res = await apiFetch(`/api/notifications/outbox?${query.toString()}`);
     return handleResponse<import('../types').NotificationOutboxItem[]>(res);
   },
 
@@ -155,9 +271,7 @@ export const api = {
     const query = new URLSearchParams({ limit: String(limit) });
     if (eventType && eventType !== 'all') query.append('event_type', eventType);
     if (monitorId) query.append('monitor_id', monitorId);
-    const res = await fetch(`${BASE_URL}/api/activity?${query.toString()}`);
+    const res = await apiFetch(`/api/activity?${query.toString()}`);
     return handleResponse<{ items: import('../types').ActivityItem[]; total: number }>(res);
   },
 };
-
-

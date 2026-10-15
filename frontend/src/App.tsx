@@ -13,9 +13,12 @@ import {
   Settings as SettingsIcon,
   ChevronRight,
   ArrowUpRight,
+  Lock,
+  LogOut,
+  Key,
 } from 'lucide-react';
 import { HealthStatus, MonitorSummary, CreateMonitorInput } from './types';
-import { api } from './services/api';
+import { api, getAuthToken } from './services/api';
 import { AddMonitorModal } from './components/AddMonitorModal';
 import { MonitorDetails } from './components/MonitorDetails';
 import { ActivityView } from './components/ActivityView';
@@ -29,6 +32,13 @@ export const App: React.FC = () => {
   const [monitorsLoading, setMonitorsLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+
+  // Authentication State
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => !!getAuthToken());
+  const [authChecking, setAuthChecking] = useState<boolean>(true);
+  const [loginPassword, setLoginPassword] = useState<string>('');
+  const [loginError, setLoginError] = useState<string | null>(null);
+  const [loginLoading, setLoginLoading] = useState<boolean>(false);
   
   // Navigation & Modal State
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
@@ -49,6 +59,10 @@ export const App: React.FC = () => {
   };
 
   const fetchMonitorsData = async () => {
+    if (!isAuthenticated && !getAuthToken()) {
+      setMonitorsLoading(false);
+      return;
+    }
     try {
       setMonitorsLoading(true);
       const res = await api.getMonitors();
@@ -61,10 +75,47 @@ export const App: React.FC = () => {
   };
 
   useEffect(() => {
+    // Initial health check
     fetchHealthData();
-    fetchMonitorsData();
+
+    // Check auth status with backend
+    const checkAuth = async () => {
+      setAuthChecking(true);
+      try {
+        const res = await api.getAuthStatus();
+        setIsAuthenticated(res.authenticated);
+        if (res.authenticated) {
+          fetchMonitorsData();
+        }
+      } catch {
+        setIsAuthenticated(false);
+      } finally {
+        setAuthChecking(false);
+      }
+    };
+
+    checkAuth();
+
+    const handleUnauthorized = () => {
+      setIsAuthenticated(false);
+      setLoginError('Your session has expired. Please sign in with your administrative password.');
+    };
+
+    const handleLogout = () => {
+      setIsAuthenticated(false);
+      setLoginPassword('');
+      setLoginError(null);
+    };
+
+    window.addEventListener('auth:unauthorized', handleUnauthorized);
+    window.addEventListener('auth:logout', handleLogout);
+
     const healthInterval = setInterval(fetchHealthData, 15000);
-    const monitorInterval = setInterval(fetchMonitorsData, 10000);
+    const monitorInterval = setInterval(() => {
+      if (isAuthenticated) {
+        fetchMonitorsData();
+      }
+    }, 10000);
 
     const parseHash = () => {
       const hash = window.location.hash;
@@ -93,8 +144,33 @@ export const App: React.FC = () => {
       clearInterval(healthInterval);
       clearInterval(monitorInterval);
       window.removeEventListener('hashchange', parseHash);
+      window.removeEventListener('auth:unauthorized', handleUnauthorized);
+      window.removeEventListener('auth:logout', handleLogout);
     };
-  }, []);
+  }, [isAuthenticated]);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginLoading(true);
+    setLoginError(null);
+    try {
+      await api.login(loginPassword);
+      setIsAuthenticated(true);
+      fetchHealthData();
+      fetchMonitorsData();
+    } catch (err: any) {
+      setLoginError(err.message || 'Authentication failed. Please verify password.');
+    } finally {
+      setLoginLoading(false);
+    }
+  };
+
+  const handleLogoutClick = async () => {
+    await api.logout();
+    setIsAuthenticated(false);
+    setLoginPassword('');
+    setLoginError(null);
+  };
 
   const handleSelectMonitor = (id: string | null, tab: 'overview' | 'compare' | 'rules' = 'overview') => {
     setSelectedMonitorId(id);
@@ -153,6 +229,76 @@ export const App: React.FC = () => {
     return matchesSearch && matchesStatus;
   });
 
+  // Unauthenticated Lock Screen
+  if (!isAuthenticated && !authChecking) {
+    return (
+      <div className="min-h-screen bg-[#F8FAFC] flex flex-col justify-center items-center p-4">
+        <div className="max-w-md w-full bg-white border border-[#E2E8F0] rounded-2xl shadow-xl p-8">
+          <div className="flex flex-col items-center text-center mb-6">
+            <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-3 shadow-inner">
+              <Lock className="w-6 h-6" />
+            </div>
+            <h1 className="text-xl font-bold text-[#0F172A]">Website Change Detector</h1>
+            <p className="text-xs text-[#64748B] mt-1">
+              Production Access Protection &bull; Enter administrative password to access system
+            </p>
+          </div>
+
+          {loginError && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg flex items-center space-x-2">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              <span>{loginError}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <label className="block text-xs font-medium text-[#475569] mb-1">
+                Admin Password
+              </label>
+              <input
+                type="password"
+                placeholder="Enter admin password..."
+                value={loginPassword}
+                onChange={(e) => setLoginPassword(e.target.value)}
+                className="w-full text-sm px-3.5 py-2.5 bg-white border border-[#CBD5E1] rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                autoFocus
+                required
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loginLoading || !loginPassword.trim()}
+              className="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-medium text-sm rounded-lg shadow-sm transition-all flex items-center justify-center space-x-2"
+            >
+              {loginLoading ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  <span>Authenticating...</span>
+                </>
+              ) : (
+                <>
+                  <Key className="w-4 h-4" />
+                  <span>Unlock System</span>
+                </>
+              )}
+            </button>
+          </form>
+
+          {/* System Health footer on lock screen */}
+          <div className="mt-8 pt-4 border-t border-[#F1F5F9] flex items-center justify-between text-[11px] text-[#94A3B8]">
+            <span>Access: Protected</span>
+            <span className="flex items-center space-x-1.5">
+              <span className={`w-2 h-2 rounded-full ${health?.status === 'ok' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+              <span>API {health?.status === 'ok' ? 'Online' : 'Checking'}</span>
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A] flex flex-col font-sans">
       {/* Top Navigation */}
@@ -203,7 +349,7 @@ export const App: React.FC = () => {
             </nav>
           </div>
 
-          {/* System Health Indicators */}
+          {/* System Health Indicators & Action Buttons */}
           <div className="flex items-center space-x-3">
             <div className="flex items-center space-x-2 text-xs bg-slate-50 border border-[#E2E8F0] px-3 py-1.5 rounded-full">
               <div className="flex items-center space-x-1">
@@ -241,6 +387,15 @@ export const App: React.FC = () => {
             >
               <Plus className="w-4 h-4" />
               <span>Add Monitor</span>
+            </button>
+
+            <button
+              onClick={handleLogoutClick}
+              title="Sign out of administrative session"
+              className="inline-flex items-center space-x-1 border border-[#E2E8F0] hover:bg-slate-50 text-[#64748B] hover:text-[#0F172A] text-xs font-medium px-2.5 py-1.5 rounded-lg transition-colors"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Sign Out</span>
             </button>
           </div>
         </div>

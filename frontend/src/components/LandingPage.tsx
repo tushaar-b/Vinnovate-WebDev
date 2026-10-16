@@ -219,7 +219,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
          ===================================================================== */}
       <section className="relative min-h-[calc(100vh-4rem)] flex flex-col justify-between items-center overflow-hidden px-4 sm:px-6 lg:px-8 text-center bg-[#141210]">
         {/* Cinematic Technical Background Image with Responsive Positioning & Vignette */}
-        <div className="absolute inset-0 pointer-events-none -z-20 overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
           <picture>
             <source srcSet="/assets/wide_dark_cinematic_tech_themed_hero_background.webp" type="image/webp" />
             <img
@@ -236,8 +236,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             className="absolute inset-0"
             style={{
               background: `
-                radial-gradient(ellipse 75% 65% at 50% 45%, rgba(20, 18, 16, 0.78) 0%, rgba(20, 18, 16, 0.52) 50%, rgba(20, 18, 16, 0.25) 100%),
-                linear-gradient(to right, rgba(20, 18, 16, 0.32) 0%, rgba(20, 18, 16, 0.74) 25%, rgba(20, 18, 16, 0.82) 50%, rgba(20, 18, 16, 0.74) 75%, rgba(20, 18, 16, 0.32) 100%)
+                radial-gradient(ellipse 70% 60% at 50% 45%, rgba(20, 18, 16, 0.70) 0%, rgba(20, 18, 16, 0.45) 55%, rgba(20, 18, 16, 0.20) 100%),
+                linear-gradient(to right, rgba(20, 18, 16, 0.25) 0%, rgba(20, 18, 16, 0.65) 25%, rgba(20, 18, 16, 0.72) 50%, rgba(20, 18, 16, 0.65) 75%, rgba(20, 18, 16, 0.25) 100%)
               `,
             }}
           />
@@ -253,7 +253,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         </div>
 
         {/* Subtle warm atmospheric champagne glow behind headline */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl h-[460px] bg-gradient-to-b from-[#C5A474]/12 via-[#C5A474]/4 to-transparent pointer-events-none -z-10 blur-3xl rounded-full" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl h-[460px] bg-gradient-to-b from-[#C5A474]/12 via-[#C5A474]/4 to-transparent pointer-events-none z-0 blur-3xl rounded-full" />
 
         {/* Top spacer to balance the vertical centering */}
         <div className="hidden sm:block h-6" />

@@ -15,12 +15,9 @@ import {
   ArrowUpRight,
   Lock,
   LogOut,
-  Key,
   Compass,
-  ArrowRight,
   Info,
   Clock,
-  Sparkles,
 } from 'lucide-react';
 import { HealthStatus, MonitorSummary, CreateMonitorInput } from './types';
 import { 
@@ -34,6 +31,7 @@ import { AddMonitorModal } from './components/AddMonitorModal';
 import { MonitorDetails } from './components/MonitorDetails';
 import { ActivityView } from './components/ActivityView';
 import { SettingsView } from './components/SettingsView';
+import { LandingPage } from './components/LandingPage';
 
 export const App: React.FC = () => {
   const [isJudge, setIsJudge] = useState<boolean>(() => isJudgeMode());
@@ -256,12 +254,13 @@ export const App: React.FC = () => {
     }
   }, [isJudge, initOrRefreshJudge, fetchMonitorsData, judgeSessionStatus]);
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleLogin = async (e?: React.FormEvent, customPassword?: string) => {
+    if (e) e.preventDefault();
+    const pw = customPassword !== undefined ? customPassword : loginPassword;
     setLoginLoading(true);
     setLoginError(null);
     try {
-      await api.login(loginPassword);
+      await api.login(pw);
       setIsAuthenticated(true);
       window.location.hash = '#dashboard';
       fetchHealthData();
@@ -370,167 +369,18 @@ export const App: React.FC = () => {
   }
 
   // =========================================================================
-  // ENTRY SCREEN (Unauthenticated & Not in Judge Workspace)
+  // ENTRY SCREEN / LANDING PAGE (Unauthenticated & Not in Judge Workspace)
   // =========================================================================
   if (!isJudge && !isAuthenticated) {
     return (
-      <div className="min-h-screen bg-[#F8FAFC] flex flex-col justify-between font-sans">
-        {/* Simple Top Bar */}
-        <header className="border-b border-[#E2E8F0] bg-white">
-          <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-sm">
-                <Globe className="w-5 h-5" />
-              </div>
-              <div className="flex flex-col">
-                <span className="font-semibold text-base leading-none text-[#0F172A]">Website Change Detector</span>
-                <span className="text-[11px] text-[#64748B] mt-0.5 font-medium tracking-wide">PRECISION OBSERVABILITY</span>
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-2 text-xs text-[#64748B]">
-              <span className={`w-2 h-2 rounded-full ${health?.status === 'ok' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-              <span>Production Pipeline {health?.status === 'ok' ? 'Active' : 'Checking'}</span>
-            </div>
-          </div>
-        </header>
-
-        {/* Hero & Dual-Choice Cards */}
-        <main className="max-w-5xl mx-auto px-4 py-12 w-full flex-1 flex flex-col justify-center">
-          <div className="text-center max-w-2xl mx-auto mb-10">
-            <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold mb-4">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Interactive Evaluation Submission</span>
-            </div>
-            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-[#0F172A]">
-              Website Change Detector
-            </h1>
-            <p className="text-sm sm:text-base text-[#64748B] mt-3 leading-relaxed">
-              Autonomous, high-precision web content diffing & visual change detection engine.
-              Observe real websites, capture Playwright snapshots, and inspect verified diffs.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto w-full">
-            {/* Card 1: Explore Judge Workspace (PRIMARY) */}
-            <div className="relative bg-white border-2 border-blue-500 rounded-2xl shadow-xl p-7 flex flex-col justify-between hover:shadow-2xl transition-all">
-              <div className="absolute -top-3 left-6 bg-blue-600 text-white text-[11px] font-bold px-3 py-0.5 rounded-full uppercase tracking-wider shadow-sm">
-                Recommended for Evaluators
-              </div>
-
-              <div>
-                <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center mb-4">
-                  <Compass className="w-6 h-6" />
-                </div>
-                <h2 className="text-xl font-bold text-[#0F172A]">
-                  Explore Judge Workspace
-                </h2>
-                <p className="text-xs text-[#64748B] mt-1.5 leading-relaxed">
-                  Monitor a real website, capture snapshots, and discover what changed. No login required.
-                </p>
-
-                <ul className="mt-5 space-y-2.5 text-xs text-[#475569]">
-                  <li className="flex items-center space-x-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span>Real Playwright headless browser website captures</span>
-                  </li>
-                  <li className="flex items-center space-x-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span>SHA-256 normalized diffing & false-positive filters</span>
-                  </li>
-                  <li className="flex items-center space-x-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span>Side-by-side & visual overlay screenshot diffs</span>
-                  </li>
-                  <li className="flex items-center space-x-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span>Interactive CSS WATCH/IGNORE region picker</span>
-                  </li>
-                  <li className="flex items-center space-x-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span>Up to 2 monitors with real background worker checks</span>
-                  </li>
-                </ul>
-              </div>
-
-              <div className="mt-8 pt-5 border-t border-slate-100">
-                <button
-                  onClick={handleEnterJudge}
-                  className="w-full py-3 px-5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm rounded-xl shadow-md transition-all flex items-center justify-center space-x-2 group"
-                >
-                  <span>Explore Judge Workspace</span>
-                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                </button>
-              </div>
-            </div>
-
-            {/* Card 2: Admin Login (SECONDARY) */}
-            <div className="bg-white border border-[#E2E8F0] rounded-2xl shadow-sm p-7 flex flex-col justify-between hover:border-slate-300 transition-all">
-              <div>
-                <div className="w-12 h-12 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center mb-4">
-                  <Lock className="w-6 h-6" />
-                </div>
-                <h2 className="text-xl font-bold text-[#0F172A]">
-                  Admin Login
-                </h2>
-                <p className="text-xs text-[#64748B] mt-1.5 leading-relaxed">
-                  Access the protected administration dashboard.
-                </p>
-
-                {loginError && (
-                  <div className="mt-4 p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg flex items-center space-x-2">
-                    <AlertCircle className="w-4 h-4 shrink-0" />
-                    <span>{loginError}</span>
-                  </div>
-                )}
-
-                <form onSubmit={handleLogin} className="mt-5 space-y-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-[#475569] mb-1">
-                      Administrative Password
-                    </label>
-                    <input
-                      type="password"
-                      placeholder="Enter admin password..."
-                      value={loginPassword}
-                      onChange={(e) => setLoginPassword(e.target.value)}
-                      className="w-full text-sm px-3.5 py-2.5 bg-slate-50 border border-[#CBD5E1] rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={loginLoading || !loginPassword.trim()}
-                    className="w-full py-2.5 px-4 bg-slate-800 hover:bg-slate-900 disabled:bg-slate-300 text-white font-medium text-sm rounded-lg shadow-sm transition-all flex items-center justify-center space-x-2"
-                  >
-                    {loginLoading ? (
-                      <>
-                        <RefreshCw className="w-4 h-4 animate-spin" />
-                        <span>Authenticating...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Key className="w-4 h-4" />
-                        <span>Sign In as Admin</span>
-                      </>
-                    )}
-                  </button>
-                </form>
-              </div>
-
-              <div className="mt-8 pt-5 border-t border-slate-100 flex items-center justify-between text-[11px] text-[#94A3B8]">
-                <span>Access: Protected</span>
-                <span>Production Monitoring Dashboard</span>
-              </div>
-            </div>
-          </div>
-        </main>
-
-        {/* Footer */}
-        <footer className="border-t border-[#E2E8F0] py-4 bg-white text-center text-xs text-[#94A3B8]">
-          Website Change Detector &bull; Precision Observability Platform &bull; Railway Backend + Vercel Frontend
-        </footer>
-      </div>
+      <LandingPage
+        health={health}
+        healthLoading={healthLoading}
+        onEnterNormalUser={handleEnterJudge}
+        onAdminLogin={(pw) => handleLogin(undefined, pw)}
+        loginLoading={loginLoading}
+        loginError={loginError}
+      />
     );
   }
 

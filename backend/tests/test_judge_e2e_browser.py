@@ -95,16 +95,12 @@ def test_judge_workspace_e2e_workflow():
 
         # Judge B tries to access Judge A's monitor directly
         page_b.goto(f"{FRONTEND_URL}/#/judge/monitors/{monitor_id}", wait_until="networkidle")
-        page_b.wait_for_timeout(2000)
-
-        # Should show error or not found (404)
-        has_error = (
-            page_b.locator("text=/not found/i").is_visible()
-            or page_b.locator("text=/failed to load/i").is_visible()
-            or page_b.locator("button:has-text('Return to Dashboard')").is_visible()
-            or page_b.locator(".bg-rose-50").is_visible()
+        # Wait for 404 / error state to render
+        page_b.wait_for_function(
+            "() => document.body.innerText.toLowerCase().includes('not found') || document.body.innerText.includes('Return to Dashboard') || document.body.innerText.includes('Failed')",
+            timeout=15000,
         )
-        assert has_error, "Judge B must not be able to access Judge A's monitor"
+        assert "not found" in page_b.inner_text("body").lower() or "return to dashboard" in page_b.inner_text("body").lower(), "Judge B must not be able to access Judge A's monitor"
 
         # -------------------------------------------------------------
         # Admin Login Verification

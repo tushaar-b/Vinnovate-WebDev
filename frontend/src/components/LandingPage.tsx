@@ -18,6 +18,7 @@ import {
   RefreshCw,
   AlertCircle,
   Compass,
+  ChevronDown,
 } from 'lucide-react';
 import { HealthStatus } from '../types';
 
@@ -162,38 +163,36 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       </header>
 
       {/* =====================================================================
-          2. HERO SECTION
+          2. HERO SECTION — FULL VIEWPORT
          ===================================================================== */}
-      <section className="relative pt-20 pb-24 overflow-hidden">
+      <section className="relative min-h-[calc(100vh-4rem)] flex flex-col justify-between items-center overflow-hidden px-4 sm:px-6 lg:px-8 text-center">
         {/* Subtle warm atmospheric glow */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-6xl h-96 bg-gradient-to-b from-[#C5A474]/8 via-[#C5A474]/3 to-transparent pointer-events-none -z-10 blur-3xl" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-5xl h-[520px] bg-gradient-to-b from-[#C5A474]/12 via-[#C5A474]/4 to-transparent pointer-events-none -z-10 blur-3xl rounded-full" />
 
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          {/* Eyebrow badge */}
-          <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-[#211D19] border border-[#C5A474]/30 text-[#C5A474] text-xs font-medium mb-6 shadow-sm animate-fade-in">
-            <Sparkles className="w-3.5 h-3.5 text-[#C5A474]" />
-            <span>Headless Chromium Captures & Cryptographic SHA-256 Validation</span>
-          </div>
+        {/* Top spacer to balance the vertical centering */}
+        <div className="hidden sm:block h-6" />
 
+        {/* Centered Hero Content */}
+        <div className="max-w-5xl mx-auto my-auto py-12 flex flex-col items-center">
           {/* Main Headline */}
-          <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl font-normal text-[#F5EFE5] tracking-tight leading-[1.18] max-w-4xl mx-auto">
+          <h1 className="font-serif text-5xl sm:text-6xl md:text-7xl lg:text-7xl font-normal text-[#F5EFE5] tracking-tight leading-[1.12] max-w-5xl mx-auto">
             Detect Every Website Change.{' '}
-            <span className="text-[#C5A474] italic">
+            <span className="text-[#C5A474] italic block mt-3 sm:mt-4">
               Down to the Pixel and Word.
             </span>
           </h1>
 
           {/* Subtitle */}
-          <p className="mt-6 text-base sm:text-lg text-[#BDB3A7] max-w-2xl mx-auto leading-relaxed font-sans">
+          <p className="mt-8 text-base sm:text-lg md:text-xl text-[#BDB3A7] max-w-2xl mx-auto leading-relaxed font-sans">
             Track meaningful website changes through real browser captures, noise-aware text extraction, and precise version comparisons.
           </p>
 
           {/* CTA Group */}
-          <div className="mt-9 flex flex-col sm:flex-row items-center justify-center gap-4">
+          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 w-full sm:w-auto">
             {/* Primary Continue Button */}
             <button
               onClick={() => setIsContinueModalOpen(true)}
-              className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-7 py-3.5 bg-[#C5A474] hover:bg-[#D8BB8E] text-[#141210] font-semibold text-sm rounded-xl shadow-gold transition-all transform hover:-translate-y-0.5 active:translate-y-0"
+              className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-8 py-4 bg-[#C5A474] hover:bg-[#D8BB8E] text-[#141210] font-semibold text-sm rounded-xl shadow-gold transition-all transform hover:-translate-y-0.5 active:translate-y-0"
             >
               <span>Continue to Platform</span>
               <ArrowRight className="w-4 h-4" />
@@ -202,34 +201,41 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             {/* Direct Judge Workspace Button (Recommended for evaluators) */}
             <button
               onClick={onEnterNormalUser}
-              className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-7 py-3.5 bg-[#211D19]/80 hover:bg-[#2A2520] text-[#F5EFE5] font-semibold text-sm rounded-xl border border-[#40372D] hover:border-[#665744] shadow-sm transition-all"
+              className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-8 py-4 bg-[#211D19]/80 hover:bg-[#2A2520] text-[#F5EFE5] font-semibold text-sm rounded-xl border border-[#40372D] hover:border-[#665744] shadow-sm transition-all"
             >
               <Compass className="w-4 h-4 text-[#C5A474]" />
               <span>Explore Judge Workspace</span>
-              <span className="text-[11px] font-normal text-[#8F8579]">(No Login)</span>
+              <span className="text-xs font-normal text-[#8F8579]">(No Login)</span>
             </button>
           </div>
+        </div>
 
-          {/* Feature highlights below CTA */}
-          <div className="mt-9 flex flex-wrap items-center justify-center gap-x-7 gap-y-2 text-xs text-[#BDB3A7]">
-            <span className="flex items-center space-x-2">
-              <CheckCircle2 className="w-3.5 h-3.5 text-[#34C59A]" />
-              <span>No login required for normal users</span>
-            </span>
-            <span className="flex items-center space-x-2">
-              <CheckCircle2 className="w-3.5 h-3.5 text-[#34C59A]" />
-              <span>Automated Playwright Chromium snapshots</span>
-            </span>
-            <span className="flex items-center space-x-2">
-              <CheckCircle2 className="w-3.5 h-3.5 text-[#34C59A]" />
-              <span>Side-by-side & visual overlay screenshot diffs</span>
-            </span>
+        {/* Bottom Scroll Indicator */}
+        <div
+          className="pb-8 pt-4 flex flex-col items-center space-y-1.5 text-[#8F8579] cursor-pointer hover:text-[#C5A474] transition-colors"
+          onClick={() => scrollToSection('preview')}
+        >
+          <span className="text-[10px] font-sans uppercase tracking-widest text-[#8F8579]">Explore Diff Engine</span>
+          <ChevronDown className="w-4 h-4 animate-bounce text-[#C5A474]" />
+        </div>
+      </section>
+
+      {/* =====================================================================
+          3. HERO VISUAL PREVIEW MOCKUP SECTION
+         ===================================================================== */}
+      <section id="preview" className="relative py-24 px-4 sm:px-6 lg:px-8 border-t border-[#40372D]/50 bg-[#100F0D]/40">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-12">
+            <span className="text-xs font-mono font-medium uppercase tracking-widest text-[#C5A474]">Live Difference Engine</span>
+            <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-medium text-[#F5EFE5] mt-2">
+              Side-by-side baseline intelligence.
+            </h2>
+            <p className="text-sm sm:text-base text-[#BDB3A7] mt-3 max-w-2xl mx-auto">
+              Inspect semantic content additions, price drops, and structural DOM mutations with cryptographic certainty.
+            </p>
           </div>
 
-          {/* =====================================================================
-              HERO VISUAL PREVIEW MOCKUP
-             ===================================================================== */}
-          <div id="preview" className="mt-14 max-w-4xl mx-auto rounded-2xl bg-[#211D19] border border-[#40372D] shadow-luxury overflow-hidden transition-all text-left">
+          <div className="max-w-4xl mx-auto rounded-2xl bg-[#211D19] border border-[#40372D] shadow-luxury overflow-hidden transition-all text-left">
             {/* Mockup browser chrome top bar */}
             <div className="bg-[#1A1714] border-b border-[#40372D] px-4 py-2.5 flex items-center justify-between">
               <div className="flex items-center space-x-2">
@@ -286,7 +292,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 </div>
               </div>
 
-                {/* Verified Text Diff Chip Strip */}
+              {/* Verified Text Diff Chip Strip */}
               <div className="mt-4 p-3 bg-[#1A1714] border border-[#40372D] rounded-xl flex flex-wrap items-center justify-between gap-2 text-xs">
                 <div className="flex items-center space-x-2">
                   <span className="text-[#8F8579] font-medium">Text Delta:</span>

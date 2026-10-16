@@ -6,7 +6,13 @@ from typing import Optional, Tuple, Dict, Any, List
 from playwright.sync_api import sync_playwright
 
 from app.redis_client import redis_client
-from app.services.browser import CaptureResult, normalize_text, calculate_content_hash, BrowserCaptureError
+from app.services.browser import (
+    CaptureResult,
+    normalize_text,
+    calculate_content_hash,
+    BrowserCaptureError,
+    VISIBLE_TEXT_EXTRACTION_JS,
+)
 
 
 FETCH_COALESCE_WINDOW_SECONDS = 30
@@ -142,41 +148,8 @@ class SharedFetchService:
                     browser.close()
                     raise BrowserCaptureError(f"Invalid watch selector '{ws}': {str(e)}", error_code="MISSING_SELECTOR")
 
-            # Extract clean text with watch/ignore rules applied
-            extraction_js = """
-            ({ watchRules, ignoreRules }) => {
-                function extractCleanText(node) {
-                    if (!node) return "";
-                    const clone = node.cloneNode(true);
-                    if (ignoreRules && ignoreRules.length > 0) {
-                        for (const ig of ignoreRules) {
-                            try {
-                                const ignNodes = clone.querySelectorAll(ig);
-                                ignNodes.forEach(el => el.remove());
-                            } catch (e) {}
-                        }
-                    }
-                    return clone.innerText || "";
-                }
-
-                if (watchRules && watchRules.length > 0) {
-                    const collected = [];
-                    for (const ws of watchRules) {
-                        try {
-                            const elements = document.querySelectorAll(ws);
-                            elements.forEach(el => {
-                                const t = extractCleanText(el);
-                                if (t) collected.push(t);
-                            });
-                        } catch (e) {}
-                    }
-                    return collected.join("\\n");
-                } else {
-                    return extractCleanText(document.body);
-                }
-            }
-            """
-            raw_text = page.evaluate(extraction_js, {"watchRules": watch_selectors, "ignoreRules": ignore_selectors}) or ""
+            # Extract clean visible text with watch/ignore rules applied
+            raw_text = page.evaluate(VISIBLE_TEXT_EXTRACTION_JS, {"watchRules": watch_selectors, "ignoreRules": ignore_selectors}) or ""
             browser.close()
 
         normalized = normalize_text(raw_text)

@@ -13,6 +13,8 @@ def fixture_product(
     banner: str = Query("Special Edition Launch - Limited Availability", description="Banner text"),
     timestamp: str = Query("2026-10-14 00:00:00 UTC", description="Rendered noise timestamp"),
     visitors: str = Query("142", description="Visitor counter noise"),
+    request_id: str = Query("REQ-INITIAL-001", description="Dynamic script request ID"),
+    hidden_meta: str = Query("META-INITIAL-999", description="Hidden metadata telemetry"),
 ):
     html_content = f"""<!DOCTYPE html>
 <html lang="en">
@@ -46,6 +48,12 @@ def fixture_product(
             Calibrated for extreme environments and high durability.
         </div>
     </div>
+    <script type="text/javascript">
+        window.CacheDetection = {{ RequestID: "{request_id}", timestamp: 1729000000 }};
+        var page = {{ requestId: "{request_id}" }};
+    </script>
+    <div style="display: none;" id="hidden-meta">Telemetry session: {hidden_meta}</div>
+    <div hidden id="hidden-tag">Hidden tracking tag: {hidden_meta}</div>
 </body>
 </html>
 """

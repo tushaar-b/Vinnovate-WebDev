@@ -29,6 +29,80 @@ class BrowserCaptureError(Exception):
         self.http_status = http_status
 
 
+VISIBLE_TEXT_EXTRACTION_JS = """
+({ watchRules, ignoreRules }) => {
+    // Collect elements to temporarily suppress so they are excluded from innerText layout rendering
+    const toRestore = [];
+    const seen = new Set();
+
+    function suppressElements(selector) {
+        try {
+            document.querySelectorAll(selector).forEach(el => {
+                if (!seen.has(el)) {
+                    seen.add(el);
+                    toRestore.push({ el, prevCss: el.style.cssText });
+                    el.style.setProperty("display", "none", "important");
+                }
+            });
+        } catch (e) {}
+    }
+
+    // 1. Exclude non-content tags (never part of meaningful visible webpage content)
+    suppressElements("script, style, noscript, template, iframe");
+
+    // 2. Exclude hidden metadata and input elements
+    suppressElements("[hidden], input[type='hidden'], meta, link");
+
+    // 3. Exclude user-configured ignore selectors
+    if (ignoreRules && ignoreRules.length > 0) {
+        for (const ig of ignoreRules) {
+            if (ig && typeof ig === "string" && ig.trim()) {
+                suppressElements(ig.trim());
+            }
+        }
+    }
+
+    let text = "";
+    try {
+        if (watchRules && watchRules.length > 0) {
+            // Collect text for each watch selector in stable rule order
+            const collected = [];
+            for (const ws of watchRules) {
+                if (!ws || typeof ws !== "string" || !ws.trim()) continue;
+                try {
+                    const elements = document.querySelectorAll(ws.trim());
+                    elements.forEach(el => {
+                        // Check if element is rendered and visible in layout
+                        const isVisible = typeof el.checkVisibility === "function"
+                            ? el.checkVisibility({ opacityProperty: true, checkVisibilityCSS: true })
+                            : (el.offsetParent !== null || el.offsetWidth > 0 || el.offsetHeight > 0);
+                        if (isVisible) {
+                            const t = el.innerText || "";
+                            if (t && t.trim()) {
+                                collected.push(t.trim());
+                            }
+                        }
+                    });
+                } catch (e) {}
+            }
+            text = collected.join("\\n");
+        } else {
+            // Whole body visible layout text
+            text = document.body ? (document.body.innerText || "") : "";
+        }
+    } finally {
+        // Guarantee 100% restoration of live DOM state in reverse order
+        for (let i = toRestore.length - 1; i >= 0; i--) {
+            try {
+                toRestore[i].el.style.cssText = toRestore[i].prevCss;
+            } catch (e) {}
+        }
+    }
+    return text;
+}
+"""
+
+
 def capture_page(
     url: str,
     is_fixture: bool = False,
@@ -181,46 +255,8 @@ def capture_page(
                         http_status=final_http_status,
                     )
 
-        # Extraction script in browser context
-        extraction_js = """
-        ({ watchRules, ignoreRules }) => {
-            // Helper to get text excluding ignore elements
-            function extractCleanText(node) {
-                if (!node) return "";
-                const clone = node.cloneNode(true);
-                // Remove all ignored elements inside clone
-                if (ignoreRules && ignoreRules.length > 0) {
-                    for (const ig of ignoreRules) {
-                        try {
-                            const ignNodes = clone.querySelectorAll(ig);
-                            ignNodes.forEach(el => el.remove());
-                        } catch (e) {}
-                    }
-                }
-                return clone.innerText || "";
-            }
-
-            if (watchRules && watchRules.length > 0) {
-                // Collect text for each watch selector in stable rule order
-                const collected = [];
-                for (const ws of watchRules) {
-                    try {
-                        const elements = document.querySelectorAll(ws);
-                        elements.forEach(el => {
-                            const t = extractCleanText(el);
-                            if (t) collected.push(t);
-                        });
-                    } catch (e) {}
-                }
-                return collected.join("\\n");
-            } else {
-                // Whole body with ignore selectors applied
-                return extractCleanText(document.body);
-            }
-        }
-        """
-
-        raw_text = page.evaluate(extraction_js, {"watchRules": watch_selectors, "ignoreRules": ignore_selectors}) or ""
+        # Extract clean visible text with watch and ignore rules applied
+        raw_text = page.evaluate(VISIBLE_TEXT_EXTRACTION_JS, {"watchRules": watch_selectors, "ignoreRules": ignore_selectors}) or ""
         normalized = normalize_text(raw_text)
         content_hash = calculate_content_hash(normalized)
 

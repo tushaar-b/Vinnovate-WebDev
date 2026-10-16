@@ -146,6 +146,19 @@ def execute_check(check_run_id: uuid.UUID) -> None:
         # When extraction scope or rules were revised, transition the baseline without classifying as website change
         is_safe_rebaseline = bool(locked_monitor.rebaseline_needed)
 
+        # Transition handling: If existing version in DB is polluted with legacy script/telemetry dumps
+        # (e.g. from pre-fix monitoring on Amazon), transition to clean visible text baseline safely
+        if not is_safe_rebaseline and latest_version and latest_version.normalized_text:
+            legacy_script_markers = (
+                "window.CacheDetection",
+                "CacheDetection.RequestID",
+                "page.requestId",
+                "<script",
+                "</script",
+            )
+            if any(marker in latest_version.normalized_text for marker in legacy_script_markers):
+                is_safe_rebaseline = True
+
         if latest_version is None or is_safe_rebaseline:
             # FIRST CHECK OR SAFE REBASELINE TRANSITION
             next_seq = 1 if latest_version is None else (latest_version.sequence_number + 1)

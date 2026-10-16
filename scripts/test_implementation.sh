@@ -28,7 +28,13 @@ else
   report PASS 'Required tools (Python, npm)'
 fi
 
-if [[ -x "$BACKEND/.venv/bin/python" ]]; then PY="$BACKEND/.venv/bin/python"; else PY="${PYTHON:-$DEFAULT_PY}"; fi
+if [[ -x "$BACKEND/.venv/bin/python" ]]; then
+  PY="$BACKEND/.venv/bin/python"
+elif [[ -x "$BACKEND/venv/bin/python" ]]; then
+  PY="$BACKEND/venv/bin/python"
+else
+  PY="${PYTHON:-$DEFAULT_PY}"
+fi
 if [[ -z "$PY" ]]; then PY=python3; fi
 if "$PY" -c 'import pytest, sqlalchemy, redis, alembic' >/dev/null 2>&1; then
   report PASS 'Backend Python dependencies'

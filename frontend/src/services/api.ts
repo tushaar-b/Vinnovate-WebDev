@@ -41,12 +41,32 @@ export function clearAuthToken() {
 }
 
 export function attachAuthToMediaUrl(url: string): string {
-  if (!url || !authToken) return url;
+  if (!url) return '';
+
+  // If the media URL is a relative path, resolve it against the configured backend origin (VITE_API_URL)
+  // so requests target the Railway backend rather than resolving to the Vercel frontend origin.
+  let fullUrl = url;
+  if (!fullUrl.startsWith('http://') && !fullUrl.startsWith('https://')) {
+    if (BASE_URL) {
+      const normalizedPath = fullUrl.startsWith('/') ? fullUrl : `/${fullUrl}`;
+      fullUrl = `${BASE_URL}${normalizedPath}`;
+    }
+  }
+
+  if (!authToken) return fullUrl;
+
   try {
-    const separator = url.includes('?') ? '&' : '?';
-    return `${url}${separator}token=${encodeURIComponent(authToken)}`;
+    const origin = typeof window !== 'undefined' && window.location?.origin ? window.location.origin : 'http://localhost';
+    const parsed = new URL(fullUrl, origin);
+    if (!parsed.searchParams.has('token') && !parsed.searchParams.has('auth_token')) {
+      parsed.searchParams.set('token', authToken);
+    }
+    return fullUrl.startsWith('http://') || fullUrl.startsWith('https://')
+      ? parsed.toString()
+      : `${parsed.pathname}${parsed.search}`;
   } catch {
-    return url;
+    const separator = fullUrl.includes('?') ? '&' : '?';
+    return `${fullUrl}${separator}token=${encodeURIComponent(authToken)}`;
   }
 }
 
@@ -202,6 +222,12 @@ export const api = {
     }
     if (data.image_diff_url) {
       data.image_diff_url = attachAuthToMediaUrl(data.image_diff_url);
+    }
+    if (data.old_version?.screenshot_url) {
+      data.old_version.screenshot_url = attachAuthToMediaUrl(data.old_version.screenshot_url);
+    }
+    if (data.new_version?.screenshot_url) {
+      data.new_version.screenshot_url = attachAuthToMediaUrl(data.new_version.screenshot_url);
     }
     return data;
   },

@@ -20,9 +20,6 @@ import { VersionCompare } from './VersionCompare';
 import { RegionPicker } from './RegionPicker';
 import { ConfirmModal } from './ConfirmModal';
 
-
-
-
 interface MonitorDetailsProps {
   monitorId: string;
   initialTab?: 'overview' | 'compare' | 'rules';
@@ -138,8 +135,7 @@ export const MonitorDetails: React.FC<MonitorDetailsProps> = ({
       setIsDeleteModalOpen(false);
       onDeleted();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to delete monitor');
-      setIsDeleteModalOpen(false);
+      alert(err instanceof Error ? err.message : 'Failed to delete monitor');
     } finally {
       setDeleteLoading(false);
     }
@@ -147,9 +143,9 @@ export const MonitorDetails: React.FC<MonitorDetailsProps> = ({
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center p-24 text-[#66758C]">
-        <RefreshCw className="w-8 h-8 animate-spin text-blue-600 mb-3" />
-        <p className="text-sm font-medium">Loading monitor details...</p>
+      <div className="flex flex-col items-center justify-center p-24 text-[#BDB3A7]">
+        <RefreshCw className="w-8 h-8 animate-spin text-[#C5A474] mb-3" />
+        <p className="text-sm font-medium font-sans">Loading monitor details...</p>
       </div>
     );
   }
@@ -157,12 +153,12 @@ export const MonitorDetails: React.FC<MonitorDetailsProps> = ({
   if (error || !monitor) {
     return (
       <div className="p-8 max-w-xl mx-auto text-center">
-        <div className="p-4 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl mb-4 text-sm">
+        <div className="p-4 bg-[#ED7777]/10 border border-[#ED7777]/30 text-[#ED7777] rounded-xl mb-4 text-sm font-sans">
           {error || 'Monitor not found.'}
         </div>
         <button
           onClick={onBack}
-          className="inline-flex items-center space-x-2 text-sm text-blue-600 hover:underline"
+          className="inline-flex items-center space-x-2 text-sm text-[#C5A474] hover:underline font-sans"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Return to Dashboard</span>
@@ -171,48 +167,45 @@ export const MonitorDetails: React.FC<MonitorDetailsProps> = ({
     );
   }
 
-
-
   return (
-
-    <div className="space-y-6">
+    <div className="space-y-6 font-sans">
       {/* Top Breadcrumb & Toolbar */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-[#E2E8F0]">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-[#40372D]">
         <div className="flex items-center space-x-3">
           <button
             onClick={onBack}
-            className="p-2 rounded-lg text-[#66758C] hover:text-[#101828] hover:bg-white border border-[#E2E8F0] shadow-sm transition-colors"
+            className="p-2 rounded-lg text-[#BDB3A7] hover:text-[#F5EFE5] hover:bg-[#211D19] border border-[#40372D] shadow-sm transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
           <div>
             <div className="flex items-center space-x-2.5">
-              <h1 className="text-xl font-bold text-[#101828]">{monitor.name}</h1>
+              <h1 className="font-serif text-2xl font-normal text-[#F5EFE5]">{monitor.name}</h1>
               <span
                 className={`text-[11px] font-semibold uppercase px-2.5 py-0.5 rounded-full border ${
                   monitor.status === 'ok'
-                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                    ? 'bg-[#34C59A]/10 text-[#34C59A] border-[#34C59A]/30'
                     : monitor.status === 'changed'
-                    ? 'bg-blue-50 text-blue-700 border-blue-200'
+                    ? 'bg-[#E9AD5A]/10 text-[#E9AD5A] border-[#E9AD5A]/30'
                     : monitor.status === 'blocked'
-                    ? 'bg-amber-50 text-amber-700 border-amber-200'
+                    ? 'bg-[#ED7777]/10 text-[#ED7777] border-[#ED7777]/30'
                     : monitor.status === 'error'
-                    ? 'bg-rose-50 text-rose-700 border-rose-200'
-                    : 'bg-slate-100 text-slate-700 border-slate-200'
+                    ? 'bg-[#ED7777]/10 text-[#ED7777] border-[#ED7777]/30'
+                    : 'bg-[#A69C90]/10 text-[#A69C90] border-[#A69C90]/30'
                 }`}
               >
                 {monitor.status}
               </span>
             </div>
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-[#66758C] mt-1">
+            <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-[#8F8579] mt-1">
               <a
                 href={monitor.url}
                 target="_blank"
                 rel="noreferrer"
-                className="hover:text-blue-600 flex items-center space-x-1"
+                className="hover:text-[#C5A474] flex items-center space-x-1 font-mono"
               >
                 <span>{monitor.url}</span>
-                <ExternalLink className="w-3 h-3" />
+                <ExternalLink className="w-3 h-3 text-[#8F8579]" />
               </a>
               <span>•</span>
               <span>Every {monitor.interval_minutes}m</span>
@@ -228,7 +221,7 @@ export const MonitorDetails: React.FC<MonitorDetailsProps> = ({
           <button
             onClick={handleCheckNow}
             disabled={isCheckingOrActive}
-            className="inline-flex items-center space-x-1.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-semibold px-3.5 py-2 rounded-lg shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="inline-flex items-center space-x-1.5 bg-[#C5A474] hover:bg-[#D8BB8E] disabled:opacity-50 text-[#141210] text-xs font-semibold px-4 py-2 rounded-lg shadow-gold transition-all"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isCheckingOrActive ? 'animate-spin' : ''}`} />
             <span>
@@ -242,7 +235,7 @@ export const MonitorDetails: React.FC<MonitorDetailsProps> = ({
 
           <button
             onClick={handleDelete}
-            className="inline-flex items-center space-x-1 text-xs font-medium text-rose-600 hover:text-rose-700 hover:bg-rose-50 px-3 py-2 rounded-lg border border-transparent hover:border-rose-200 transition-colors"
+            className="inline-flex items-center space-x-1 text-xs font-medium text-[#ED7777] hover:bg-[#ED7777]/10 px-3 py-2 rounded-lg border border-[#ED7777]/30 transition-colors"
           >
             <Trash2 className="w-3.5 h-3.5" />
             <span>Delete</span>
@@ -252,16 +245,16 @@ export const MonitorDetails: React.FC<MonitorDetailsProps> = ({
 
       {/* Live Queued or Running Worker Banner */}
       {activeCheck && (
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-3.5 flex items-center justify-between text-blue-900 text-xs shadow-sm">
+        <div className="bg-[#342B20]/60 border border-[#C5A474]/40 rounded-xl p-3.5 flex items-center justify-between text-[#C5A474] text-xs shadow-sm">
           <div className="flex items-center space-x-2.5">
-            <RefreshCw className="w-4 h-4 animate-spin text-blue-600" />
+            <RefreshCw className="w-4 h-4 animate-spin text-[#C5A474]" />
             <div>
-              <span className="font-semibold">
+              <span className="font-semibold text-[#F5EFE5]">
                 {activeCheck.state === 'queued'
                   ? 'Check is queued in worker job queue'
                   : 'Check is executing in Playwright worker...'}
               </span>
-              <span className="ml-2 text-[11px] text-blue-700 font-mono">
+              <span className="ml-2 text-[11px] text-[#C5A474] font-mono">
                 Run ID: {activeCheck.id.slice(0, 8)}
               </span>
             </div>
@@ -269,8 +262,8 @@ export const MonitorDetails: React.FC<MonitorDetailsProps> = ({
           <span
             className={`px-2.5 py-0.5 rounded-full text-[10px] uppercase font-bold border ${
               activeCheck.state === 'queued'
-                ? 'bg-amber-100 text-amber-800 border-amber-300'
-                : 'bg-blue-100 text-blue-800 border-blue-300'
+                ? 'bg-[#342B20] text-[#E9AD5A] border-[#E9AD5A]/40'
+                : 'bg-[#342B20] text-[#C5A474] border-[#C5A474]/40'
             }`}
           >
             {activeCheck.state}
@@ -280,8 +273,8 @@ export const MonitorDetails: React.FC<MonitorDetailsProps> = ({
 
       {/* Error or Blocked Banner */}
       {monitor.last_error && (
-        <div className="bg-rose-50 border border-rose-200 rounded-xl p-4 flex items-start space-x-3 text-rose-800">
-          <ShieldAlert className="w-5 h-5 shrink-0 mt-0.5 text-rose-600" />
+        <div className="bg-[#ED7777]/10 border border-[#ED7777]/30 rounded-xl p-4 flex items-start space-x-3 text-[#ED7777]">
+          <ShieldAlert className="w-5 h-5 shrink-0 mt-0.5 text-[#ED7777]" />
           <div className="text-xs">
             <span className="font-semibold">Recent Check Notice: </span>
             <span>{monitor.last_error}</span>
@@ -290,13 +283,13 @@ export const MonitorDetails: React.FC<MonitorDetailsProps> = ({
       )}
 
       {/* View Mode Navigation Tabs */}
-      <div className="flex items-center space-x-2 border-b border-[#E2E8F0] pb-2">
+      <div className="flex items-center space-x-2 border-b border-[#40372D] pb-2">
         <button
           onClick={() => setActiveTab('overview')}
           className={`flex items-center space-x-2 px-4 py-2 text-xs font-semibold rounded-lg transition-all ${
             activeTab === 'overview'
-              ? 'bg-blue-600 text-white shadow-sm'
-              : 'text-[#66758C] hover:text-[#101828] hover:bg-slate-100'
+              ? 'bg-[#342B20] text-[#C5A474] border border-[#C5A474]/40 shadow-sm'
+              : 'text-[#BDB3A7] hover:text-[#F5EFE5] hover:bg-[#211D19]'
           }`}
         >
           <ImageIcon className="w-3.5 h-3.5" />
@@ -307,8 +300,8 @@ export const MonitorDetails: React.FC<MonitorDetailsProps> = ({
           onClick={() => setActiveTab('compare')}
           className={`flex items-center space-x-2 px-4 py-2 text-xs font-semibold rounded-lg transition-all ${
             activeTab === 'compare'
-              ? 'bg-blue-600 text-white shadow-sm'
-              : 'text-[#66758C] hover:text-[#101828] hover:bg-slate-100'
+              ? 'bg-[#342B20] text-[#C5A474] border border-[#C5A474]/40 shadow-sm'
+              : 'text-[#BDB3A7] hover:text-[#F5EFE5] hover:bg-[#211D19]'
           }`}
         >
           <GitCompare className="w-3.5 h-3.5" />
@@ -319,8 +312,8 @@ export const MonitorDetails: React.FC<MonitorDetailsProps> = ({
           onClick={() => setActiveTab('rules')}
           className={`flex items-center space-x-2 px-4 py-2 text-xs font-semibold rounded-lg transition-all ${
             activeTab === 'rules'
-              ? 'bg-blue-600 text-white shadow-sm'
-              : 'text-[#66758C] hover:text-[#101828] hover:bg-slate-100'
+              ? 'bg-[#342B20] text-[#C5A474] border border-[#C5A474]/40 shadow-sm'
+              : 'text-[#BDB3A7] hover:text-[#F5EFE5] hover:bg-[#211D19]'
           }`}
         >
           <Crosshair className="w-3.5 h-3.5" />
@@ -352,30 +345,31 @@ export const MonitorDetails: React.FC<MonitorDetailsProps> = ({
           {/* Left Column: Screenshot & Extracted Content (2 cols) */}
           <div className="lg:col-span-2 space-y-6">
             {/* Display Selected or Latest Screenshot Card */}
-            <div className="bg-white border border-[#E2E8F0] rounded-xl overflow-hidden shadow-sm">
-              <div className="px-5 py-3.5 border-b border-[#E2E8F0] flex items-center justify-between bg-slate-50/50">
-                <div className="flex items-center space-x-2 text-xs font-semibold text-[#101828]">
-                  <ImageIcon className="w-4 h-4 text-blue-600" />
+            <div className="bg-[#211D19] border border-[#40372D] rounded-xl overflow-hidden shadow-luxury">
+              <div className="px-5 py-3.5 border-b border-[#40372D] flex items-center justify-between bg-[#1A1714]">
+                <div className="flex items-center space-x-2 text-xs font-semibold text-[#F5EFE5]">
+                  <ImageIcon className="w-4 h-4 text-[#C5A474]" />
                   <span>
                     Captured Webpage Snapshot {displayVersion ? `(Version #${displayVersion.sequence_number})` : ''}
                   </span>
                 </div>
                 {displayVersion && (
-                  <span className="text-[11px] text-[#66758C]">
+                  <span className="text-[11px] text-[#8F8579] font-mono">
                     Captured {new Date(displayVersion.captured_at).toLocaleTimeString()}
                   </span>
                 )}
               </div>
 
-              <div className="p-4 bg-slate-100 flex items-center justify-center min-h-[360px]">
+              {/* Neutral dark container preserving natural screenshot aspect ratio without tint/filter */}
+              <div className="p-4 bg-[#100F0D] flex items-center justify-center min-h-[360px]">
                 {displayVersion ? (
                   imageError ? (
-                    <div className="text-center p-8 text-[#66758C] flex flex-col items-center">
-                      <div className="w-10 h-10 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center mb-2.5">
+                    <div className="text-center p-8 text-[#BDB3A7] flex flex-col items-center">
+                      <div className="w-10 h-10 rounded-xl bg-[#ED7777]/10 border border-[#ED7777]/30 text-[#ED7777] flex items-center justify-center mb-2.5">
                         <AlertCircle className="w-5 h-5" />
                       </div>
-                      <p className="text-xs font-semibold text-[#101828]">Screenshot failed to render</p>
-                      <p className="text-[11px] text-[#66758C] mt-1 mb-3 max-w-xs">
+                      <p className="text-xs font-semibold text-[#F5EFE5]">Screenshot failed to render</p>
+                      <p className="text-[11px] text-[#8F8579] mt-1 mb-3 max-w-xs">
                         Unable to load the captured snapshot image. Verify network access or retry.
                       </p>
                       <button
@@ -383,14 +377,14 @@ export const MonitorDetails: React.FC<MonitorDetailsProps> = ({
                           setImageError(false);
                           setImageRetryCount((prev) => prev + 1);
                         }}
-                        className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-medium shadow-sm transition-all"
+                        className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-[#C5A474] hover:bg-[#D8BB8E] text-[#141210] rounded-lg text-xs font-semibold shadow-gold transition-all"
                       >
                         <RefreshCw className="w-3.5 h-3.5" />
                         <span>Retry Screenshot</span>
                       </button>
                     </div>
                   ) : (
-                    <div className="relative border border-[#CBD5E1] rounded-lg overflow-hidden bg-white shadow-sm max-w-full">
+                    <div className="relative border border-[#40372D] rounded-lg overflow-hidden bg-black shadow-sm max-w-full">
                       <img
                         key={`${displayVersion.id}-${imageRetryCount}`}
                         src={resolvedScreenshotUrl}
@@ -402,30 +396,29 @@ export const MonitorDetails: React.FC<MonitorDetailsProps> = ({
                     </div>
                   )
                 ) : (
-
-                <div className="text-center p-12 text-[#66758C]">
-                  <ImageIcon className="w-12 h-12 stroke-[1.5] mx-auto mb-2 text-slate-400" />
-                  <p className="text-xs font-semibold text-[#101828]">No snapshot captured yet</p>
-                  <p className="text-[11px] text-[#66758C] mt-1 mb-4">
-                    Click "Check Now" to execute the first Playwright Chromium capture.
-                  </p>
-                  <button
-                    onClick={handleCheckNow}
-                    disabled={checking}
-                    className="inline-flex items-center space-x-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium px-3.5 py-1.5 rounded-lg"
-                  >
-                    <RefreshCw className={`w-3.5 h-3.5 ${checking ? 'animate-spin' : ''}`} />
-                    <span>Run Baseline Check</span>
-                  </button>
-                </div>
-              )}
+                  <div className="text-center p-12 text-[#8F8579]">
+                    <ImageIcon className="w-12 h-12 stroke-[1.5] mx-auto mb-2 text-[#40372D]" />
+                    <p className="text-xs font-semibold text-[#F5EFE5]">No snapshot captured yet</p>
+                    <p className="text-[11px] text-[#8F8579] mt-1 mb-4">
+                      Click "Check Now" to execute the first Playwright Chromium capture.
+                    </p>
+                    <button
+                      onClick={handleCheckNow}
+                      disabled={checking}
+                      className="inline-flex items-center space-x-1.5 bg-[#C5A474] hover:bg-[#D8BB8E] text-[#141210] text-xs font-semibold px-3.5 py-1.5 rounded-lg shadow-gold"
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 ${checking ? 'animate-spin' : ''}`} />
+                      <span>Run Baseline Check</span>
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
 
             {/* Extracted Content & Hashes */}
-            <div className="bg-white border border-[#E2E8F0] rounded-xl p-5 shadow-sm space-y-4">
-              <div className="flex items-center space-x-2 text-xs font-semibold text-[#101828]">
-                <FileText className="w-4 h-4 text-blue-600" />
+            <div className="bg-[#211D19] border border-[#40372D] rounded-xl p-5 shadow-sm space-y-4">
+              <div className="flex items-center space-x-2 text-xs font-semibold text-[#F5EFE5]">
+                <FileText className="w-4 h-4 text-[#C5A474]" />
                 <span>
                   Extracted Web Content Details {displayVersion ? `(v${displayVersion.sequence_number})` : ''}
                 </span>
@@ -434,178 +427,175 @@ export const MonitorDetails: React.FC<MonitorDetailsProps> = ({
               {displayVersion ? (
                 <div className="space-y-3 text-xs">
                   <div>
-                    <span className="text-[#66758C] block font-medium mb-1">SHA-256 Content Hash:</span>
-                    <div className="flex items-center space-x-1.5 bg-slate-50 border border-[#E2E8F0] px-3 py-1.5 rounded-lg font-mono text-[11px] text-[#101828]">
-                      <Hash className="w-3.5 h-3.5 text-[#66758C] shrink-0" />
+                    <span className="text-[#8F8579] block font-medium mb-1">SHA-256 Content Hash:</span>
+                    <div className="flex items-center space-x-1.5 bg-[#141210] border border-[#40372D] px-3 py-1.5 rounded-lg font-mono text-[11px] text-[#F5EFE5]">
+                      <Hash className="w-3.5 h-3.5 text-[#8F8579] shrink-0" />
                       <span className="truncate">{displayVersion.content_hash}</span>
                     </div>
                   </div>
 
                   <div>
-                    <span className="text-[#66758C] block font-medium mb-1">Normalized Text Preview:</span>
-                    <div className="bg-slate-50 border border-[#E2E8F0] rounded-lg p-3 font-mono text-[11px] text-slate-800 whitespace-pre-wrap max-h-48 overflow-y-auto leading-relaxed">
+                    <span className="text-[#8F8579] block font-medium mb-1">Normalized Text Preview:</span>
+                    <div className="bg-[#141210] border border-[#40372D] rounded-lg p-3 font-mono text-[11px] text-[#F5EFE5] whitespace-pre-wrap max-h-48 overflow-y-auto leading-relaxed">
                       {displayVersion.short_preview}
                     </div>
                   </div>
                 </div>
               ) : (
-                <p className="text-xs text-[#66758C]">Content metadata will appear after the first successful check.</p>
+                <p className="text-xs text-[#8F8579]">Content metadata will appear after the first successful check.</p>
               )}
             </div>
           </div>
 
-
-        {/* Right Column: Check Activity Log & Versions (1 col) */}
-        <div className="space-y-6">
-          {/* Versions Timeline */}
-          <div className="bg-white border border-[#E2E8F0] rounded-xl p-5 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center space-x-2 text-xs font-semibold text-[#101828]">
-                <Layers className="w-4 h-4 text-blue-600" />
-                <span>Captured Versions ({versions.length})</span>
+          {/* Right Column: Check Activity Log & Versions (1 col) */}
+          <div className="space-y-6">
+            {/* Versions Timeline */}
+            <div className="bg-[#211D19] border border-[#40372D] rounded-xl p-5 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center space-x-2 text-xs font-semibold text-[#F5EFE5]">
+                  <Layers className="w-4 h-4 text-[#C5A474]" />
+                  <span>Captured Versions ({versions.length})</span>
+                </div>
               </div>
-            </div>
 
-            {versions.length === 0 ? (
-              <p className="text-xs text-[#66758C]">No versions saved yet.</p>
-            ) : (
-              <div className="space-y-2">
-                {versions.map((v, idx) => (
-                  <div
-                    key={v.id}
-                    onClick={() => {
-                      setSelectedVersion(v);
-                      setImageError(false);
-                    }}
-                    className={`p-3 rounded-lg border text-xs cursor-pointer transition-all ${
-                      selectedVersion?.id === v.id
-                        ? 'border-blue-500 bg-blue-50/50'
-                        : 'border-[#E2E8F0] hover:bg-slate-50'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="flex items-center space-x-1.5">
-                        <span className="font-semibold text-[#101828]">Version #{v.sequence_number}</span>
-                        {idx === 0 && (
-                          <span className="text-[9px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-medium">
-                            Latest
-                          </span>
+              {versions.length === 0 ? (
+                <p className="text-xs text-[#8F8579]">No versions saved yet.</p>
+              ) : (
+                <div className="space-y-2">
+                  {versions.map((v, idx) => (
+                    <div
+                      key={v.id}
+                      onClick={() => {
+                        setSelectedVersion(v);
+                        setImageError(false);
+                      }}
+                      className={`p-3 rounded-lg border text-xs cursor-pointer transition-all ${
+                        selectedVersion?.id === v.id
+                          ? 'border-[#C5A474] bg-[#342B20]/40'
+                          : 'border-[#40372D] hover:bg-[#2A2520]'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center space-x-1.5">
+                          <span className="font-semibold text-[#F5EFE5]">Version #{v.sequence_number}</span>
+                          {idx === 0 && (
+                            <span className="text-[9px] bg-[#342B20] text-[#C5A474] border border-[#C5A474]/30 px-1.5 py-0.5 rounded font-medium">
+                              Latest
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-[10px] text-[#8F8579] font-mono">
+                          {new Date(v.captured_at).toLocaleTimeString()}
+                        </span>
+                      </div>
+
+                      <p className="text-[11px] text-[#BDB3A7] line-clamp-2 my-1 leading-relaxed">
+                        {v.short_preview || 'No content preview available'}
+                      </p>
+
+                      <div className="flex items-center justify-between pt-1 border-t border-[#40372D]/60 mt-1.5 text-[10px]">
+                        <span className="text-[#8F8579] font-mono truncate max-w-[140px]">
+                          {v.content_hash.slice(0, 14)}...
+                        </span>
+
+                        {versions.length >= 2 && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const baseIdx = Math.min(idx + 1, versions.length - 1);
+                              setCompareFromId(versions[baseIdx].id);
+                              setCompareToId(v.id);
+                              setActiveTab('compare');
+                            }}
+                            className="inline-flex items-center space-x-1 text-[#C5A474] hover:underline font-medium"
+                          >
+                            <GitCompare className="w-3 h-3" />
+                            <span>Compare</span>
+                          </button>
                         )}
                       </div>
-                      <span className="text-[10px] text-[#66758C]">
-                        {new Date(v.captured_at).toLocaleTimeString()}
-                      </span>
                     </div>
-
-                    <p className="text-[11px] text-[#475569] line-clamp-2 my-1 leading-relaxed">
-                      {v.short_preview || 'No content preview available'}
-                    </p>
-
-                    <div className="flex items-center justify-between pt-1 border-t border-slate-100 mt-1.5 text-[10px]">
-                      <span className="text-[#66758C] font-mono truncate max-w-[140px]">
-                        {v.content_hash.slice(0, 14)}...
-                      </span>
-
-                      {versions.length >= 2 && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            // If there is an adjacent earlier version, compare with it
-                            const baseIdx = Math.min(idx + 1, versions.length - 1);
-                            setCompareFromId(versions[baseIdx].id);
-                            setCompareToId(v.id);
-                            setActiveTab('compare');
-                          }}
-                          className="inline-flex items-center space-x-1 text-blue-600 hover:text-blue-800 font-medium hover:underline"
-                        >
-                          <GitCompare className="w-3 h-3" />
-                          <span>Compare</span>
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-
-          {/* Check History / Run Log */}
-          <div className="bg-white border border-[#E2E8F0] rounded-xl p-5 shadow-sm">
-            <div className="flex items-center space-x-2 text-xs font-semibold text-[#101828] mb-4">
-              <Terminal className="w-4 h-4 text-blue-600" />
-              <span>Check Execution Activity</span>
+                  ))}
+                </div>
+              )}
             </div>
 
-            {checks.length === 0 ? (
-              <p className="text-xs text-[#66758C]">No checks logged yet.</p>
-            ) : (
-              <div className="space-y-3 max-h-96 overflow-y-auto pr-1">
-                {checks.map((c) => (
-                  <div key={c.id} className="p-3 rounded-lg bg-slate-50 border border-[#E2E8F0] text-xs">
-                    <div className="flex items-center justify-between mb-1">
-                      <span
-                        className={`font-semibold uppercase text-[10px] px-2 py-0.5 rounded-full border ${
-                          c.state === 'queued'
-                            ? 'bg-amber-50 text-amber-800 border-amber-300'
-                            : c.state === 'running'
-                            ? 'bg-blue-50 text-blue-800 border-blue-300'
-                            : c.state === 'baseline' || c.state === 'unchanged' || c.state === 'changed'
-                            ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
-                            : c.state === 'error'
-                            ? 'bg-rose-50 text-rose-800 border-rose-300'
-                            : c.state === 'blocked'
-                            ? 'bg-amber-50 text-amber-800 border-amber-300'
-                            : 'bg-slate-100 text-slate-800 border-slate-300'
-                        }`}
-                      >
-                        {c.state === 'queued'
-                          ? 'QUEUED'
-                          : c.state === 'running'
-                          ? 'RUNNING'
-                          : c.state === 'baseline' || c.state === 'unchanged' || c.state === 'changed'
-                          ? `SUCCESSFUL (${c.state})`
-                          : c.state === 'error' || c.state === 'blocked'
-                          ? `FAILED (${c.state})`
-                          : c.state}
-                      </span>
-                      <span className="text-[10px] text-[#66758C]">
-                        {c.finished_at ? new Date(c.finished_at).toLocaleTimeString() : c.state === 'running' ? 'In Progress' : 'Queued'}
-                      </span>
-                    </div>
-
-                    <div className="text-[11px] text-[#66758C] mt-1 flex items-center justify-between">
-                      <span>HTTP {c.http_status || '---'}</span>
-                      {c.duration_ms && <span>{c.duration_ms} ms</span>}
-                    </div>
-
-                    {c.error_message && (
-                      <p className="text-[11px] text-rose-600 mt-1.5 font-medium leading-snug">
-                        {c.error_message}
-                      </p>
-                    )}
-                  </div>
-                ))}
+            {/* Check History / Run Log */}
+            <div className="bg-[#211D19] border border-[#40372D] rounded-xl p-5 shadow-sm">
+              <div className="flex items-center space-x-2 text-xs font-semibold text-[#F5EFE5] mb-4">
+                <Terminal className="w-4 h-4 text-[#C5A474]" />
+                <span>Check Execution Activity</span>
               </div>
-            )}
+
+              {checks.length === 0 ? (
+                <p className="text-xs text-[#8F8579]">No checks logged yet.</p>
+              ) : (
+                <div className="space-y-3 max-h-96 overflow-y-auto pr-1">
+                  {checks.map((c) => (
+                    <div key={c.id} className="p-3 rounded-lg bg-[#141210] border border-[#40372D] text-xs">
+                      <div className="flex items-center justify-between mb-1">
+                        <span
+                          className={`font-semibold uppercase text-[10px] px-2 py-0.5 rounded-full border ${
+                            c.state === 'queued'
+                              ? 'bg-[#342B20] text-[#E9AD5A] border-[#E9AD5A]/30'
+                              : c.state === 'running'
+                              ? 'bg-[#342B20] text-[#C5A474] border-[#C5A474]/30'
+                              : c.state === 'baseline' || c.state === 'unchanged' || c.state === 'changed'
+                              ? 'bg-[#34C59A]/10 text-[#34C59A] border-[#34C59A]/30'
+                              : c.state === 'error'
+                              ? 'bg-[#ED7777]/10 text-[#ED7777] border-[#ED7777]/30'
+                              : c.state === 'blocked'
+                              ? 'bg-[#E9AD5A]/10 text-[#E9AD5A] border-[#E9AD5A]/30'
+                              : 'bg-[#A69C90]/10 text-[#A69C90] border-[#A69C90]/30'
+                          }`}
+                        >
+                          {c.state === 'queued'
+                            ? 'QUEUED'
+                            : c.state === 'running'
+                            ? 'RUNNING'
+                            : c.state === 'baseline' || c.state === 'unchanged' || c.state === 'changed'
+                            ? `SUCCESSFUL (${c.state})`
+                            : c.state === 'error' || c.state === 'blocked'
+                            ? `FAILED (${c.state})`
+                            : c.state}
+                        </span>
+                        <span className="text-[10px] text-[#8F8579] font-mono">
+                          {c.finished_at ? new Date(c.finished_at).toLocaleTimeString() : c.state === 'running' ? 'In Progress' : 'Queued'}
+                        </span>
+                      </div>
+
+                      <div className="text-[11px] text-[#8F8579] mt-1 flex items-center justify-between font-mono">
+                        <span>HTTP {c.http_status || '---'}</span>
+                        {c.duration_ms && <span>{c.duration_ms} ms</span>}
+                      </div>
+
+                      {c.error_message && (
+                        <p className="text-[11px] text-[#ED7777] mt-1.5 font-medium leading-snug">
+                          {c.error_message}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </div>
-    )}
+      )}
 
-    {/* Confirmation Dialog for Destructive Action */}
-    <ConfirmModal
-      isOpen={isDeleteModalOpen}
-      title="Delete Monitor"
-      message={`Are you sure you want to delete "${monitor?.name}"? This action cannot be undone and will remove all version history, check runs, rules, and outbox logs.`}
-      confirmText="Yes, Delete Monitor"
-      confirmVariant="danger"
-      loading={deleteLoading}
-      onConfirm={handleConfirmDelete}
-      onCancel={() => setIsDeleteModalOpen(false)}
-    />
-  </div>
-);
+      {/* Confirmation Dialog for Destructive Action */}
+      <ConfirmModal
+        isOpen={isDeleteModalOpen}
+        title="Delete Monitor"
+        message={`Are you sure you want to delete "${monitor?.name}"? This action cannot be undone and will remove all version history, check runs, rules, and outbox logs.`}
+        confirmText="Yes, Delete Monitor"
+        confirmVariant="danger"
+        loading={deleteLoading}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setIsDeleteModalOpen(false)}
+      />
+    </div>
+  );
 };
 
-
+export default MonitorDetails;

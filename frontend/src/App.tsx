@@ -361,9 +361,9 @@ export const App: React.FC = () => {
   // Session Checking State (prevents mounting protected components prematurely)
   if (authChecking) {
     return (
-      <div className="min-h-screen bg-[#F5F7FB] flex flex-col justify-center items-center p-4 text-[#66758C]">
-        <RefreshCw className="w-8 h-8 animate-spin text-blue-600 mb-3" />
-        <p className="text-sm font-medium">Verifying session status...</p>
+      <div className="min-h-screen bg-[#141210] flex flex-col justify-center items-center p-4 text-[#BDB3A7]">
+        <RefreshCw className="w-8 h-8 animate-spin text-[#C5A474] mb-3" />
+        <p className="text-sm font-medium font-sans">Verifying session status...</p>
       </div>
     );
   }
@@ -391,31 +391,29 @@ export const App: React.FC = () => {
   const isQuotaReached = isJudge && monitors.length >= maxMonitorsAllowed;
 
   return (
-    <div className="min-h-screen bg-[#F5F7FB] text-[#101828] flex flex-col font-sans">
+    <div className="min-h-screen bg-[#141210] text-[#F5EFE5] flex flex-col font-sans">
       {/* Top Navigation */}
-      <header className="bg-white border-b border-[#E2E8F0] sticky top-0 z-30">
+      <header className="bg-[#100F0D] border-b border-[#40372D] sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-6">
             <div 
               onClick={() => handleSelectMonitor(null)}
-              className="flex items-center space-x-3 cursor-pointer"
+              className="flex items-center space-x-3 cursor-pointer group"
             >
-              <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-white shadow-sm ${
-                isJudge ? 'bg-indigo-600' : 'bg-blue-600'
-              }`}>
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center text-[#C5A474] bg-[#211D19] border border-[#C5A474]/40 shadow-sm group-hover:border-[#C5A474] transition-all">
                 {isJudge ? <Compass className="w-5 h-5" /> : <Globe className="w-5 h-5" />}
               </div>
               <div className="flex flex-col">
-                <span className="font-semibold text-base leading-none text-[#101828]">
+                <span className="font-serif font-medium text-base leading-none text-[#F5EFE5]">
                   {isJudge ? 'Evaluation Workspace' : 'Website Change Detector'}
                 </span>
-                <span className="text-[11px] text-[#66758C] mt-0.5 font-medium tracking-wide uppercase">
+                <span className="text-[10px] text-[#8F8579] mt-0.5 font-medium tracking-wider uppercase font-sans">
                   {isJudge ? 'Interactive Judge Mode' : 'Precision Observability'}
                 </span>
               </div>
             </div>
 
-            <nav className="hidden md:flex space-x-1">
+            <nav className="hidden md:flex space-x-1.5">
               {[
                 { id: 'dashboard', label: 'Dashboard', icon: Layers },
                 { id: 'monitors', label: 'Monitors', icon: Globe },
@@ -436,13 +434,13 @@ export const App: React.FC = () => {
                         window.location.hash = item.id === 'dashboard' ? '' : `#${item.id}`;
                       }
                     }}
-                    className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    className={`flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                       isActive 
-                        ? isJudge ? 'bg-indigo-50 text-indigo-700' : 'bg-blue-50 text-blue-600' 
-                        : 'text-[#66758C] hover:text-[#101828] hover:bg-slate-50'
+                        ? 'bg-[#342B20] text-[#C5A474] border border-[#C5A474]/40 shadow-sm' 
+                        : 'text-[#BDB3A7] hover:text-[#F5EFE5] hover:bg-[#211D19]'
                     }`}
                   >
-                    <Icon className="w-4 h-4" />
+                    <Icon className="w-3.5 h-3.5" />
                     <span>{item.label}</span>
                   </button>
                 );
@@ -453,31 +451,31 @@ export const App: React.FC = () => {
           {/* Right Action Controls */}
           <div className="flex items-center space-x-3">
             {/* Health pill */}
-            <div className="hidden sm:flex items-center space-x-2 text-xs bg-slate-50 border border-[#E2E8F0] px-3 py-1.5 rounded-full">
+            <div className="hidden sm:flex items-center space-x-2 text-xs bg-[#211D19] border border-[#40372D] px-3 py-1.5 rounded-full">
               <div className="flex items-center space-x-1">
-                <Server className="w-3.5 h-3.5 text-[#66758C]" />
-                <span className="text-[#66758C]">API:</span>
-                <span className={health?.status === 'ok' ? 'text-green-600 font-medium' : 'text-amber-600 font-medium'}>
+                <Server className="w-3.5 h-3.5 text-[#8F8579]" />
+                <span className="text-[#8F8579]">API:</span>
+                <span className={health?.status === 'ok' ? 'text-[#34C59A] font-medium' : 'text-[#E9AD5A] font-medium'}>
                   {healthLoading ? '...' : health?.status === 'ok' ? 'ONLINE' : 'OFFLINE'}
                 </span>
               </div>
 
-              <span className="text-[#CBD5E1]">|</span>
+              <span className="text-[#40372D]">|</span>
 
               <div className="flex items-center space-x-1">
-                <Database className="w-3.5 h-3.5 text-[#66758C]" />
-                <span className="text-[#66758C]">DB:</span>
-                <span className={health?.database === 'ok' ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
+                <Database className="w-3.5 h-3.5 text-[#8F8579]" />
+                <span className="text-[#8F8579]">DB:</span>
+                <span className={health?.database === 'ok' ? 'text-[#34C59A] font-medium' : 'text-[#ED7777] font-medium'}>
                   {health?.database === 'ok' ? 'OK' : 'ERR'}
                 </span>
               </div>
 
-              <span className="text-[#CBD5E1]">|</span>
+              <span className="text-[#40372D]">|</span>
 
               <div className="flex items-center space-x-1">
-                <RefreshCw className={`w-3.5 h-3.5 ${healthLoading ? 'animate-spin text-blue-600' : 'text-[#66758C]'}`} />
-                <span className="text-[#66758C]">Redis:</span>
-                <span className={health?.redis === 'ok' ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
+                <RefreshCw className={`w-3.5 h-3.5 ${healthLoading ? 'animate-spin text-[#C5A474]' : 'text-[#8F8579]'}`} />
+                <span className="text-[#8F8579]">Redis:</span>
+                <span className={health?.redis === 'ok' ? 'text-[#34C59A] font-medium' : 'text-[#ED7777] font-medium'}>
                   {health?.redis === 'ok' ? 'OK' : 'ERR'}
                 </span>
               </div>
@@ -485,11 +483,7 @@ export const App: React.FC = () => {
 
             <button
               onClick={() => setIsAddModalOpen(true)}
-              className={`inline-flex items-center space-x-1.5 text-white text-sm font-medium px-3.5 py-1.5 rounded-lg shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-                isJudge
-                  ? 'bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-500'
-                  : 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-500'
-              }`}
+              className="inline-flex items-center space-x-1.5 bg-[#C5A474] hover:bg-[#D8BB8E] text-[#141210] text-xs font-semibold px-3.5 py-1.5 rounded-lg shadow-gold transition-all"
             >
               <Plus className="w-4 h-4" />
               <span>{isJudge ? 'Add Website' : 'Add Monitor'}</span>
@@ -500,9 +494,9 @@ export const App: React.FC = () => {
                 <button
                   onClick={handleResetJudgeSession}
                   title="Start a fresh anonymous evaluation session"
-                  className="inline-flex items-center space-x-1 border border-[#E2E8F0] hover:bg-slate-50 text-[#66758C] hover:text-[#101828] text-xs font-medium px-2.5 py-1.5 rounded-lg transition-colors"
+                  className="inline-flex items-center space-x-1 border border-[#40372D] hover:border-[#665744] hover:bg-[#211D19] text-[#BDB3A7] hover:text-[#F5EFE5] text-xs font-medium px-2.5 py-1.5 rounded-lg transition-colors"
                 >
-                  <RefreshCw className={`w-3.5 h-3.5 ${judgeInitLoading ? 'animate-spin' : ''}`} />
+                  <RefreshCw className={`w-3.5 h-3.5 text-[#C5A474] ${judgeInitLoading ? 'animate-spin' : ''}`} />
                   <span className="hidden sm:inline">New Session</span>
                 </button>
                 <button
@@ -511,9 +505,9 @@ export const App: React.FC = () => {
                     window.location.hash = '#admin';
                   }}
                   title="Switch to Admin Login"
-                  className="inline-flex items-center space-x-1 border border-[#E2E8F0] hover:bg-slate-50 text-[#66758C] hover:text-[#101828] text-xs font-medium px-2.5 py-1.5 rounded-lg transition-colors"
+                  className="inline-flex items-center space-x-1 border border-[#40372D] hover:border-[#665744] hover:bg-[#211D19] text-[#BDB3A7] hover:text-[#F5EFE5] text-xs font-medium px-2.5 py-1.5 rounded-lg transition-colors"
                 >
-                  <Lock className="w-3.5 h-3.5" />
+                  <Lock className="w-3.5 h-3.5 text-[#C5A474]" />
                   <span className="hidden sm:inline">Admin Login</span>
                 </button>
               </div>
@@ -521,9 +515,9 @@ export const App: React.FC = () => {
               <button
                 onClick={handleLogoutClick}
                 title="Sign out of administrative session"
-                className="inline-flex items-center space-x-1 border border-[#E2E8F0] hover:bg-slate-50 text-[#66758C] hover:text-[#101828] text-xs font-medium px-2.5 py-1.5 rounded-lg transition-colors"
+                className="inline-flex items-center space-x-1 border border-[#40372D] hover:border-[#665744] hover:bg-[#211D19] text-[#BDB3A7] hover:text-[#F5EFE5] text-xs font-medium px-2.5 py-1.5 rounded-lg transition-colors"
               >
-                <LogOut className="w-3.5 h-3.5" />
+                <LogOut className="w-3.5 h-3.5 text-[#C5A474]" />
                 <span className="hidden sm:inline">Sign Out</span>
               </button>
             )}
@@ -534,14 +528,14 @@ export const App: React.FC = () => {
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {judgeError && isJudge && (
-          <div className="mb-6 p-4 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800 flex items-start space-x-3">
-            <AlertCircle className="w-5 h-5 shrink-0 text-amber-600 mt-0.5" />
+          <div className="mb-6 p-4 rounded-xl bg-[#342B20]/60 border border-[#E9AD5A]/40 text-xs text-[#E9AD5A] flex items-start space-x-3">
+            <AlertCircle className="w-5 h-5 shrink-0 text-[#E9AD5A] mt-0.5" />
             <div className="flex-1">
               <span className="font-semibold">Session Notice:</span> {judgeError}
             </div>
             <button
               onClick={handleResetJudgeSession}
-              className="px-2.5 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded text-xs font-medium"
+              className="px-2.5 py-1 bg-[#C5A474] hover:bg-[#D8BB8E] text-[#141210] rounded text-xs font-semibold"
             >
               Re-initialize
             </button>
@@ -570,16 +564,16 @@ export const App: React.FC = () => {
         ) : (
           <>
             {/* Header & Status */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-6 border-b border-[#E2E8F0]">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-6 border-b border-[#40372D]">
               <div>
-                <h1 className="text-2xl font-bold tracking-tight text-[#101828]">
+                <h1 className="font-serif text-3xl font-normal tracking-tight text-[#F5EFE5]">
                   {isJudge 
-                    ? 'Website Change Detector — Interactive Evaluation Workspace' 
+                    ? 'Observe what changes.' 
                     : 'Website Change Detector'}
                 </h1>
-                <p className="text-sm text-[#66758C] mt-1">
+                <p className="text-sm text-[#BDB3A7] mt-1.5 font-sans">
                   {isJudge
-                    ? 'Observe real websites. Track meaningful changes. Compare captured versions.'
+                    ? 'Monitor public websites with precision. Capture the evidence. Understand the difference.'
                     : 'Autonomous, high-precision web content diffing & change detection engine.'}
                 </p>
               </div>
@@ -590,9 +584,9 @@ export const App: React.FC = () => {
                     fetchHealthData();
                     fetchMonitorsData();
                   }}
-                  className="inline-flex items-center space-x-1.5 px-3 py-1.5 border border-[#E2E8F0] rounded-lg text-xs font-medium text-[#66758C] hover:text-[#101828] hover:bg-white transition-colors"
+                  className="inline-flex items-center space-x-1.5 px-3 py-1.5 border border-[#40372D] hover:border-[#665744] rounded-lg text-xs font-medium text-[#BDB3A7] hover:text-[#F5EFE5] hover:bg-[#211D19] transition-colors"
                 >
-                  <RefreshCw className={`w-3.5 h-3.5 ${monitorsLoading ? 'animate-spin' : ''}`} />
+                  <RefreshCw className={`w-3.5 h-3.5 text-[#C5A474] ${monitorsLoading ? 'animate-spin' : ''}`} />
                   <span>Refresh Monitors</span>
                 </button>
               </div>
@@ -600,58 +594,58 @@ export const App: React.FC = () => {
 
             {/* Judge Evaluation Guidance & Quota Banner */}
             {isJudge && (
-              <div className="mt-6 bg-gradient-to-r from-indigo-50 to-blue-50 border border-indigo-200 rounded-xl p-5 shadow-sm">
+              <div className="mt-6 bg-[#211D19] border border-[#C5A474]/40 rounded-xl p-5 shadow-sm">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div className="flex items-start space-x-3">
-                    <div className="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center shrink-0 mt-0.5">
+                  <div className="flex items-start space-x-3.5">
+                    <div className="w-8 h-8 rounded-lg bg-[#342B20] border border-[#C5A474]/40 text-[#C5A474] flex items-center justify-center shrink-0 mt-0.5">
                       <Info className="w-4 h-4" />
                     </div>
                     <div>
                       <div className="flex items-center space-x-2">
-                        <span className="font-semibold text-sm text-indigo-950">
+                        <span className="font-serif font-medium text-sm text-[#F5EFE5]">
                           Temporary evaluation session — up to 2 monitors.
                         </span>
-                        <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-indigo-200/80 text-indigo-800">
+                        <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-[#342B20] text-[#C5A474] border border-[#C5A474]/30 font-mono">
                           {monitors.length} / 2 active
                         </span>
                       </div>
-                      <p className="text-xs text-indigo-800 mt-1 leading-relaxed">
+                      <p className="text-xs text-[#BDB3A7] mt-1 leading-relaxed">
                         Add any safe public HTTP/HTTPS URL. Genuine Playwright browser instances capture DOM and screenshots.
                         Manual checks: up to 3 checks/hr per monitor. Min interval: 15 minutes.
                       </p>
                     </div>
                   </div>
 
-                  <div className="flex items-center space-x-2 text-xs shrink-0 bg-white/80 backdrop-blur-sm border border-indigo-100 rounded-lg p-2.5">
-                    <Clock className="w-4 h-4 text-indigo-600" />
-                    <span className="text-indigo-900 font-medium">Session auto-expires after 24h</span>
+                  <div className="flex items-center space-x-2 text-xs shrink-0 bg-[#141210] border border-[#40372D] rounded-lg p-2.5">
+                    <Clock className="w-4 h-4 text-[#C5A474]" />
+                    <span className="text-[#F5EFE5] font-medium">Session auto-expires after 24h</span>
                   </div>
                 </div>
 
                 {/* State Definitions Guide */}
-                <div className="mt-4 pt-3 border-t border-indigo-100 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                  <div className="bg-white/80 rounded-lg p-2.5 border border-indigo-100/70">
-                    <div className="flex items-center space-x-1.5 font-semibold text-slate-800 mb-0.5">
-                      <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                <div className="mt-4 pt-3.5 border-t border-[#40372D] grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                  <div className="bg-[#141210] rounded-lg p-2.5 border border-[#40372D]">
+                    <div className="flex items-center space-x-1.5 font-semibold text-[#F5EFE5] mb-0.5">
+                      <span className="w-2 h-2 rounded-full bg-[#8FAAD4]"></span>
                       <span>BASELINE</span>
                     </div>
-                    <p className="text-[11px] text-[#66758C]">Initial captured snapshot. Serves as reference point (not counted as a change).</p>
+                    <p className="text-[11px] text-[#8F8579]">Initial captured snapshot. Serves as reference point (not counted as a change).</p>
                   </div>
 
-                  <div className="bg-white/80 rounded-lg p-2.5 border border-indigo-100/70">
-                    <div className="flex items-center space-x-1.5 font-semibold text-slate-800 mb-0.5">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                  <div className="bg-[#141210] rounded-lg p-2.5 border border-[#40372D]">
+                    <div className="flex items-center space-x-1.5 font-semibold text-[#F5EFE5] mb-0.5">
+                      <span className="w-2 h-2 rounded-full bg-[#34C59A]"></span>
                       <span>UNCHANGED</span>
                     </div>
-                    <p className="text-[11px] text-[#66758C]">Content checked. Text and structure match the baseline version.</p>
+                    <p className="text-[11px] text-[#8F8579]">Content checked. Text and structure match the baseline version.</p>
                   </div>
 
-                  <div className="bg-white/80 rounded-lg p-2.5 border border-indigo-100/70">
-                    <div className="flex items-center space-x-1.5 font-semibold text-slate-800 mb-0.5">
-                      <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+                  <div className="bg-[#141210] rounded-lg p-2.5 border border-[#40372D]">
+                    <div className="flex items-center space-x-1.5 font-semibold text-[#F5EFE5] mb-0.5">
+                      <span className="w-2 h-2 rounded-full bg-[#E9AD5A]"></span>
                       <span>CHANGED</span>
                     </div>
-                    <p className="text-[11px] text-[#66758C]">Meaningful content difference detected. New snapshot & diff generated.</p>
+                    <p className="text-[11px] text-[#8F8579]">Meaningful content difference detected. New snapshot & diff generated.</p>
                   </div>
                 </div>
               </div>
@@ -659,80 +653,80 @@ export const App: React.FC = () => {
 
             {/* Metric Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
-              <div className="bg-white border border-[#E2E8F0] rounded-xl p-5 shadow-sm">
-                <div className="flex items-center justify-between text-[#66758C]">
+              <div className="bg-[#211D19] border border-[#40372D] rounded-xl p-5 shadow-sm">
+                <div className="flex items-center justify-between text-[#8F8579]">
                   <span className="text-xs font-medium uppercase tracking-wider">
                     {isJudge ? 'Session Monitors' : 'Total Monitors'}
                   </span>
-                  <Layers className={`w-4 h-4 ${isJudge ? 'text-indigo-600' : 'text-blue-600'}`} />
+                  <Layers className="w-4 h-4 text-[#C5A474]" />
                 </div>
-                <div className="mt-2 flex items-baseline space-x-2">
-                  <span className="text-2xl font-semibold text-[#101828]">{totalMonitors}</span>
-                  <span className="text-xs text-[#66758C]">
+                <div className="mt-2.5 flex items-baseline space-x-2">
+                  <span className="font-serif text-3xl font-normal text-[#F5EFE5]">{totalMonitors}</span>
+                  <span className="text-xs text-[#8F8579]">
                     {isJudge ? `/ ${maxMonitorsAllowed} max` : 'monitored targets'}
                   </span>
                 </div>
-                <p className="text-xs text-[#66758C] mt-2">
+                <p className="text-xs text-[#8F8579] mt-2 font-sans">
                   {isJudge ? 'Bounded evaluation slots' : 'Active observation configurations'}
                 </p>
               </div>
 
-              <div className="bg-white border border-[#E2E8F0] rounded-xl p-5 shadow-sm">
-                <div className="flex items-center justify-between text-[#66758C]">
+              <div className="bg-[#211D19] border border-[#40372D] rounded-xl p-5 shadow-sm">
+                <div className="flex items-center justify-between text-[#8F8579]">
                   <span className="text-xs font-medium uppercase tracking-wider">Healthy / OK</span>
-                  <CheckCircle2 className="w-4 h-4 text-[#12B886]" />
+                  <CheckCircle2 className="w-4 h-4 text-[#34C59A]" />
                 </div>
-                <div className="mt-2 flex items-baseline space-x-2">
-                  <span className="text-2xl font-semibold text-[#101828]">{healthyMonitors}</span>
-                  <span className="text-xs text-[#12B886] font-medium">operational</span>
+                <div className="mt-2.5 flex items-baseline space-x-2">
+                  <span className="font-serif text-3xl font-normal text-[#F5EFE5]">{healthyMonitors}</span>
+                  <span className="text-xs text-[#34C59A] font-medium font-sans">operational</span>
                 </div>
-                <p className="text-xs text-[#66758C] mt-2">Successful captures without outages</p>
+                <p className="text-xs text-[#8F8579] mt-2 font-sans">Successful captures without outages</p>
               </div>
 
-              <div className="bg-white border border-[#E2E8F0] rounded-xl p-5 shadow-sm">
-                <div className="flex items-center justify-between text-[#66758C]">
+              <div className="bg-[#211D19] border border-[#40372D] rounded-xl p-5 shadow-sm">
+                <div className="flex items-center justify-between text-[#8F8579]">
                   <span className="text-xs font-medium uppercase tracking-wider">Changed</span>
-                  <Activity className="w-4 h-4 text-blue-600" />
+                  <Activity className="w-4 h-4 text-[#E9AD5A]" />
                 </div>
-                <div className="mt-2 flex items-baseline space-x-2">
-                  <span className="text-2xl font-semibold text-[#101828]">{changedMonitors}</span>
-                  <span className="text-xs text-[#66758C]">confirmed diffs</span>
+                <div className="mt-2.5 flex items-baseline space-x-2">
+                  <span className="font-serif text-3xl font-normal text-[#F5EFE5]">{changedMonitors}</span>
+                  <span className="text-xs text-[#E9AD5A] font-medium font-sans">confirmed diffs</span>
                 </div>
-                <p className="text-xs text-[#66758C] mt-2">Verified content updates</p>
+                <p className="text-xs text-[#8F8579] mt-2 font-sans">Verified content updates</p>
               </div>
 
-              <div className="bg-white border border-[#E2E8F0] rounded-xl p-5 shadow-sm">
-                <div className="flex items-center justify-between text-[#66758C]">
+              <div className="bg-[#211D19] border border-[#40372D] rounded-xl p-5 shadow-sm">
+                <div className="flex items-center justify-between text-[#8F8579]">
                   <span className="text-xs font-medium uppercase tracking-wider">Errors / Blocked</span>
-                  <AlertCircle className="w-4 h-4 text-[#D97706]" />
+                  <AlertCircle className="w-4 h-4 text-[#ED7777]" />
                 </div>
-                <div className="mt-2 flex items-baseline space-x-2">
-                  <span className="text-2xl font-semibold text-[#101828]">{errorMonitors}</span>
-                  <span className="text-xs text-[#66758C]">outages / challenges</span>
+                <div className="mt-2.5 flex items-baseline space-x-2">
+                  <span className="font-serif text-3xl font-normal text-[#F5EFE5]">{errorMonitors}</span>
+                  <span className="text-xs text-[#ED7777] font-medium font-sans">outages / challenges</span>
                 </div>
-                <p className="text-xs text-[#66758C] mt-2">Never counted as content diffs</p>
+                <p className="text-xs text-[#8F8579] mt-2 font-sans">Never counted as content diffs</p>
               </div>
             </div>
 
             {/* Monitors Table Container */}
-            <div className="mt-6 bg-white border border-[#E2E8F0] rounded-xl shadow-sm overflow-hidden">
-              <div className="px-6 py-4 border-b border-[#E2E8F0] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="mt-6 bg-[#211D19] border border-[#40372D] rounded-xl shadow-luxury overflow-hidden">
+              <div className="px-6 py-4 border-b border-[#40372D] bg-[#1A1714] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div className="relative flex-1 max-w-sm">
-                  <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#66758C]" />
+                  <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#8F8579]" />
                   <input
                     type="text"
                     placeholder="Search monitors..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-[#E2E8F0] rounded-lg text-[#101828] placeholder-[#66758C] focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="w-full pl-9 pr-3 py-1.5 text-xs bg-[#141210] border border-[#40372D] rounded-lg text-[#F5EFE5] placeholder-[#8F8579] focus:outline-none focus:ring-1 focus:ring-[#C5A474]"
                   />
                 </div>
                 <div className="flex items-center space-x-2">
-                  <span className="text-xs text-[#66758C]">Filter:</span>
+                  <span className="text-xs text-[#8F8579]">Filter:</span>
                   <select
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value)}
-                    className="text-xs bg-slate-50 border border-[#E2E8F0] text-[#101828] px-2.5 py-1 rounded-md font-medium focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="text-xs bg-[#141210] border border-[#40372D] text-[#F5EFE5] px-2.5 py-1 rounded-md font-medium focus:outline-none focus:ring-1 focus:ring-[#C5A474]"
                   >
                     <option value="all">All Monitors ({monitors.length})</option>
                     <option value="ok">Healthy (OK)</option>
@@ -745,18 +739,16 @@ export const App: React.FC = () => {
               </div>
 
               {filteredMonitors.length === 0 ? (
-                <div className="p-12 text-center flex flex-col items-center justify-center">
-                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-4 ${
-                    isJudge ? 'bg-indigo-50 text-indigo-600' : 'bg-blue-50 text-blue-600'
-                  }`}>
+                <div className="p-14 text-center flex flex-col items-center justify-center">
+                  <div className="w-12 h-12 rounded-2xl bg-[#342B20] border border-[#C5A474]/30 text-[#C5A474] flex items-center justify-center mb-4">
                     {isJudge ? <Compass className="w-6 h-6" /> : <Globe className="w-6 h-6" />}
                   </div>
-                  <h3 className="text-base font-semibold text-[#101828]">
+                  <h3 className="font-serif text-lg font-medium text-[#F5EFE5]">
                     {monitors.length === 0 
                       ? isJudge ? 'No evaluation monitors added yet' : 'No monitors configured yet'
                       : 'No matching monitors found'}
                   </h3>
-                  <p className="text-xs text-[#66758C] max-w-md mt-1 mb-6 leading-relaxed">
+                  <p className="text-xs text-[#BDB3A7] max-w-md mt-1.5 mb-6 leading-relaxed font-sans">
                     {monitors.length === 0
                       ? isJudge 
                         ? 'Enter any publicly accessible website URL (e.g. https://example.com) to trigger a genuine Playwright capture and inspect snapshots and diffs.'
@@ -766,9 +758,7 @@ export const App: React.FC = () => {
                   {monitors.length === 0 && (
                     <button
                       onClick={() => setIsAddModalOpen(true)}
-                      className={`inline-flex items-center space-x-1.5 text-white text-xs font-semibold px-4 py-2 rounded-lg shadow-sm transition-all ${
-                        isJudge ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-blue-600 hover:bg-blue-700'
-                      }`}
+                      className="inline-flex items-center space-x-1.5 bg-[#C5A474] hover:bg-[#D8BB8E] text-[#141210] text-xs font-semibold px-4 py-2 rounded-lg shadow-gold transition-all"
                     >
                       <Plus className="w-3.5 h-3.5" />
                       <span>{isJudge ? 'Add First Website' : 'Create First Monitor'}</span>
@@ -778,32 +768,32 @@ export const App: React.FC = () => {
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs">
-                    <thead className="bg-slate-50 border-b border-[#E2E8F0] text-[#66758C] uppercase font-semibold text-[11px] tracking-wider">
+                    <thead className="bg-[#1A1714] border-b border-[#40372D] text-[#8F8579] uppercase font-semibold text-[11px] tracking-wider font-sans">
                       <tr>
-                        <th className="px-6 py-3">Monitor</th>
-                        <th className="px-6 py-3">Status</th>
-                        <th className="px-6 py-3">Interval</th>
-                        <th className="px-6 py-3">Last Checked</th>
-                        <th className="px-6 py-3">Next Scheduled</th>
-                        <th className="px-6 py-3">Versions</th>
-                        <th className="px-6 py-3 text-right">Actions</th>
+                        <th className="px-6 py-3.5">Monitor</th>
+                        <th className="px-6 py-3.5">Status</th>
+                        <th className="px-6 py-3.5">Interval</th>
+                        <th className="px-6 py-3.5">Last Checked</th>
+                        <th className="px-6 py-3.5">Next Scheduled</th>
+                        <th className="px-6 py-3.5">Versions</th>
+                        <th className="px-6 py-3.5 text-right">Actions</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-[#E2E8F0]">
+                    <tbody className="divide-y divide-[#40372D]/60 font-sans">
                       {filteredMonitors.map((m) => {
                         const isChecking = checkingIds[m.id];
                         return (
                           <tr
                             key={m.id}
                             onClick={() => handleSelectMonitor(m.id)}
-                            className="hover:bg-slate-50/80 cursor-pointer transition-colors"
+                            className="hover:bg-[#2A2520]/70 cursor-pointer transition-colors"
                           >
                             <td className="px-6 py-4">
                               <div className="flex flex-col">
-                                <span className="font-semibold text-sm text-[#101828] hover:text-blue-600 transition-colors">
+                                <span className="font-semibold text-sm text-[#F5EFE5] hover:text-[#C5A474] transition-colors">
                                   {m.name}
                                 </span>
-                                <span className="text-xs text-[#66758C] truncate max-w-xs mt-0.5">
+                                <span className="text-xs text-[#8F8579] font-mono truncate max-w-xs mt-0.5">
                                   {m.url}
                                 </span>
                               </div>
@@ -813,37 +803,37 @@ export const App: React.FC = () => {
                               <span
                                 className={`text-[11px] font-semibold uppercase px-2.5 py-0.5 rounded-full border ${
                                   m.status === 'ok'
-                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                    ? 'bg-[#34C59A]/10 text-[#34C59A] border-[#34C59A]/30'
                                     : m.status === 'changed'
-                                    ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                    ? 'bg-[#E9AD5A]/10 text-[#E9AD5A] border-[#E9AD5A]/30'
                                     : m.status === 'blocked'
-                                    ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                    ? 'bg-[#ED7777]/10 text-[#ED7777] border-[#ED7777]/30'
                                     : m.status === 'error'
-                                    ? 'bg-rose-50 text-rose-700 border-rose-200'
-                                    : 'bg-slate-100 text-slate-700 border-slate-200'
+                                    ? 'bg-[#ED7777]/10 text-[#ED7777] border-[#ED7777]/30'
+                                    : 'bg-[#A69C90]/10 text-[#A69C90] border-[#A69C90]/30'
                                 }`}
                               >
                                 {m.status}
                               </span>
                             </td>
 
-                            <td className="px-6 py-4 text-[#66758C]">
+                            <td className="px-6 py-4 text-[#BDB3A7]">
                               Every {m.interval_minutes}m
                             </td>
 
-                            <td className="px-6 py-4 text-[#66758C]">
+                            <td className="px-6 py-4 text-[#BDB3A7] font-mono">
                               {m.last_checked_at
                                 ? new Date(m.last_checked_at).toLocaleTimeString()
                                 : 'Pending'}
                             </td>
 
-                            <td className="px-6 py-4 text-[#66758C]">
+                            <td className="px-6 py-4 text-[#BDB3A7] font-mono">
                               {m.next_check_at
                                 ? new Date(m.next_check_at).toLocaleTimeString()
                                 : '---'}
                             </td>
 
-                            <td className="px-6 py-4 text-[#101828] font-medium">
+                            <td className="px-6 py-4 text-[#F5EFE5] font-medium font-mono">
                               {m.versions_count} snapshot{m.versions_count === 1 ? '' : 's'}
                             </td>
 
@@ -852,14 +842,14 @@ export const App: React.FC = () => {
                                 <button
                                   onClick={(e) => handleCheckNow(m.id, e)}
                                   disabled={isChecking}
-                                  className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border border-[#E2E8F0] hover:bg-white text-xs font-medium text-[#101828] shadow-sm transition-colors"
+                                  className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border border-[#40372D] hover:border-[#665744] hover:bg-[#2A2520] text-xs font-medium text-[#F5EFE5] shadow-sm transition-colors"
                                 >
                                   <RefreshCw
-                                    className={`w-3.5 h-3.5 ${isChecking ? 'animate-spin text-blue-600' : 'text-[#66758C]'}`}
+                                    className={`w-3.5 h-3.5 ${isChecking ? 'animate-spin text-[#C5A474]' : 'text-[#8F8579]'}`}
                                   />
                                   <span>{isChecking ? 'Checking...' : 'Check Now'}</span>
                                 </button>
-                                <ChevronRight className="w-4 h-4 text-[#94A3B8]" />
+                                <ChevronRight className="w-4 h-4 text-[#8F8579]" />
                               </div>
                             </td>
                           </tr>
@@ -872,27 +862,27 @@ export const App: React.FC = () => {
             </div>
 
             {/* Architectural Footnote */}
-            <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-[#66758C]">
-              <div className="border border-[#E2E8F0] bg-white rounded-lg p-3.5">
-                <div className="font-semibold text-[#101828] mb-1 flex items-center justify-between">
+            <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-[#8F8579]">
+              <div className="border border-[#40372D] bg-[#211D19] rounded-xl p-4">
+                <div className="font-serif font-medium text-[#F5EFE5] mb-1 flex items-center justify-between">
                   <span>SSRF Defenses Active</span>
-                  <ArrowUpRight className="w-3.5 h-3.5 text-[#66758C]" />
+                  <ArrowUpRight className="w-3.5 h-3.5 text-[#C5A474]" />
                 </div>
-                <p>DNS resolution verification, private CIDR blocking, subresource request interception.</p>
+                <p className="leading-relaxed">DNS resolution verification, private CIDR blocking, subresource request interception.</p>
               </div>
-              <div className="border border-[#E2E8F0] bg-white rounded-lg p-3.5">
-                <div className="font-semibold text-[#101828] mb-1 flex items-center justify-between">
+              <div className="border border-[#40372D] bg-[#211D19] rounded-xl p-4">
+                <div className="font-serif font-medium text-[#F5EFE5] mb-1 flex items-center justify-between">
                   <span>Playwright Capture Engine</span>
-                  <ArrowUpRight className="w-3.5 h-3.5 text-[#66758C]" />
+                  <ArrowUpRight className="w-3.5 h-3.5 text-[#C5A474]" />
                 </div>
-                <p>Headless Chromium renders full DOM, captures consistent 1440x900 viewport screenshots.</p>
+                <p className="leading-relaxed">Headless Chromium renders full DOM, captures consistent 1440x900 viewport screenshots.</p>
               </div>
-              <div className="border border-[#E2E8F0] bg-white rounded-lg p-3.5">
-                <div className="font-semibold text-[#101828] mb-1 flex items-center justify-between">
+              <div className="border border-[#40372D] bg-[#211D19] rounded-xl p-4">
+                <div className="font-serif font-medium text-[#F5EFE5] mb-1 flex items-center justify-between">
                   <span>Precision Normalized Diff</span>
-                  <ArrowUpRight className="w-3.5 h-3.5 text-[#66758C]" />
+                  <ArrowUpRight className="w-3.5 h-3.5 text-[#C5A474]" />
                 </div>
-                <p>SHA-256 content hashing with whitespace normalization to eliminate cosmetic false positives.</p>
+                <p className="leading-relaxed">SHA-256 content hashing with whitespace normalization to eliminate cosmetic false positives.</p>
               </div>
             </div>
           </>

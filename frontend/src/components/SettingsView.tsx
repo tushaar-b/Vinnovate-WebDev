@@ -207,8 +207,8 @@ export const SettingsView: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-24 text-slate-500">
-        <svg className="animate-spin h-6 w-6 mr-3 text-blue-600" viewBox="0 0 24 24">
+      <div className="flex items-center justify-center py-24 text-text-subtle">
+        <svg className="animate-spin h-6 w-6 mr-3 text-gold-champagne" viewBox="0 0 24 24">
           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
         </svg>
@@ -221,20 +221,20 @@ export const SettingsView: React.FC = () => {
     <div className="space-y-8 max-w-5xl">
       {/* Header */}
       <div>
-        <h2 className="text-xl font-bold text-slate-900">Notification Settings</h2>
-        <p className="text-sm text-slate-500 mt-1">
-          Configure external alert channels. Sensitive tokens and passwords are encrypted at rest using authenticated AES encryption and securely masked in the UI.
+        <h2 className="text-xl font-serif font-medium text-ivory-warm">Notification Dispatch & Webhooks</h2>
+        <p className="text-xs text-text-subtle mt-1">
+          Configure external alert channels. Sensitive tokens and credentials are encrypted at rest using authenticated AES encryption and securely masked.
         </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Discord Card */}
-        <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-6 flex flex-col justify-between">
+        <div className="bg-surface-elevated border border-warmborder rounded-2xl shadow-luxury p-6 flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center space-x-2">
                 <span className="text-xl">💬</span>
-                <h3 className="font-semibold text-slate-900">Discord</h3>
+                <h3 className="font-serif font-medium text-ivory-warm">Discord</h3>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
@@ -243,29 +243,29 @@ export const SettingsView: React.FC = () => {
                   onChange={(e) => setDiscordEnabled(e.target.checked)}
                   className="sr-only peer"
                 />
-                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                <div className="w-11 h-6 bg-surface-interactive border border-warmborder peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-obsidian-deep after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-ivory-warm after:border-warmborder after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gold-champagne"></div>
               </label>
             </div>
-            <p className="text-xs text-slate-500 mb-4">
+            <p className="text-xs text-text-subtle mb-4">
               Sends rich embeds to a Discord channel when website content changes.
             </p>
 
             <div className="space-y-3">
               <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">Webhook URL</label>
+                <label className="block text-xs font-medium text-text-muted mb-1">Webhook URL</label>
                 <input
                   type="text"
                   placeholder="https://discord.com/api/webhooks/..."
                   value={discordUrl}
                   onChange={(e) => setDiscordUrl(e.target.value)}
-                  className="w-full text-xs font-mono px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  className="w-full text-xs font-mono px-3 py-2 bg-surface-interactive border border-warmborder rounded-xl text-ivory-warm placeholder:text-text-subtle focus:border-gold-champagne/60 focus:outline-none transition-colors"
                 />
               </div>
 
               {discordMsg && (
                 <div
-                  className={`text-xs p-2.5 rounded-lg ${
-                    discordMsg.type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'
+                  className={`text-xs p-2.5 rounded-xl ${
+                    discordMsg.type === 'success' ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-300 border border-rose-500/20'
                   }`}
                 >
                   {discordMsg.text}
@@ -274,18 +274,18 @@ export const SettingsView: React.FC = () => {
             </div>
           </div>
 
-          <div className="pt-6 flex items-center space-x-2 border-t border-slate-100 mt-6">
+          <div className="pt-6 flex items-center space-x-2 border-t border-warmborder/40 mt-6">
             <button
               onClick={testDiscord}
               disabled={discordTesting || !discordUrl}
-              className="flex-1 text-xs font-medium py-2 px-3 border border-slate-300 rounded-lg hover:bg-slate-50 text-slate-700 disabled:opacity-50"
+              className="flex-1 text-xs font-medium py-2 px-3 border border-warmborder rounded-xl hover:bg-surface-interactive bg-surface-interactive/60 text-ivory-warm disabled:opacity-40 transition-colors"
             >
               {discordTesting ? 'Testing...' : 'Test'}
             </button>
             <button
               onClick={saveDiscord}
               disabled={savingChannel === 'discord'}
-              className="flex-1 text-xs font-medium py-2 px-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:opacity-50"
+              className="flex-1 text-xs font-medium py-2 px-3 bg-gold-champagne hover:bg-gold-hover text-obsidian-deep rounded-xl shadow-gold disabled:opacity-40 transition-all"
             >
               {savingChannel === 'discord' ? 'Saving...' : 'Save'}
             </button>
@@ -293,12 +293,12 @@ export const SettingsView: React.FC = () => {
         </div>
 
         {/* Telegram Card */}
-        <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-6 flex flex-col justify-between">
+        <div className="bg-surface-elevated border border-warmborder rounded-2xl shadow-luxury p-6 flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center space-x-2">
                 <span className="text-xl">✈️</span>
-                <h3 className="font-semibold text-slate-900">Telegram</h3>
+                <h3 className="font-serif font-medium text-ivory-warm">Telegram</h3>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
@@ -307,40 +307,40 @@ export const SettingsView: React.FC = () => {
                   onChange={(e) => setTgEnabled(e.target.checked)}
                   className="sr-only peer"
                 />
-                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                <div className="w-11 h-6 bg-surface-interactive border border-warmborder peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-obsidian-deep after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-ivory-warm after:border-warmborder after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gold-champagne"></div>
               </label>
             </div>
-            <p className="text-xs text-slate-500 mb-4">
+            <p className="text-xs text-text-subtle mb-4">
               Delivers instant HTML formatted notifications via Telegram Bot.
             </p>
 
             <div className="space-y-3">
               <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">Bot Token</label>
+                <label className="block text-xs font-medium text-text-muted mb-1">Bot Token</label>
                 <input
                   type="password"
                   placeholder="123456789:ABCdefGhI..."
                   value={tgToken}
                   onChange={(e) => setTgToken(e.target.value)}
-                  className="w-full text-xs font-mono px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  className="w-full text-xs font-mono px-3 py-2 bg-surface-interactive border border-warmborder rounded-xl text-ivory-warm placeholder:text-text-subtle focus:border-gold-champagne/60 focus:outline-none transition-colors"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">Chat ID</label>
+                <label className="block text-xs font-medium text-text-muted mb-1">Chat ID</label>
                 <input
                   type="text"
                   placeholder="-100123456789"
                   value={tgChatId}
                   onChange={(e) => setTgChatId(e.target.value)}
-                  className="w-full text-xs font-mono px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  className="w-full text-xs font-mono px-3 py-2 bg-surface-interactive border border-warmborder rounded-xl text-ivory-warm placeholder:text-text-subtle focus:border-gold-champagne/60 focus:outline-none transition-colors"
                 />
               </div>
 
               {tgMsg && (
                 <div
-                  className={`text-xs p-2.5 rounded-lg ${
-                    tgMsg.type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'
+                  className={`text-xs p-2.5 rounded-xl ${
+                    tgMsg.type === 'success' ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-300 border border-rose-500/20'
                   }`}
                 >
                   {tgMsg.text}
@@ -349,18 +349,18 @@ export const SettingsView: React.FC = () => {
             </div>
           </div>
 
-          <div className="pt-6 flex items-center space-x-2 border-t border-slate-100 mt-6">
+          <div className="pt-6 flex items-center space-x-2 border-t border-warmborder/40 mt-6">
             <button
               onClick={testTelegram}
               disabled={tgTesting || !tgToken || !tgChatId}
-              className="flex-1 text-xs font-medium py-2 px-3 border border-slate-300 rounded-lg hover:bg-slate-50 text-slate-700 disabled:opacity-50"
+              className="flex-1 text-xs font-medium py-2 px-3 border border-warmborder rounded-xl hover:bg-surface-interactive bg-surface-interactive/60 text-ivory-warm disabled:opacity-40 transition-colors"
             >
               {tgTesting ? 'Testing...' : 'Test'}
             </button>
             <button
               onClick={saveTelegram}
               disabled={savingChannel === 'telegram'}
-              className="flex-1 text-xs font-medium py-2 px-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:opacity-50"
+              className="flex-1 text-xs font-medium py-2 px-3 bg-gold-champagne hover:bg-gold-hover text-obsidian-deep rounded-xl shadow-gold disabled:opacity-40 transition-all"
             >
               {savingChannel === 'telegram' ? 'Saving...' : 'Save'}
             </button>
@@ -368,12 +368,12 @@ export const SettingsView: React.FC = () => {
         </div>
 
         {/* Email SMTP Card */}
-        <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-6 flex flex-col justify-between">
+        <div className="bg-surface-elevated border border-warmborder rounded-2xl shadow-luxury p-6 flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center space-x-2">
                 <span className="text-xl">📧</span>
-                <h3 className="font-semibold text-slate-900">Email (SMTP)</h3>
+                <h3 className="font-serif font-medium text-ivory-warm">Email (SMTP)</h3>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
@@ -382,73 +382,73 @@ export const SettingsView: React.FC = () => {
                   onChange={(e) => setEmailEnabled(e.target.checked)}
                   className="sr-only peer"
                 />
-                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                <div className="w-11 h-6 bg-surface-interactive border border-warmborder peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-obsidian-deep after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-ivory-warm after:border-warmborder after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gold-champagne"></div>
               </label>
             </div>
-            <p className="text-xs text-slate-500 mb-4">
+            <p className="text-xs text-text-subtle mb-4">
               Delivers HTML change summaries using custom SMTP credentials.
             </p>
 
             <div className="space-y-2">
               <div className="grid grid-cols-3 gap-2">
                 <div className="col-span-2">
-                  <label className="block text-[11px] font-medium text-slate-700 mb-1">Host</label>
+                  <label className="block text-[11px] font-medium text-text-muted mb-1">Host</label>
                   <input
                     type="text"
                     placeholder="smtp.mail.com"
                     value={smtpHost}
                     onChange={(e) => setSmtpHost(e.target.value)}
-                    className="w-full text-xs px-2.5 py-1.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="w-full text-xs px-2.5 py-1.5 bg-surface-interactive border border-warmborder rounded-xl text-ivory-warm placeholder:text-text-subtle focus:border-gold-champagne/60 focus:outline-none transition-colors"
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-medium text-slate-700 mb-1">Port</label>
+                  <label className="block text-[11px] font-medium text-text-muted mb-1">Port</label>
                   <input
                     type="number"
                     value={smtpPort}
                     onChange={(e) => setSmtpPort(e.target.value)}
-                    className="w-full text-xs px-2.5 py-1.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="w-full text-xs px-2.5 py-1.5 bg-surface-interactive border border-warmborder rounded-xl text-ivory-warm placeholder:text-text-subtle focus:border-gold-champagne/60 focus:outline-none transition-colors"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-[11px] font-medium text-slate-700 mb-1">Username</label>
+                <label className="block text-[11px] font-medium text-text-muted mb-1">Username</label>
                 <input
                   type="text"
                   placeholder="alerts@mycorp.com"
                   value={smtpUser}
                   onChange={(e) => setSmtpUser(e.target.value)}
-                  className="w-full text-xs px-2.5 py-1.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  className="w-full text-xs px-2.5 py-1.5 bg-surface-interactive border border-warmborder rounded-xl text-ivory-warm placeholder:text-text-subtle focus:border-gold-champagne/60 focus:outline-none transition-colors"
                 />
               </div>
 
               <div>
-                <label className="block text-[11px] font-medium text-slate-700 mb-1">Password</label>
+                <label className="block text-[11px] font-medium text-text-muted mb-1">Password</label>
                 <input
                   type="password"
                   placeholder="••••••••"
                   value={smtpPass}
                   onChange={(e) => setSmtpPass(e.target.value)}
-                  className="w-full text-xs px-2.5 py-1.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  className="w-full text-xs px-2.5 py-1.5 bg-surface-interactive border border-warmborder rounded-xl text-ivory-warm placeholder:text-text-subtle focus:border-gold-champagne/60 focus:outline-none transition-colors"
                 />
               </div>
 
               <div>
-                <label className="block text-[11px] font-medium text-slate-700 mb-1">Destination Email</label>
+                <label className="block text-[11px] font-medium text-text-muted mb-1">Destination Email</label>
                 <input
                   type="email"
                   placeholder="admin@mycorp.com"
                   value={toEmail}
                   onChange={(e) => setToEmail(e.target.value)}
-                  className="w-full text-xs px-2.5 py-1.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  className="w-full text-xs px-2.5 py-1.5 bg-surface-interactive border border-warmborder rounded-xl text-ivory-warm placeholder:text-text-subtle focus:border-gold-champagne/60 focus:outline-none transition-colors"
                 />
               </div>
 
               {emailMsg && (
                 <div
-                  className={`text-xs p-2.5 rounded-lg mt-2 ${
-                    emailMsg.type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'
+                  className={`text-xs p-2.5 rounded-xl mt-2 ${
+                    emailMsg.type === 'success' ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-300 border border-rose-500/20'
                   }`}
                 >
                   {emailMsg.text}
@@ -457,18 +457,18 @@ export const SettingsView: React.FC = () => {
             </div>
           </div>
 
-          <div className="pt-6 flex items-center space-x-2 border-t border-slate-100 mt-6">
+          <div className="pt-6 flex items-center space-x-2 border-t border-warmborder/40 mt-6">
             <button
               onClick={testEmail}
               disabled={emailTesting || !smtpHost || !toEmail}
-              className="flex-1 text-xs font-medium py-2 px-3 border border-slate-300 rounded-lg hover:bg-slate-50 text-slate-700 disabled:opacity-50"
+              className="flex-1 text-xs font-medium py-2 px-3 border border-warmborder rounded-xl hover:bg-surface-interactive bg-surface-interactive/60 text-ivory-warm disabled:opacity-40 transition-colors"
             >
               {emailTesting ? 'Testing...' : 'Test'}
             </button>
             <button
               onClick={saveEmail}
               disabled={savingChannel === 'email'}
-              className="flex-1 text-xs font-medium py-2 px-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:opacity-50"
+              className="flex-1 text-xs font-medium py-2 px-3 bg-gold-champagne hover:bg-gold-hover text-obsidian-deep rounded-xl shadow-gold disabled:opacity-40 transition-all"
             >
               {savingChannel === 'email' ? 'Saving...' : 'Save'}
             </button>
@@ -477,11 +477,11 @@ export const SettingsView: React.FC = () => {
       </div>
 
       {/* Outbox Delivery History Table */}
-      <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-        <div className="p-5 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="bg-surface-elevated border border-warmborder rounded-2xl shadow-luxury overflow-hidden">
+        <div className="p-5 border-b border-warmborder flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-obsidian-deep/50">
           <div>
-            <h3 className="text-base font-semibold text-slate-900">Notification Delivery History</h3>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <h3 className="text-base font-serif font-medium text-ivory-warm">Notification Outbox Audit</h3>
+            <p className="text-xs text-text-subtle mt-0.5">
               Durable outbox dispatch logs with bounded retries and external delivery status.
             </p>
           </div>
@@ -493,20 +493,20 @@ export const SettingsView: React.FC = () => {
                 setOutboxFilter(e.target.value);
                 setTimeout(loadOutbox, 50);
               }}
-              className="text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="text-xs bg-surface-interactive border border-warmborder rounded-xl text-ivory-warm px-3 py-1.5 focus:outline-none focus:border-gold-champagne/60 transition-colors cursor-pointer"
             >
-              <option value="all">All States</option>
-              <option value="sent">Delivered (Sent)</option>
-              <option value="failed">Failed</option>
-              <option value="pending">Pending</option>
+              <option value="all" className="bg-surface-elevated text-ivory-warm">All States</option>
+              <option value="sent" className="bg-surface-elevated text-ivory-warm">Delivered (Sent)</option>
+              <option value="failed" className="bg-surface-elevated text-ivory-warm">Failed</option>
+              <option value="pending" className="bg-surface-elevated text-ivory-warm">Pending</option>
             </select>
             <button
               onClick={loadOutbox}
               disabled={outboxLoading}
-              className="p-1.5 text-slate-500 hover:text-slate-800 border border-slate-200 rounded-lg hover:bg-slate-50"
+              className="p-2 text-text-subtle hover:text-ivory-warm border border-warmborder rounded-xl bg-surface-interactive hover:bg-surface-elevated transition-colors"
               title="Refresh logs"
             >
-              <svg className={`w-4 h-4 ${outboxLoading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className={`w-3.5 h-3.5 ${outboxLoading ? 'animate-spin text-gold-champagne' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
             </button>
@@ -515,12 +515,12 @@ export const SettingsView: React.FC = () => {
 
         <div className="overflow-x-auto">
           {outboxItems.length === 0 ? (
-            <div className="py-12 text-center text-slate-400 text-xs">
+            <div className="py-12 text-center text-text-subtle text-xs">
               No notification delivery records found.
             </div>
           ) : (
-            <table className="min-w-full divide-y divide-slate-200 text-left text-xs">
-              <thead className="bg-slate-50 text-slate-500 font-semibold uppercase tracking-wider">
+            <table className="min-w-full divide-y divide-warmborder/30 text-left text-xs">
+              <thead className="bg-obsidian-deep text-text-subtle font-mono uppercase tracking-wider text-[11px]">
                 <tr>
                   <th className="py-3 px-4">Monitor</th>
                   <th className="py-3 px-4">Channel</th>
@@ -531,49 +531,49 @@ export const SettingsView: React.FC = () => {
                   <th className="py-3 px-4">Details</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 font-normal text-slate-700">
+              <tbody className="divide-y divide-warmborder/30 font-normal text-text-muted">
                 {outboxItems.map((item) => (
-                  <tr key={item.id} className="hover:bg-slate-50/60">
-                    <td className="py-3 px-4 font-medium text-slate-900">{item.monitor_name}</td>
-                    <td className="py-3 px-4 uppercase text-[11px] font-semibold text-slate-600">
+                  <tr key={item.id} className="hover:bg-surface-interactive/30 transition-colors">
+                    <td className="py-3 px-4 font-serif font-medium text-ivory-warm">{item.monitor_name}</td>
+                    <td className="py-3 px-4 uppercase text-[11px] font-mono font-medium text-gold-champagne">
                       {item.channel_type}
                     </td>
                     <td className="py-3 px-4">
                       {item.state === 'sent' && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-100 text-emerald-800">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
                           Delivered
                         </span>
                       )}
                       {item.state === 'failed' && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-rose-100 text-rose-800">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-rose-500/15 text-rose-400 border border-rose-500/30">
                           Failed
                         </span>
                       )}
                       {item.state === 'pending' && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-100 text-amber-800">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-500/15 text-amber-300 border border-amber-500/30">
                           Pending
                         </span>
                       )}
                       {item.state === 'sending' && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-blue-100 text-blue-800 animate-pulse">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-gold-champagne/15 text-gold-champagne border border-gold-champagne/30 animate-pulse">
                           Sending
                         </span>
                       )}
                     </td>
-                    <td className="py-3 px-4">{item.attempts}</td>
-                    <td className="py-3 px-4 text-slate-500">
+                    <td className="py-3 px-4 font-mono">{item.attempts}</td>
+                    <td className="py-3 px-4 text-text-subtle font-mono">
                       {new Date(item.created_at).toLocaleString()}
                     </td>
-                    <td className="py-3 px-4 text-slate-500">
+                    <td className="py-3 px-4 text-text-subtle font-mono">
                       {item.sent_at ? new Date(item.sent_at).toLocaleString() : '—'}
                     </td>
-                    <td className="py-3 px-4 max-w-xs truncate text-slate-500">
+                    <td className="py-3 px-4 max-w-xs truncate text-text-subtle">
                       {item.last_error ? (
-                        <span className="text-rose-600" title={item.last_error}>
+                        <span className="text-rose-400" title={item.last_error}>
                           {item.last_error}
                         </span>
                       ) : (
-                        <span className="text-slate-400">OK</span>
+                        <span className="text-text-subtle font-mono">OK</span>
                       )}
                     </td>
                   </tr>

@@ -76,10 +76,10 @@ export const VersionCompare: React.FC<VersionCompareProps> = ({
 
   if (versions.length < 2) {
     return (
-      <div className="bg-white border border-[#E2E8F0] rounded-xl p-8 text-center text-[#66758C]">
-        <GitCompare className="w-10 h-10 text-slate-400 mx-auto mb-3" />
-        <h4 className="text-sm font-semibold text-[#101828]">Multiple Versions Required</h4>
-        <p className="text-xs text-[#66758C] mt-1 max-w-sm mx-auto">
+      <div className="bg-surface-elevated border border-warmborder rounded-2xl p-10 text-center text-text-muted shadow-luxury">
+        <GitCompare className="w-10 h-10 text-gold-champagne/40 mx-auto mb-3" />
+        <h4 className="text-sm font-serif font-medium text-ivory-warm">Multiple Versions Required</h4>
+        <p className="text-xs text-text-subtle mt-1 max-w-sm mx-auto">
           At least two distinct saved snapshots are needed to compute text and visual difference comparisons.
         </p>
       </div>
@@ -90,47 +90,47 @@ export const VersionCompare: React.FC<VersionCompareProps> = ({
   const removalsCount = comparison?.text_diff.filter((d) => d.kind === 'remove').length || 0;
 
   return (
-    <div className="bg-white border border-[#E2E8F0] rounded-xl overflow-hidden shadow-sm space-y-0">
+    <div className="bg-surface-elevated border border-warmborder rounded-2xl overflow-hidden shadow-luxury space-y-0">
       {/* Selector Header Bar */}
-      <div className="p-5 border-b border-[#E2E8F0] bg-slate-50/70 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="p-5 border-b border-warmborder bg-obsidian-deep/80 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center font-semibold">
+          <div className="w-9 h-9 rounded-xl bg-gold-champagne/15 text-gold-champagne flex items-center justify-center border border-gold-champagne/25 shadow-gold">
             <GitCompare className="w-4 h-4" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-[#101828]">Version Comparison</h3>
-            <p className="text-[11px] text-[#66758C]">Compare any two captured versions across timeline</p>
+            <h3 className="text-sm font-serif font-medium text-ivory-warm">Version Comparison Engine</h3>
+            <p className="text-[11px] text-text-subtle">Compare any two captured versions across your timeline</p>
           </div>
         </div>
 
         {/* Version Pickers */}
         <div className="flex flex-wrap items-center gap-2 text-xs">
-          <div className="flex items-center space-x-1.5 bg-white border border-[#CBD5E1] rounded-lg px-2.5 py-1.5 shadow-sm">
-            <span className="text-[#66758C] font-medium text-[11px]">Base:</span>
+          <div className="flex items-center space-x-2 bg-surface-interactive border border-warmborder rounded-xl px-3 py-1.5 focus-within:border-gold-champagne/50 transition-colors">
+            <span className="text-text-subtle font-medium text-[11px]">Base:</span>
             <select
               value={fromId}
               onChange={(e) => setFromId(e.target.value)}
-              className="bg-transparent font-semibold text-[#101828] focus:outline-none cursor-pointer"
+              className="bg-transparent font-medium text-ivory-warm focus:outline-none cursor-pointer"
             >
               {sortedVersions.map((v) => (
-                <option key={v.id} value={v.id}>
+                <option key={v.id} value={v.id} className="bg-surface-elevated text-ivory-warm">
                   v{v.sequence_number} ({new Date(v.captured_at).toLocaleTimeString()})
                 </option>
               ))}
             </select>
           </div>
 
-          <ArrowRight className="w-4 h-4 text-[#94A3B8]" />
+          <ArrowRight className="w-4 h-4 text-gold-champagne/50" />
 
-          <div className="flex items-center space-x-1.5 bg-white border border-[#CBD5E1] rounded-lg px-2.5 py-1.5 shadow-sm">
-            <span className="text-[#66758C] font-medium text-[11px]">Target:</span>
+          <div className="flex items-center space-x-2 bg-surface-interactive border border-warmborder rounded-xl px-3 py-1.5 focus-within:border-gold-champagne/50 transition-colors">
+            <span className="text-text-subtle font-medium text-[11px]">Target:</span>
             <select
               value={toId}
               onChange={(e) => setToId(e.target.value)}
-              className="bg-transparent font-semibold text-[#101828] focus:outline-none cursor-pointer"
+              className="bg-transparent font-medium text-ivory-warm focus:outline-none cursor-pointer"
             >
               {sortedVersions.map((v) => (
-                <option key={v.id} value={v.id}>
+                <option key={v.id} value={v.id} className="bg-surface-elevated text-ivory-warm">
                   v{v.sequence_number} ({new Date(v.captured_at).toLocaleTimeString()})
                 </option>
               ))}
@@ -140,23 +140,23 @@ export const VersionCompare: React.FC<VersionCompareProps> = ({
           <button
             onClick={() => fetchComparison(fromId, toId)}
             disabled={loading}
-            className="p-2 text-[#66758C] hover:text-[#101828] hover:bg-slate-200 rounded-lg transition-colors"
+            className="p-2 text-text-subtle hover:text-ivory-warm hover:bg-surface-interactive rounded-xl border border-transparent hover:border-warmborder transition-all"
             title="Refresh comparison"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-gold-champagne' : ''}`} />
           </button>
         </div>
       </div>
 
       {/* Tabs & Metrics */}
-      <div className="px-5 py-3 border-b border-[#E2E8F0] flex flex-wrap items-center justify-between gap-3 bg-white">
-        <div className="flex items-center space-x-1 bg-slate-100 p-1 rounded-lg">
+      <div className="px-5 py-3 border-b border-warmborder flex flex-wrap items-center justify-between gap-3 bg-obsidian-deep/50">
+        <div className="flex items-center space-x-1.5 bg-obsidian-base p-1 rounded-xl border border-warmborder">
           <button
             onClick={() => setActiveTab('text')}
-            className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${
+            className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
               activeTab === 'text'
-                ? 'bg-white text-blue-600 shadow-sm'
-                : 'text-[#66758C] hover:text-[#101828]'
+                ? 'bg-surface-interactive text-gold-champagne shadow-sm border border-gold-champagne/30'
+                : 'text-text-muted hover:text-ivory-warm border border-transparent'
             }`}
           >
             <span className="flex items-center space-x-1.5">
@@ -166,10 +166,10 @@ export const VersionCompare: React.FC<VersionCompareProps> = ({
           </button>
           <button
             onClick={() => setActiveTab('side-by-side')}
-            className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${
+            className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
               activeTab === 'side-by-side'
-                ? 'bg-white text-blue-600 shadow-sm'
-                : 'text-[#66758C] hover:text-[#101828]'
+                ? 'bg-surface-interactive text-gold-champagne shadow-sm border border-gold-champagne/30'
+                : 'text-text-muted hover:text-ivory-warm border border-transparent'
             }`}
           >
             <span className="flex items-center space-x-1.5">
@@ -179,10 +179,10 @@ export const VersionCompare: React.FC<VersionCompareProps> = ({
           </button>
           <button
             onClick={() => setActiveTab('visual')}
-            className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${
+            className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
               activeTab === 'visual'
-                ? 'bg-white text-blue-600 shadow-sm'
-                : 'text-[#66758C] hover:text-[#101828]'
+                ? 'bg-surface-interactive text-gold-champagne shadow-sm border border-gold-champagne/30'
+                : 'text-text-muted hover:text-ivory-warm border border-transparent'
             }`}
           >
             <span className="flex items-center space-x-1.5">
@@ -195,18 +195,17 @@ export const VersionCompare: React.FC<VersionCompareProps> = ({
         {/* Change Indicators */}
         {comparison && (
           <div className="flex items-center space-x-3 text-xs">
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
               +{additionsCount} additions
             </span>
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full font-medium bg-rose-50 text-rose-700 border border-rose-200">
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full font-medium bg-rose-500/10 text-rose-400 border border-rose-500/20">
               -{removalsCount} removals
             </span>
             {comparison.change_ratio > 0 && (
-              <span className="text-[#66758C] text-[11px] font-mono">
-                Visual change: {formatChangePercent(comparison.change_ratio)}
+              <span className="text-text-subtle text-[11px] font-mono">
+                Visual delta: {formatChangePercent(comparison.change_ratio)}
               </span>
             )}
-
           </div>
         )}
       </div>
@@ -214,14 +213,14 @@ export const VersionCompare: React.FC<VersionCompareProps> = ({
       {/* Content Area */}
       <div className="p-5">
         {loading && (
-          <div className="py-20 flex flex-col items-center justify-center text-[#66758C]">
-            <RefreshCw className="w-6 h-6 animate-spin text-blue-600 mb-2" />
-            <p className="text-xs font-medium">Computing diff between selected versions...</p>
+          <div className="py-20 flex flex-col items-center justify-center text-text-subtle">
+            <RefreshCw className="w-6 h-6 animate-spin text-gold-champagne mb-2" />
+            <p className="text-xs font-medium">Computing difference between selected versions...</p>
           </div>
         )}
 
         {error && (
-          <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl flex items-center space-x-3 text-rose-700 text-xs">
+          <div className="p-4 bg-rose-500/10 border border-rose-500/20 rounded-xl flex items-center space-x-3 text-rose-400 text-xs">
             <AlertCircle className="w-5 h-5 shrink-0" />
             <span>{error}</span>
           </div>
@@ -231,39 +230,39 @@ export const VersionCompare: React.FC<VersionCompareProps> = ({
           <div>
             {/* 1. Text Diff View */}
             {activeTab === 'text' && (
-              <div className="border border-[#E2E8F0] rounded-lg overflow-hidden bg-white">
-                <div className="px-4 py-2.5 bg-slate-50 border-b border-[#E2E8F0] text-xs font-semibold text-[#101828] flex justify-between items-center">
-                  <span>Structured Normalized Text Diff</span>
-                  <span className="text-[11px] text-[#66758C]">
-                    Comparing v{comparison.old_version.sequence_number} → v{comparison.new_version.sequence_number}
+              <div className="border border-warmborder rounded-xl overflow-hidden bg-obsidian-deep">
+                <div className="px-4 py-2.5 bg-surface-elevated border-b border-warmborder text-xs font-medium text-ivory-warm flex justify-between items-center">
+                  <span className="font-serif">Normalized Text Diff (DOM Text Stream)</span>
+                  <span className="text-[11px] text-text-subtle font-mono">
+                    v{comparison.old_version.sequence_number} → v{comparison.new_version.sequence_number}
                   </span>
                 </div>
-                <div className="divide-y divide-[#F1F5F9] font-mono text-xs max-h-[500px] overflow-y-auto">
+                <div className="divide-y divide-warmborder/30 font-mono text-xs max-h-[500px] overflow-y-auto">
                   {comparison.text_diff.length === 0 ? (
-                    <div className="p-8 text-center text-[#66758C]">No text changes detected between these versions.</div>
+                    <div className="p-8 text-center text-text-subtle">No text changes detected between these versions.</div>
                   ) : (
                     comparison.text_diff.map((item, idx) => {
                       if (item.kind === 'add') {
                         return (
-                          <div key={idx} className="bg-emerald-50 text-emerald-900 px-4 py-2 flex items-start space-x-3">
-                            <span className="font-bold text-emerald-600 select-none w-4 shrink-0">+</span>
+                          <div key={idx} className="bg-emerald-950/20 text-emerald-300 px-4 py-2 flex items-start space-x-3">
+                            <span className="font-bold text-emerald-400 select-none w-4 shrink-0">+</span>
                             <span className="whitespace-pre-wrap break-words flex-1">{item.text}</span>
                           </div>
                         );
                       }
                       if (item.kind === 'remove') {
                         return (
-                          <div key={idx} className="bg-rose-50 text-rose-900 px-4 py-2 flex items-start space-x-3">
-                            <span className="font-bold text-rose-600 select-none w-4 shrink-0">-</span>
-                            <span className="whitespace-pre-wrap break-words flex-1 line-through opacity-85">
+                          <div key={idx} className="bg-rose-950/20 text-rose-300 px-4 py-2 flex items-start space-x-3">
+                            <span className="font-bold text-rose-400 select-none w-4 shrink-0">-</span>
+                            <span className="whitespace-pre-wrap break-words flex-1 line-through opacity-80">
                               {item.text}
                             </span>
                           </div>
                         );
                       }
                       return (
-                        <div key={idx} className="bg-white text-slate-700 px-4 py-1.5 flex items-start space-x-3">
-                          <span className="text-slate-300 select-none w-4 shrink-0"> </span>
+                        <div key={idx} className="bg-obsidian-deep/80 text-ivory-warm/80 px-4 py-1.5 flex items-start space-x-3">
+                          <span className="text-text-subtle select-none w-4 shrink-0"> </span>
                           <span className="whitespace-pre-wrap break-words flex-1">{item.text}</span>
                         </div>
                       );
@@ -276,38 +275,38 @@ export const VersionCompare: React.FC<VersionCompareProps> = ({
             {/* 2. Side-by-Side Screenshots */}
             {activeTab === 'side-by-side' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="border border-[#E2E8F0] rounded-xl overflow-hidden bg-slate-50 shadow-sm">
-                  <div className="px-3.5 py-2 border-b border-[#E2E8F0] bg-white flex justify-between items-center text-xs">
-                    <span className="font-semibold text-[#101828]">
-                      Base (v{comparison.old_version.sequence_number})
+                <div className="border border-warmborder rounded-xl overflow-hidden bg-surface-elevated shadow-luxury">
+                  <div className="px-3.5 py-2.5 border-b border-warmborder bg-obsidian-deep flex justify-between items-center text-xs">
+                    <span className="font-serif font-medium text-ivory-warm">
+                      Base Snapshot (v{comparison.old_version.sequence_number})
                     </span>
-                    <span className="text-[#66758C] text-[10px]">
+                    <span className="text-text-subtle text-[11px] font-mono">
                       {new Date(comparison.old_version.captured_at).toLocaleTimeString()}
                     </span>
                   </div>
-                  <div className="p-3 flex items-center justify-center">
+                  <div className="p-3 flex items-center justify-center bg-obsidian-base">
                     <img
                       src={comparison.image_old_url}
                       alt="Base version screenshot"
-                      className="max-h-[480px] w-full object-cover object-top rounded-lg border border-[#CBD5E1]"
+                      className="max-h-[480px] w-full object-cover object-top rounded-lg border border-warmborder"
                     />
                   </div>
                 </div>
 
-                <div className="border border-[#E2E8F0] rounded-xl overflow-hidden bg-slate-50 shadow-sm">
-                  <div className="px-3.5 py-2 border-b border-[#E2E8F0] bg-white flex justify-between items-center text-xs">
-                    <span className="font-semibold text-[#101828]">
-                      Target (v{comparison.new_version.sequence_number})
+                <div className="border border-warmborder rounded-xl overflow-hidden bg-surface-elevated shadow-luxury">
+                  <div className="px-3.5 py-2.5 border-b border-warmborder bg-obsidian-deep flex justify-between items-center text-xs">
+                    <span className="font-serif font-medium text-ivory-warm">
+                      Target Snapshot (v{comparison.new_version.sequence_number})
                     </span>
-                    <span className="text-[#66758C] text-[10px]">
+                    <span className="text-text-subtle text-[11px] font-mono">
                       {new Date(comparison.new_version.captured_at).toLocaleTimeString()}
                     </span>
                   </div>
-                  <div className="p-3 flex items-center justify-center">
+                  <div className="p-3 flex items-center justify-center bg-obsidian-base">
                     <img
                       src={comparison.image_new_url}
                       alt="Target version screenshot"
-                      className="max-h-[480px] w-full object-cover object-top rounded-lg border border-[#CBD5E1]"
+                      className="max-h-[480px] w-full object-cover object-top rounded-lg border border-warmborder"
                     />
                   </div>
                 </div>
@@ -316,31 +315,30 @@ export const VersionCompare: React.FC<VersionCompareProps> = ({
 
             {/* 3. Visual Difference Highlight Overlay */}
             {activeTab === 'visual' && (
-              <div className="border border-[#E2E8F0] rounded-xl overflow-hidden bg-slate-50 shadow-sm">
-                <div className="px-4 py-2.5 border-b border-[#E2E8F0] bg-white flex justify-between items-center text-xs">
+              <div className="border border-warmborder rounded-xl overflow-hidden bg-surface-elevated shadow-luxury">
+                <div className="px-4 py-2.5 border-b border-warmborder bg-obsidian-deep flex justify-between items-center text-xs">
                   <div className="flex items-center space-x-2">
-                    <span className="font-semibold text-[#101828]">Pillow Pixel Difference Overlay</span>
-                    <span className="text-[11px] text-rose-600 bg-rose-50 px-2 py-0.5 rounded font-medium">
-                      Red pixels indicate visual changes
+                    <span className="font-serif font-medium text-ivory-warm">Pillow Pixel Difference Overlay</span>
+                    <span className="text-[11px] text-rose-300 bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 rounded font-medium">
+                      Red pixels highlight visual delta
                     </span>
                   </div>
                   {comparison.change_ratio !== undefined && (
-                    <span className="text-[#66758C] text-[11px] font-mono">
+                    <span className="text-text-subtle text-[11px] font-mono">
                       Delta: {formatChangePercent(comparison.change_ratio)}
                     </span>
                   )}
-
                 </div>
 
-                <div className="p-4 flex items-center justify-center bg-slate-100 min-h-[380px]">
+                <div className="p-4 flex items-center justify-center bg-obsidian-base min-h-[380px]">
                   {comparison.image_diff_url ? (
                     <img
                       src={comparison.image_diff_url}
                       alt="Visual diff overlay"
-                      className="max-h-[500px] w-auto max-w-full rounded-lg border border-[#CBD5E1] shadow-sm"
+                      className="max-h-[500px] w-auto max-w-full rounded-lg border border-warmborder shadow-luxury"
                     />
                   ) : (
-                    <div className="text-center text-[#66758C] p-8 text-xs">
+                    <div className="text-center text-text-subtle p-8 text-xs">
                       Visual diff unavailable for these screenshots.
                     </div>
                   )}

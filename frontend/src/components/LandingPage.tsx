@@ -21,8 +21,6 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  Play,
-  Pause,
 } from 'lucide-react';
 import { HealthStatus } from '../types';
 
@@ -100,16 +98,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   ];
 
   const [activeCapIndex, setActiveCapIndex] = useState(0);
-  const [isRoulettePaused, setIsRoulettePaused] = useState(false);
-
-  useEffect(() => {
-    if (isRoulettePaused) return;
-    const interval = setInterval(() => {
-      setActiveCapIndex((prev) => (prev + 1) % capabilities.length);
-    }, 3800);
-    return () => clearInterval(interval);
-  }, [isRoulettePaused, capabilities.length]);
-
   const prevCapIndex = (activeCapIndex - 1 + capabilities.length) % capabilities.length;
   const nextCapIndex = (activeCapIndex + 1) % capabilities.length;
 
@@ -417,14 +405,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       <section
         id="features"
         className="py-24 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 overflow-hidden select-none"
-        onMouseEnter={() => setIsRoulettePaused(true)}
-        onMouseLeave={() => setIsRoulettePaused(false)}
       >
         {/* Section Header */}
         <div className="text-center max-w-2xl mx-auto mb-14">
-          <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-[#211D19] border border-[#C5A474]/30 text-[#C5A474] text-xs font-mono uppercase tracking-wider mb-3">
-            <span className={`w-2 h-2 rounded-full ${isRoulettePaused ? 'bg-[#E9AD5A]' : 'bg-[#34C59A] animate-pulse'}`} />
-            <span>{isRoulettePaused ? 'Roulette Paused' : 'Automatic Rotating Showcase'}</span>
+          <div className="inline-flex items-center space-x-2 px-3.5 py-1 rounded-full bg-[#211D19] border border-[#C5A474]/30 text-[#C5A474] text-xs font-mono uppercase tracking-wider mb-3">
+            <span>Capabilities Showcase</span>
           </div>
           <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-normal text-[#F5EFE5] tracking-tight">
             Engineered for Precision Observability
@@ -532,7 +517,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                       <span>{activeItem.highlight}</span>
                     </div>
                     <span className="text-[11px] font-mono text-[#8F8579]">
-                      Rotates in 3.8s
+                      0{activeCapIndex + 1} of 06
                     </span>
                   </div>
                 </div>
@@ -629,26 +614,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 {cap.badge}
               </button>
             ))}
-          </div>
-
-          {/* Pause / Play Toggle helper */}
-          <div className="flex items-center space-x-2 text-[11px] text-[#8F8579] pt-1">
-            <button
-              onClick={() => setIsRoulettePaused(!isRoulettePaused)}
-              className="inline-flex items-center space-x-1.5 hover:text-[#C5A474] transition-colors"
-            >
-              {isRoulettePaused ? (
-                <>
-                  <Play className="w-3 h-3 text-[#34C59A]" />
-                  <span>Resume Auto-Rotation</span>
-                </>
-              ) : (
-                <>
-                  <Pause className="w-3 h-3 text-[#C5A474]" />
-                  <span>Pause Rotation (or hover)</span>
-                </>
-              )}
-            </button>
           </div>
         </div>
       </section>

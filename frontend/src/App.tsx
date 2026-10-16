@@ -229,8 +229,18 @@ export const App: React.FC = () => {
     return matchesSearch && matchesStatus;
   });
 
+  // Session Checking State (prevents mounting protected components prematurely)
+  if (authChecking) {
+    return (
+      <div className="min-h-screen bg-[#F8FAFC] flex flex-col justify-center items-center p-4 text-[#64748B]">
+        <RefreshCw className="w-8 h-8 animate-spin text-blue-600 mb-3" />
+        <p className="text-sm font-medium">Verifying administrative session...</p>
+      </div>
+    );
+  }
+
   // Unauthenticated Lock Screen
-  if (!isAuthenticated && !authChecking) {
+  if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-[#F8FAFC] flex flex-col justify-center items-center p-4">
         <div className="max-w-md w-full bg-white border border-[#E2E8F0] rounded-2xl shadow-xl p-8">

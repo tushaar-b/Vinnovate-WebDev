@@ -53,20 +53,23 @@ export function attachAuthToMediaUrl(url: string): string {
     }
   }
 
-  if (!authToken) return fullUrl;
+  const token = getAuthToken() || (typeof window !== 'undefined' ? localStorage.getItem('change_detector_token') || '' : '');
+  if (!token) return fullUrl;
 
   try {
     const origin = typeof window !== 'undefined' && window.location?.origin ? window.location.origin : 'http://localhost';
     const parsed = new URL(fullUrl, origin);
-    if (!parsed.searchParams.has('token') && !parsed.searchParams.has('auth_token')) {
-      parsed.searchParams.set('token', authToken);
+    if (!parsed.searchParams.has('auth_token')) {
+      if (parsed.searchParams.get('token') !== token) {
+        parsed.searchParams.set('token', token);
+      }
     }
     return fullUrl.startsWith('http://') || fullUrl.startsWith('https://')
       ? parsed.toString()
       : `${parsed.pathname}${parsed.search}`;
   } catch {
     const separator = fullUrl.includes('?') ? '&' : '?';
-    return `${fullUrl}${separator}token=${encodeURIComponent(authToken)}`;
+    return `${fullUrl}${separator}token=${encodeURIComponent(token)}`;
   }
 }
 

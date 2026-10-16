@@ -12,9 +12,10 @@ import {
   Layers,
   GitCompare,
   Crosshair,
+  AlertCircle,
 } from 'lucide-react';
 import { MonitorDetail, CheckRun, VersionSummary } from '../types';
-import { api } from '../services/api';
+import { api, attachAuthToMediaUrl } from '../services/api';
 import { VersionCompare } from './VersionCompare';
 import { RegionPicker } from './RegionPicker';
 import { ConfirmModal } from './ConfirmModal';
@@ -47,8 +48,8 @@ export const MonitorDetails: React.FC<MonitorDetailsProps> = ({
   const [compareToId, setCompareToId] = useState<string>('');
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
-
-
+  const [imageError, setImageError] = useState(false);
+  const [imageRetryCount, setImageRetryCount] = useState(0);
 
   const loadData = async () => {
     try {
@@ -60,9 +61,13 @@ export const MonitorDetails: React.FC<MonitorDetailsProps> = ({
       setMonitor(m);
       setChecks(c.items);
       setVersions(v.items);
-      if (v.items.length > 0 && !selectedVersion) {
-        setSelectedVersion(v.items[0]);
-      }
+      setSelectedVersion((prev) => {
+        if (!prev || prev.monitor_id !== monitorId) {
+          return v.items.length > 0 ? v.items[0] : null;
+        }
+        const matched = v.items.find((item) => item.id === prev.id);
+        return matched || prev;
+      });
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to load monitor details');
     } finally {
@@ -71,12 +76,31 @@ export const MonitorDetails: React.FC<MonitorDetailsProps> = ({
   };
 
   useEffect(() => {
+    setSelectedVersion(null);
+    setImageError(false);
+    setImageRetryCount(0);
     loadData();
     const pollTimer = setInterval(() => {
       loadData();
     }, 5000);
     return () => clearInterval(pollTimer);
   }, [monitorId]);
+
+  const latestVersion = versions.length > 0 ? versions[0] : null;
+  const displayVersion = selectedVersion || latestVersion;
+  const activeCheck = checks.find((c) => c.state === 'queued' || c.state === 'running');
+  const isCheckingOrActive = checking || !!activeCheck;
+
+  const rawScreenshotUrl = displayVersion?.screenshot_url || '';
+  const resolvedScreenshotUrl = React.useMemo(() => {
+    if (!rawScreenshotUrl) return '';
+    let url = attachAuthToMediaUrl(rawScreenshotUrl);
+    if (imageRetryCount > 0) {
+      const sep = url.includes('?') ? '&' : '?';
+      url = `${url}${sep}_retry=${imageRetryCount}`;
+    }
+    return url;
+  }, [rawScreenshotUrl, imageRetryCount]);
 
   // Handle manual "Check Now"
   const handleCheckNow = async () => {
@@ -147,10 +171,7 @@ export const MonitorDetails: React.FC<MonitorDetailsProps> = ({
     );
   }
 
-  const latestVersion = versions.length > 0 ? versions[0] : null;
-  const displayVersion = selectedVersion || latestVersion;
-  const activeCheck = checks.find((c) => c.state === 'queued' || c.state === 'running');
-  const isCheckingOrActive = checking || !!activeCheck;
+
 
   return (
 
@@ -348,13 +369,38 @@ export const MonitorDetails: React.FC<MonitorDetailsProps> = ({
 
               <div className="p-4 bg-slate-100 flex items-center justify-center min-h-[360px]">
                 {displayVersion ? (
-                  <div className="relative border border-[#CBD5E1] rounded-lg overflow-hidden bg-white shadow-sm max-w-full">
-                    <img
-                      src={displayVersion.screenshot_url}
-                      alt={`Screenshot for ${monitor.name}`}
-                      className="w-full h-auto object-top max-h-[500px] object-cover"
-                    />
-                  </div>
+                  imageError ? (
+                    <div className="text-center p-8 text-[#64748B] flex flex-col items-center">
+                      <div className="w-10 h-10 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center mb-2.5">
+                        <AlertCircle className="w-5 h-5" />
+                      </div>
+                      <p className="text-xs font-semibold text-[#0F172A]">Screenshot failed to render</p>
+                      <p className="text-[11px] text-[#64748B] mt-1 mb-3 max-w-xs">
+                        Unable to load the captured snapshot image. Verify network access or retry.
+                      </p>
+                      <button
+                        onClick={() => {
+                          setImageError(false);
+                          setImageRetryCount((prev) => prev + 1);
+                        }}
+                        className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-medium shadow-sm transition-all"
+                      >
+                        <RefreshCw className="w-3.5 h-3.5" />
+                        <span>Retry Screenshot</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="relative border border-[#CBD5E1] rounded-lg overflow-hidden bg-white shadow-sm max-w-full">
+                      <img
+                        key={`${displayVersion.id}-${imageRetryCount}`}
+                        src={resolvedScreenshotUrl}
+                        alt={`Screenshot for ${monitor.name}`}
+                        onLoad={() => setImageError(false)}
+                        onError={() => setImageError(true)}
+                        className="w-full h-auto object-top max-h-[500px] object-cover"
+                      />
+                    </div>
+                  )
                 ) : (
 
                 <div className="text-center p-12 text-[#64748B]">
@@ -427,7 +473,10 @@ export const MonitorDetails: React.FC<MonitorDetailsProps> = ({
                 {versions.map((v, idx) => (
                   <div
                     key={v.id}
-                    onClick={() => setSelectedVersion(v)}
+                    onClick={() => {
+                      setSelectedVersion(v);
+                      setImageError(false);
+                    }}
                     className={`p-3 rounded-lg border text-xs cursor-pointer transition-all ${
                       selectedVersion?.id === v.id
                         ? 'border-blue-500 bg-blue-50/50'

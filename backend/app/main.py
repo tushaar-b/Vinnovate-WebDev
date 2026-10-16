@@ -17,6 +17,13 @@ async def lifespan(app: FastAPI):
     # Validate production access security at startup
     from app.services.auth import validate_production_auth_at_startup
     validate_production_auth_at_startup()
+    # Ensure version_artifacts table exists if migrations have not yet run
+    try:
+        from app.database import engine
+        from app.models.models import VersionArtifact
+        VersionArtifact.__table__.create(bind=engine, checkfirst=True)
+    except Exception:
+        pass
     yield
 
 

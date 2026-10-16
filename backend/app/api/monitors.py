@@ -46,6 +46,7 @@ from app.services.storage import (
     save_screenshot,
     save_picker_screenshot,
     get_picker_screenshot_path,
+    ensure_version_screenshot_cached,
 )
 from app.services.diff import compute_text_diff, compute_screenshot_diff
 
@@ -381,11 +382,11 @@ def get_version_screenshot(version_id: uuid.UUID, db: Session = Depends(get_db))
             detail={"error": {"code": "NOT_FOUND", "message": "Version not found."}},
         )
 
-    safe_path = get_screenshot_path(v.screenshot_path)
+    safe_path = ensure_version_screenshot_cached(v, db)
     if not safe_path:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={"error": {"code": "NOT_FOUND", "message": "Screenshot file not found on disk."}},
+            detail={"error": {"code": "NOT_FOUND", "message": "Screenshot file not found on disk or shared storage."}},
         )
 
     return FileResponse(path=safe_path, media_type="image/png")
@@ -439,8 +440,8 @@ def compare_versions(
     image_diff_url: Optional[str] = None
     change_ratio = 0.0
 
-    old_path = get_screenshot_path(v_old.screenshot_path)
-    new_path = get_screenshot_path(v_new.screenshot_path)
+    old_path = ensure_version_screenshot_cached(v_old, db)
+    new_path = ensure_version_screenshot_cached(v_new, db)
 
     if old_path and new_path:
         try:
@@ -511,12 +512,12 @@ def get_diff_image(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail={"error": {"code": "NOT_FOUND", "message": "Versions not found."}},
             )
-        old_path = get_screenshot_path(v_old.screenshot_path)
-        new_path = get_screenshot_path(v_new.screenshot_path)
+        old_path = ensure_version_screenshot_cached(v_old, db)
+        new_path = ensure_version_screenshot_cached(v_new, db)
         if not old_path or not new_path:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail={"error": {"code": "NOT_FOUND", "message": "Screenshots not found on disk."}},
+                detail={"error": {"code": "NOT_FOUND", "message": "Screenshots not found on disk or shared storage."}},
             )
         with open(old_path, "rb") as f1, open(new_path, "rb") as f2:
             diff_png_bytes, _ = compute_screenshot_diff(f1.read(), f2.read())
@@ -558,7 +559,7 @@ def get_monitor_picker_screenshot(monitor_id: uuid.UUID, db: Session = Depends(g
         .first()
     )
     if latest_version and latest_version.screenshot_path:
-        v_path = get_screenshot_path(latest_version.screenshot_path)
+        v_path = ensure_version_screenshot_cached(latest_version, db)
         if v_path and v_path.is_file():
             return FileResponse(path=v_path, media_type="image/png")
 
@@ -602,11 +603,7 @@ def get_monitor_picker(monitor_id: uuid.UUID, db: Session = Depends(get_db)):
 
     # Save the screenshot from this exact capture to guarantee alignment
     save_picker_screenshot(monitor.id, capture.screenshot_bytes)
-    if latest_version:
-        save_screenshot(monitor.id, latest_version.id, capture.screenshot_bytes)
-        screenshot_url = f"/api/versions/{latest_version.id}/screenshot"
-    else:
-        screenshot_url = f"/api/monitors/{monitor.id}/picker/screenshot"
+    screenshot_url = f"/api/monitors/{monitor.id}/picker/screenshot"
 
     elements = [
         PickerElement(

@@ -8,6 +8,7 @@ from app.models.models import (
     Monitor,
     CheckRun,
     Version,
+    VersionArtifact,
     CheckRunStateEnum,
     MonitorStatusEnum,
     utc_now,
@@ -179,6 +180,8 @@ def execute_check(check_run_id: uuid.UUID) -> None:
                 stable_alert_count=0,
             )
             db.add(version)
+            if result.screenshot_bytes:
+                db.add(VersionArtifact(version_id=new_version_id, screenshot_bytes=result.screenshot_bytes))
 
             check_run.state = CheckRunStateEnum.BASELINE
             check_run.content_hash = result.content_hash
@@ -227,6 +230,8 @@ def execute_check(check_run_id: uuid.UUID) -> None:
                 stable_alert_count=0,
             )
             db.add(version)
+            if result.screenshot_bytes:
+                db.add(VersionArtifact(version_id=new_version_id, screenshot_bytes=result.screenshot_bytes))
 
             check_run.state = CheckRunStateEnum.CHANGED
             check_run.content_hash = result.content_hash

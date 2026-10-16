@@ -12,6 +12,7 @@ from sqlalchemy import (
     UniqueConstraint,
     Enum as SAEnum,
     JSON,
+    LargeBinary,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
@@ -186,11 +187,26 @@ class Version(Base):
 
     monitor = relationship("Monitor", back_populates="versions")
     check_run = relationship("CheckRun", back_populates="version")
+    artifact = relationship("VersionArtifact", back_populates="version", uselist=False, cascade="all, delete-orphan")
 
     __table_args__ = (
         UniqueConstraint("monitor_id", "sequence_number", name="uq_versions_monitor_sequence"),
         Index("ix_versions_monitor_id_captured_at", "monitor_id", captured_at.desc()),
     )
+
+
+class VersionArtifact(Base):
+    __tablename__ = "version_artifacts"
+
+    version_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("versions.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    screenshot_bytes = Column(LargeBinary, nullable=False)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
+
+    version = relationship("Version", back_populates="artifact")
 
 
 class NotificationChannel(Base):

@@ -69,7 +69,25 @@ def test_snapshot_overview_initial_screenshot_loading():
         assert refreshed_width > 0, f"refreshed naturalWidth should be > 0, got {refreshed_width}"
         assert refreshed_height > 0, f"refreshed naturalHeight should be > 0, got {refreshed_height}"
 
-        # 7. Open Visual Overlay Diff and verify it works
+        # 7. Select an older saved version (Version #1) and verify its screenshot loads
+        version_1_item = page.locator("div:has-text('Version #1')").last
+        if version_1_item.is_visible():
+            version_1_item.click()
+            page.wait_for_function("() => { const img = document.querySelector(\"img[alt^='Screenshot for']\"); return img && img.complete && img.naturalWidth > 0 && img.naturalHeight > 0; }", timeout=5000)
+            v1_width = img_locator.evaluate("el => el.naturalWidth")
+            assert v1_width > 0
+
+        # 8. Open Region Rules & Picker and verify its screenshot works
+        picker_tab = page.locator("button:has-text('Region Rules & Picker')")
+        picker_tab.click()
+        page.wait_for_selector("img[alt='Picker target screenshot'], div:has-text('Screenshot failed to render'), div:has-text('DOM element selection mode active')", timeout=15000)
+
+        # 9. Return to Snapshot Overview and verify continued functionality
+        overview_tab.click()
+        page.wait_for_selector("img[alt^='Screenshot for']", timeout=5000)
+        page.wait_for_function("() => { const img = document.querySelector(\"img[alt^='Screenshot for']\"); return img && img.complete && img.naturalWidth > 0 && img.naturalHeight > 0; }", timeout=5000)
+
+        # 10. Open Visual Overlay Diff and verify it works
         compare_tab = page.locator("button:has-text('Compare Versions')")
         compare_tab.click()
         page.wait_for_selector("button:has-text('Visual Overlay Diff')", timeout=5000)
@@ -80,7 +98,7 @@ def test_snapshot_overview_initial_screenshot_loading():
         diff_img = page.locator("img[alt='Visual diff overlay']")
         assert diff_img.is_visible()
 
-        # 8. Return to Snapshot Overview and verify continued functionality
+        # 11. Return to Snapshot Overview and verify no regression
         overview_tab.click()
         page.wait_for_selector("img[alt^='Screenshot for']", timeout=5000)
         page.wait_for_function("() => { const img = document.querySelector(\"img[alt^='Screenshot for']\"); return img && img.complete && img.naturalWidth > 0 && img.naturalHeight > 0; }", timeout=5000)

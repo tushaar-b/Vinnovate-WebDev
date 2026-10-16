@@ -83,3 +83,43 @@ def get_picker_screenshot_path(monitor_id: uuid.UUID) -> Optional[Path]:
     return get_screenshot_path(f"{monitor_id}/picker.png")
 
 
+def ensure_version_screenshot_cached(version, db) -> Optional[Path]:
+    """
+    Ensures that the screenshot for a Version exists on local disk.
+    1. If it exists on local disk, returns the local Path (and lazily backfills VersionArtifact in DB if missing).
+    2. If it does not exist on local disk, queries VersionArtifact in PostgreSQL.
+       When found, writes bytes to local disk cache and returns the local Path.
+    3. If not found in DB or disk, returns None.
+    """
+    if not version:
+        return None
+
+    # 1. Check if local disk already has it
+    if getattr(version, "screenshot_path", None):
+        safe_path = get_screenshot_path(version.screenshot_path)
+        if safe_path:
+            try:
+                from app.models.models import VersionArtifact
+                has_artifact = db.query(VersionArtifact.version_id).filter(VersionArtifact.version_id == version.id).first()
+                if not has_artifact:
+                    with open(safe_path, "rb") as f:
+                        data = f.read()
+                    db.add(VersionArtifact(version_id=version.id, screenshot_bytes=data))
+                    db.commit()
+            except Exception:
+                db.rollback()
+            return safe_path
+
+    # 2. Query VersionArtifact from shared database
+    try:
+        from app.models.models import VersionArtifact
+        artifact = db.query(VersionArtifact).filter(VersionArtifact.version_id == version.id).first()
+        if artifact and artifact.screenshot_bytes:
+            rel_path = save_screenshot(version.monitor_id, version.id, artifact.screenshot_bytes)
+            return get_screenshot_path(rel_path)
+    except Exception:
+        pass
+
+    return None
+
+

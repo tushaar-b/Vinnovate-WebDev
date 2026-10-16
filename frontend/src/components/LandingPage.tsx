@@ -19,6 +19,10 @@ import {
   AlertCircle,
   Compass,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Play,
+  Pause,
 } from 'lucide-react';
 import { HealthStatus } from '../types';
 
@@ -42,6 +46,72 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   const [isContinueModalOpen, setIsContinueModalOpen] = useState(false);
   const [adminPassword, setAdminPassword] = useState('');
   const [bottomAdminPassword, setBottomAdminPassword] = useState('');
+
+  // Capabilities Roulette Data & State
+  const capabilities = [
+    {
+      id: 'chromium',
+      icon: Cpu,
+      title: 'Real Headless Chromium Engine',
+      desc: 'Executes client-side JavaScript, handles dynamic single-page applications, and captures full-resolution viewport snapshots using Playwright.',
+      badge: 'Browser Automation',
+      highlight: '100% JS Rendered',
+    },
+    {
+      id: 'noise',
+      icon: Eye,
+      title: 'Noise & Telemetry Exclusion',
+      desc: 'Intelligent DOM parsing strips ad trackers, request IDs, cache tokens, and ephemeral configuration variables before diff calculation.',
+      badge: 'DOM Normalization',
+      highlight: '0% False Positives',
+    },
+    {
+      id: 'diff',
+      icon: Layers,
+      title: 'Side-by-Side & Overlay Diff',
+      desc: 'Compare versions visually with interactive slider overlays or inspect word-by-word additions and deletions in human-readable color blocks.',
+      badge: 'Visual & Text Engine',
+      highlight: 'Pixel Delta Tracking',
+    },
+    {
+      id: 'picker',
+      icon: Sliders,
+      title: 'Visual CSS Region Picker',
+      desc: 'Visually highlight and click on elements to generate WATCH or IGNORE CSS selectors. Suppress noisy headers or isolate prices with ease.',
+      badge: 'Interactive Scoping',
+      highlight: 'Precision Targeting',
+    },
+    {
+      id: 'alerts',
+      icon: Bell,
+      title: 'Encrypted Notifications',
+      desc: 'Dispatch confirmed change events directly to Discord webhooks, Telegram bots, or SMTP mailboxes with credentials encrypted at rest with Fernet.',
+      badge: 'Alert Infrastructure',
+      highlight: 'Instant Webhooks',
+    },
+    {
+      id: 'security',
+      icon: Shield,
+      title: 'Enterprise SSRF & Quota Defenses',
+      desc: 'Strict destination validation rejects loopbacks, cloud metadata (169.254.169.254), private ranges, and non-standard ports to protect infrastructure.',
+      badge: 'Security Boundary',
+      highlight: 'Zero SSRF Leaks',
+    },
+  ];
+
+  const [activeCapIndex, setActiveCapIndex] = useState(0);
+  const [isRoulettePaused, setIsRoulettePaused] = useState(false);
+
+  useEffect(() => {
+    if (isRoulettePaused) return;
+    const interval = setInterval(() => {
+      setActiveCapIndex((prev) => (prev + 1) % capabilities.length);
+    }, 3800);
+    return () => clearInterval(interval);
+  }, [isRoulettePaused, capabilities.length]);
+
+  const prevCapIndex = (activeCapIndex - 1 + capabilities.length) % capabilities.length;
+  const nextCapIndex = (activeCapIndex + 1) % capabilities.length;
 
   useEffect(() => {
     if (typeof window !== 'undefined' && (window.location.hash === '#admin' || window.location.hash === '#login')) {
@@ -342,84 +412,243 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       </section>
 
       {/* =====================================================================
-          4. CORE FEATURES SECTION
+          4. CORE CAPABILITIES — AUTOMATIC ROTATING ROULETTE
          ===================================================================== */}
-      <section id="features" className="py-24 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-2xl mx-auto mb-16">
-          <div className="text-xs font-semibold uppercase tracking-wider text-[#C5A474] mb-2 font-sans">Capabilities</div>
-          <h2 className="font-serif text-3xl sm:text-4xl font-normal text-[#F5EFE5] tracking-tight">
+      <section
+        id="features"
+        className="py-24 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 overflow-hidden select-none"
+        onMouseEnter={() => setIsRoulettePaused(true)}
+        onMouseLeave={() => setIsRoulettePaused(false)}
+      >
+        {/* Section Header */}
+        <div className="text-center max-w-2xl mx-auto mb-14">
+          <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-[#211D19] border border-[#C5A474]/30 text-[#C5A474] text-xs font-mono uppercase tracking-wider mb-3">
+            <span className={`w-2 h-2 rounded-full ${isRoulettePaused ? 'bg-[#E9AD5A]' : 'bg-[#34C59A] animate-pulse'}`} />
+            <span>{isRoulettePaused ? 'Roulette Paused' : 'Automatic Rotating Showcase'}</span>
+          </div>
+          <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-normal text-[#F5EFE5] tracking-tight">
             Engineered for Precision Observability
           </h2>
-          <p className="mt-3.5 text-sm text-[#BDB3A7] leading-relaxed">
+          <p className="mt-3.5 text-sm sm:text-base text-[#BDB3A7] leading-relaxed">
             Eliminate noisy alerts and cosmetic false alarms. Inspect verified visual differences and human-readable text modifications.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Card 1 */}
-          <div className="bg-[#211D19] border border-[#40372D] hover:border-[#665744] rounded-2xl p-7 shadow-sm transition-all duration-200">
-            <div className="w-11 h-11 rounded-xl bg-[#342B20] border border-[#C5A474]/30 text-[#C5A474] flex items-center justify-center mb-5">
-              <Cpu className="w-5 h-5" />
-            </div>
-            <h3 className="font-serif text-lg font-medium text-[#F5EFE5]">Real Headless Chromium Engine</h3>
-            <p className="text-xs text-[#BDB3A7] mt-2.5 leading-relaxed font-sans">
-              Executes client-side JavaScript, handles dynamic single-page applications, and captures full-resolution viewport snapshots using Playwright.
-            </p>
+        {/* Roulette Carousel Stage */}
+        <div className="relative py-4">
+          {/* Side Navigation Arrow Buttons */}
+          <div className="hidden sm:flex absolute inset-y-0 left-0 items-center z-30 pointer-events-none">
+            <button
+              onClick={() => setActiveCapIndex(prevCapIndex)}
+              className="pointer-events-auto p-3 rounded-full bg-[#211D19]/90 hover:bg-[#2A2520] border border-[#40372D] hover:border-[#C5A474] text-[#F5EFE5] shadow-luxury transition-all transform hover:-translate-x-0.5 active:scale-95"
+              aria-label="Previous capability"
+            >
+              <ChevronLeft className="w-5 h-5 text-[#C5A474]" />
+            </button>
           </div>
 
-          {/* Card 2 */}
-          <div className="bg-[#211D19] border border-[#40372D] hover:border-[#665744] rounded-2xl p-7 shadow-sm transition-all duration-200">
-            <div className="w-11 h-11 rounded-xl bg-[#342B20] border border-[#C5A474]/30 text-[#C5A474] flex items-center justify-center mb-5">
-              <Eye className="w-5 h-5" />
-            </div>
-            <h3 className="font-serif text-lg font-medium text-[#F5EFE5]">Noise & Telemetry Exclusion</h3>
-            <p className="text-xs text-[#BDB3A7] mt-2.5 leading-relaxed font-sans">
-              Intelligent DOM parsing strips ad trackers, request IDs, cache tokens, and ephemeral configuration variables before diff calculation.
-            </p>
+          <div className="hidden sm:flex absolute inset-y-0 right-0 items-center z-30 pointer-events-none">
+            <button
+              onClick={() => setActiveCapIndex(nextCapIndex)}
+              className="pointer-events-auto p-3 rounded-full bg-[#211D19]/90 hover:bg-[#2A2520] border border-[#40372D] hover:border-[#C5A474] text-[#F5EFE5] shadow-luxury transition-all transform hover:translate-x-0.5 active:scale-95"
+              aria-label="Next capability"
+            >
+              <ChevronRight className="w-5 h-5 text-[#C5A474]" />
+            </button>
           </div>
 
-          {/* Card 3 */}
-          <div className="bg-[#211D19] border border-[#40372D] hover:border-[#665744] rounded-2xl p-7 shadow-sm transition-all duration-200">
-            <div className="w-11 h-11 rounded-xl bg-[#342B20] border border-[#C5A474]/30 text-[#C5A474] flex items-center justify-center mb-5">
-              <Layers className="w-5 h-5" />
-            </div>
-            <h3 className="font-serif text-lg font-medium text-[#F5EFE5]">Side-by-Side & Overlay Diff</h3>
-            <p className="text-xs text-[#BDB3A7] mt-2.5 leading-relaxed font-sans">
-              Compare versions visually with interactive slider overlays or inspect word-by-word additions and deletions in human-readable color blocks.
-            </p>
+          {/* 3-Card Carousel Track (Desktop: Previous, Active, Next) */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 items-center px-0 sm:px-8">
+            {/* 1. Left Card (Previous) */}
+            {(() => {
+              const prevItem = capabilities[prevCapIndex];
+              const PrevIcon = prevItem.icon;
+              return (
+                <div
+                  onClick={() => setActiveCapIndex(prevCapIndex)}
+                  className="hidden sm:flex flex-col justify-between bg-[#1A1714] border border-[#40372D] rounded-2xl p-6 opacity-45 scale-95 blur-[0.5px] hover:opacity-80 hover:border-[#665744] hover:scale-98 transition-all duration-500 cursor-pointer shadow-sm h-[320px]"
+                >
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="w-10 h-10 rounded-xl bg-[#211D19] border border-[#40372D] text-[#8F8579] flex items-center justify-center">
+                        <PrevIcon className="w-5 h-5" />
+                      </div>
+                      <span className="text-[10px] font-mono uppercase tracking-wider text-[#8F8579] bg-[#211D19] px-2 py-0.5 rounded">
+                        0{prevCapIndex + 1} / 06
+                      </span>
+                    </div>
+                    <h3 className="font-serif text-base font-medium text-[#BDB3A7] leading-snug">
+                      {prevItem.title}
+                    </h3>
+                    <p className="text-xs text-[#8F8579] mt-2.5 leading-relaxed line-clamp-3 font-sans">
+                      {prevItem.desc}
+                    </p>
+                  </div>
+                  <div className="pt-4 border-t border-[#40372D]/50 flex items-center justify-between text-[11px] text-[#8F8579]">
+                    <span className="font-mono text-[#8F8579]">{prevItem.badge}</span>
+                    <span className="text-[#C5A474] text-xs">← Click to focus</span>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* 2. Center Card (Active Hero) */}
+            {(() => {
+              const activeItem = capabilities[activeCapIndex];
+              const ActiveIcon = activeItem.icon;
+              return (
+                <div
+                  className="relative flex flex-col justify-between bg-[#241F1A] border-2 border-[#C5A474] rounded-2xl p-7 sm:p-8 scale-100 sm:scale-105 z-20 shadow-gold transition-all duration-500 h-[360px]"
+                >
+                  {/* Active highlight glow top border */}
+                  <div className="absolute top-0 left-1/4 right-1/4 h-[2px] bg-gradient-to-r from-transparent via-[#C5A474] to-transparent" />
+
+                  <div>
+                    <div className="flex items-center justify-between mb-5">
+                      <div className="w-12 h-12 rounded-xl bg-[#342B20] border border-[#C5A474]/50 text-[#C5A474] flex items-center justify-center shadow-gold">
+                        <ActiveIcon className="w-6 h-6" />
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-[11px] font-mono uppercase tracking-wider text-[#C5A474] bg-[#342B20] border border-[#C5A474]/40 px-2.5 py-0.5 rounded-full">
+                          {activeItem.badge}
+                        </span>
+                        <span className="text-[10px] font-mono text-[#8F8579] bg-[#1A1714] px-2 py-0.5 rounded">
+                          0{activeCapIndex + 1} / 06
+                        </span>
+                      </div>
+                    </div>
+
+                    <h3 className="font-serif text-xl sm:text-2xl font-medium text-[#F5EFE5] leading-snug">
+                      {activeItem.title}
+                    </h3>
+                    <p className="text-xs sm:text-sm text-[#BDB3A7] mt-3 leading-relaxed font-sans">
+                      {activeItem.desc}
+                    </p>
+                  </div>
+
+                  <div className="pt-4 border-t border-[#40372D] flex items-center justify-between">
+                    <div className="flex items-center space-x-1.5 text-xs text-[#34C59A] font-medium font-mono">
+                      <span className="w-2 h-2 rounded-full bg-[#34C59A] inline-block" />
+                      <span>{activeItem.highlight}</span>
+                    </div>
+                    <span className="text-[11px] font-mono text-[#8F8579]">
+                      Rotates in 3.8s
+                    </span>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* 3. Right Card (Next) */}
+            {(() => {
+              const nextItem = capabilities[nextCapIndex];
+              const NextIcon = nextItem.icon;
+              return (
+                <div
+                  onClick={() => setActiveCapIndex(nextCapIndex)}
+                  className="hidden sm:flex flex-col justify-between bg-[#1A1714] border border-[#40372D] rounded-2xl p-6 opacity-45 scale-95 blur-[0.5px] hover:opacity-80 hover:border-[#665744] hover:scale-98 transition-all duration-500 cursor-pointer shadow-sm h-[320px]"
+                >
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="w-10 h-10 rounded-xl bg-[#211D19] border border-[#40372D] text-[#8F8579] flex items-center justify-center">
+                        <NextIcon className="w-5 h-5" />
+                      </div>
+                      <span className="text-[10px] font-mono uppercase tracking-wider text-[#8F8579] bg-[#211D19] px-2 py-0.5 rounded">
+                        0{nextCapIndex + 1} / 06
+                      </span>
+                    </div>
+                    <h3 className="font-serif text-base font-medium text-[#BDB3A7] leading-snug">
+                      {nextItem.title}
+                    </h3>
+                    <p className="text-xs text-[#8F8579] mt-2.5 leading-relaxed line-clamp-3 font-sans">
+                      {nextItem.desc}
+                    </p>
+                  </div>
+                  <div className="pt-4 border-t border-[#40372D]/50 flex items-center justify-between text-[11px] text-[#8F8579]">
+                    <span className="font-mono text-[#8F8579]">{nextItem.badge}</span>
+                    <span className="text-[#C5A474] text-xs">Click to focus →</span>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
 
-          {/* Card 4 */}
-          <div className="bg-[#211D19] border border-[#40372D] hover:border-[#665744] rounded-2xl p-7 shadow-sm transition-all duration-200">
-            <div className="w-11 h-11 rounded-xl bg-[#342B20] border border-[#C5A474]/30 text-[#C5A474] flex items-center justify-center mb-5">
-              <Sliders className="w-5 h-5" />
-            </div>
-            <h3 className="font-serif text-lg font-medium text-[#F5EFE5]">Visual CSS Region Picker</h3>
-            <p className="text-xs text-[#BDB3A7] mt-2.5 leading-relaxed font-sans">
-              Visually highlight and click on elements to generate WATCH or IGNORE CSS selectors. Suppress noisy headers or isolate prices with ease.
-            </p>
+          {/* Mobile Navigation Controls */}
+          <div className="flex sm:hidden items-center justify-center space-x-4 mt-6">
+            <button
+              onClick={() => setActiveCapIndex(prevCapIndex)}
+              className="p-2.5 rounded-full bg-[#211D19] border border-[#40372D] text-[#C5A474]"
+              aria-label="Previous"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <span className="text-xs font-mono text-[#BDB3A7]">
+              0{activeCapIndex + 1} / 06
+            </span>
+            <button
+              onClick={() => setActiveCapIndex(nextCapIndex)}
+              className="p-2.5 rounded-full bg-[#211D19] border border-[#40372D] text-[#C5A474]"
+              aria-label="Next"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* Roulette Indicators & Pause Control */}
+        <div className="mt-10 flex flex-col items-center justify-center space-y-4">
+          {/* Indicator Dots */}
+          <div className="flex items-center space-x-2">
+            {capabilities.map((cap, idx) => (
+              <button
+                key={cap.id}
+                onClick={() => setActiveCapIndex(idx)}
+                className={`transition-all duration-300 rounded-full ${
+                  idx === activeCapIndex
+                    ? 'w-8 h-2 bg-[#C5A474] shadow-gold'
+                    : 'w-2 h-2 bg-[#40372D] hover:bg-[#665744]'
+                }`}
+                title={`Jump to ${cap.title}`}
+                aria-label={`Slide ${idx + 1}`}
+              />
+            ))}
           </div>
 
-          {/* Card 5 */}
-          <div className="bg-[#211D19] border border-[#40372D] hover:border-[#665744] rounded-2xl p-7 shadow-sm transition-all duration-200">
-            <div className="w-11 h-11 rounded-xl bg-[#342B20] border border-[#C5A474]/30 text-[#C5A474] flex items-center justify-center mb-5">
-              <Bell className="w-5 h-5" />
-            </div>
-            <h3 className="font-serif text-lg font-medium text-[#F5EFE5]">Encrypted Notifications</h3>
-            <p className="text-xs text-[#BDB3A7] mt-2.5 leading-relaxed font-sans">
-              Dispatch confirmed change events directly to Discord webhooks, Telegram bots, or SMTP mailboxes with credentials encrypted at rest with Fernet.
-            </p>
+          {/* Mini Quick-Select Roulette Strip */}
+          <div className="flex flex-wrap items-center justify-center gap-2 pt-2 max-w-4xl">
+            {capabilities.map((cap, idx) => (
+              <button
+                key={cap.id}
+                onClick={() => setActiveCapIndex(idx)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                  idx === activeCapIndex
+                    ? 'bg-[#342B20] text-[#C5A474] border border-[#C5A474]/50 shadow-gold'
+                    : 'bg-[#1A1714] text-[#8F8579] hover:text-[#F5EFE5] border border-[#40372D]/60 hover:border-[#665744]'
+                }`}
+              >
+                {cap.badge}
+              </button>
+            ))}
           </div>
 
-          {/* Card 6 */}
-          <div className="bg-[#211D19] border border-[#40372D] hover:border-[#665744] rounded-2xl p-7 shadow-sm transition-all duration-200">
-            <div className="w-11 h-11 rounded-xl bg-[#342B20] border border-[#C5A474]/30 text-[#C5A474] flex items-center justify-center mb-5">
-              <Shield className="w-5 h-5" />
-            </div>
-            <h3 className="font-serif text-lg font-medium text-[#F5EFE5]">Enterprise SSRF & Quota Defenses</h3>
-            <p className="text-xs text-[#BDB3A7] mt-2.5 leading-relaxed font-sans">
-              Strict destination validation rejects loopbacks, cloud metadata (169.254.169.254), private ranges, and non-standard ports to protect infrastructure.
-            </p>
+          {/* Pause / Play Toggle helper */}
+          <div className="flex items-center space-x-2 text-[11px] text-[#8F8579] pt-1">
+            <button
+              onClick={() => setIsRoulettePaused(!isRoulettePaused)}
+              className="inline-flex items-center space-x-1.5 hover:text-[#C5A474] transition-colors"
+            >
+              {isRoulettePaused ? (
+                <>
+                  <Play className="w-3 h-3 text-[#34C59A]" />
+                  <span>Resume Auto-Rotation</span>
+                </>
+              ) : (
+                <>
+                  <Pause className="w-3 h-3 text-[#C5A474]" />
+                  <span>Pause Rotation (or hover)</span>
+                </>
+              )}
+            </button>
           </div>
         </div>
       </section>

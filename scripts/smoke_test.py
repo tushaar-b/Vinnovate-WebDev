@@ -13,9 +13,9 @@ def request(url, timeout, method="GET", headers=None):
     req = urllib.request.Request(url, method=method, headers=headers or {})
     try:
         with urllib.request.urlopen(req, timeout=timeout) as response:
-            return response.status, dict(response.headers), response.read(2_000_000)
+            return response.status, {k.lower(): v for k, v in response.headers.items()}, response.read(2_000_000)
     except urllib.error.HTTPError as exc:
-        return exc.code, dict(exc.headers), exc.read(2_000_000)
+        return exc.code, {k.lower(): v for k, v in exc.headers.items()}, exc.read(2_000_000)
 
 
 def main():
@@ -123,9 +123,9 @@ def main():
         status, headers, _ = request(back + "/api/health", args.timeout, "OPTIONS", {
             "Origin": origin, "Access-Control-Request-Method": "GET",
         })
-        allowed = headers.get("Access-Control-Allow-Origin") in (origin, "*")
+        allowed = headers.get("access-control-allow-origin") in (origin, "*")
         check("Frontend origin CORS", status in (200, 204) and allowed,
-              f"HTTP {status}; allow-origin={headers.get('Access-Control-Allow-Origin', 'absent')}")
+              f"HTTP {status}; allow-origin={headers.get('access-control-allow-origin', 'absent')}")
     except Exception as exc:
         check("Frontend origin CORS", False, type(exc).__name__)
 

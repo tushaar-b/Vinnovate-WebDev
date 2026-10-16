@@ -170,12 +170,60 @@ def enforce_judge_manual_check_rate_limit(db: Session, monitor: Monitor) -> None
         db.commit()
 
 
+# In-memory test rate limiter fallback
+_in_memory_judge_tests: Dict[str, list] = {}
+
+
+def check_judge_test_rate_limit(judge_session_id: str, max_tests_per_hour: int = 3) -> None:
+    """Enforces per-session rate limit on test notifications (max 3 per hour)."""
+    if getattr(settings, "TEST_MODE", False):
+        return
+
+    now = time.time()
+    one_hour_ago = now - 3600
+
+    try:
+        redis_key = f"rate:judge_test:{judge_session_id}"
+        current = redis_client.incr(redis_key)
+        if current == 1:
+            redis_client.expire(redis_key, 3600)
+        if current > max_tests_per_hour:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail={
+                    "error": {
+                        "code": "TEST_RATE_LIMITED",
+                        "message": "Test notification limit reached: Maximum 3 test notifications per hour per evaluation session.",
+                    }
+                },
+            )
+        return
+    except HTTPException:
+        raise
+    except Exception:
+        pass
+
+    timestamps = _in_memory_judge_tests.setdefault(judge_session_id, [])
+    _in_memory_judge_tests[judge_session_id] = [t for t in timestamps if t > one_hour_ago]
+    if len(_in_memory_judge_tests[judge_session_id]) >= max_tests_per_hour:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail={
+                "error": {
+                    "code": "TEST_RATE_LIMITED",
+                    "message": "Test notification limit reached: Maximum 3 test notifications per hour per evaluation session.",
+                }
+            },
+        )
+    _in_memory_judge_tests[judge_session_id].append(now)
+
+
 def cleanup_expired_judge_monitors(db: Session) -> int:
     """
-    Finds and disables judge monitors whose evaluation session has expired.
+    Finds and disables judge monitors and channels whose evaluation session has expired.
     """
     now = datetime.now(timezone.utc)
-    updated = (
+    expired_monitors = (
         db.query(Monitor)
         .filter(
             Monitor.judge_session_id.isnot(None),
@@ -183,8 +231,14 @@ def cleanup_expired_judge_monitors(db: Session) -> int:
             Monitor.expires_at <= now,
             Monitor.enabled.is_(True),
         )
-        .update({"enabled": False}, synchronize_session=False)
+        .all()
     )
-    if updated:
+    count = len(expired_monitors)
+    for m in expired_monitors:
+        m.enabled = False
+        for ch in m.channels:
+            ch.enabled = False
+    if count:
         db.commit()
-    return updated
+    return count
+

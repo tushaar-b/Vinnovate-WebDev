@@ -104,3 +104,47 @@ class NotificationOutboxItemResponse(BaseModel):
             return v
         from app.services.security import sanitize_error_message
         return sanitize_error_message(v)
+
+
+# -------------------------------------------------------------------------
+# Judge Workspace Notification Schemas
+# -------------------------------------------------------------------------
+class JudgeNotificationChannelPayload(BaseModel):
+    monitor_id: uuid.UUID
+    configuration: Dict[str, Any] = Field(default_factory=dict)
+    enabled: bool = True
+
+
+class JudgeTestNotificationRequest(BaseModel):
+    monitor_id: uuid.UUID
+    configuration: Optional[Dict[str, Any]] = None
+
+
+class JudgeTestNotificationResponse(BaseModel):
+    success: bool
+    message: str
+    channel_type: str
+    verification_required: bool = True
+    verification_code: Optional[str] = None
+
+
+class JudgeVerifyChannelRequest(BaseModel):
+    monitor_id: uuid.UUID
+    code: str
+
+
+class JudgeNotificationChannelResponse(BaseModel):
+    id: uuid.UUID
+    monitor_id: uuid.UUID
+    monitor_name: Optional[str] = None
+    channel_type: str
+    enabled: bool
+    is_verified: bool
+    configuration: Dict[str, Any]
+    created_at: datetime
+
+
+class JudgeNotificationSettingsResponse(BaseModel):
+    channels: Dict[str, Optional[JudgeNotificationChannelResponse]]
+    limits: Dict[str, Any]
+

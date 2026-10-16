@@ -224,14 +224,28 @@ def dispatch_email(
             pass
 
 
-def send_test_notification(channel_type: str, config: Dict[str, Any]) -> Tuple[bool, str]:
+def send_test_notification(
+    channel_type: str,
+    config: Dict[str, Any],
+    verification_code: Optional[str] = None,
+    monitor_name: Optional[str] = None,
+    monitor_url: Optional[str] = None,
+) -> Tuple[bool, str]:
     """
     Validates credentials and delivers a test notification for verification.
     Returns (success: bool, message: str).
     """
     ch_type = channel_type.lower()
     now = utc_now()
-    summary = "This is a test notification confirming your channel configuration works properly."
+    if verification_code:
+        summary = (
+            f"Verification Code: [{verification_code}]. "
+            "Enter this code in your evaluation workspace to verify destination control and activate automated alerts."
+        )
+    else:
+        summary = "This is a test notification confirming your channel configuration works properly."
+    target_name = monitor_name or ("Verification Test" if verification_code else "Test Notification")
+    target_url = monitor_url or "https://example.com"
     comparison_url = "http://localhost:5173/#settings"
     decrypted_config = decrypt_channel_config(ch_type, config)
 
@@ -242,8 +256,8 @@ def send_test_notification(channel_type: str, config: Dict[str, Any]) -> Tuple[b
                 return False, "Discord webhook URL is required."
             dispatch_discord(
                 webhook_url=webhook_url,
-                monitor_name="Test Notification",
-                monitor_url="https://example.com",
+                monitor_name=target_name,
+                monitor_url=target_url,
                 change_summary=summary,
                 timestamp=now,
                 comparison_url=comparison_url,
@@ -258,8 +272,8 @@ def send_test_notification(channel_type: str, config: Dict[str, Any]) -> Tuple[b
             dispatch_telegram(
                 bot_token=bot_token,
                 chat_id=chat_id,
-                monitor_name="Test Notification",
-                monitor_url="https://example.com",
+                monitor_name=target_name,
+                monitor_url=target_url,
                 change_summary=summary,
                 timestamp=now,
                 comparison_url=comparison_url,
@@ -269,8 +283,8 @@ def send_test_notification(channel_type: str, config: Dict[str, Any]) -> Tuple[b
         elif ch_type == "email":
             dispatch_email(
                 config=decrypted_config,
-                monitor_name="Test Notification",
-                monitor_url="https://example.com",
+                monitor_name=target_name,
+                monitor_url=target_url,
                 change_summary=summary,
                 timestamp=now,
                 comparison_url=comparison_url,
@@ -304,21 +318,48 @@ def create_outbox_entries_for_changed_version(
     - Never triggers on BASELINE, UNCHANGED, ERROR, BLOCKED, or rebaselines.
     - Idempotency key (monitor_id, version_id, channel_id) ensures no duplicate records.
     - Persists outbox rows and enqueues background delivery jobs.
+    - For judge session monitors: enforces destination verification and bounded alert volume.
+    - Completely isolates judge channels from admin global channels.
     """
-    # Resource protection: never dispatch external notifications for judge evaluation monitors
     if getattr(monitor, "judge_session_id", None):
-        logger.info(f"Skipping notification dispatch for judge monitor {monitor.id}")
-        return []
-
-    # Query monitor-specific channels and global channels that are enabled
-    channels = (
-        db.query(NotificationChannel)
-        .filter(
-            (NotificationChannel.monitor_id == monitor.id) | (NotificationChannel.monitor_id.is_(None)),
-            NotificationChannel.enabled.is_(True),
+        # 1. Bounded alert volume: max 10 alerts total for this judge session
+        session_alerts_count = (
+            db.query(NotificationOutbox)
+            .join(Monitor, NotificationOutbox.monitor_id == Monitor.id)
+            .filter(Monitor.judge_session_id == monitor.judge_session_id)
+            .count()
         )
-        .all()
-    )
+        if session_alerts_count >= 10:
+            logger.warning(f"Judge session {monitor.judge_session_id} reached alert volume limit (10).")
+            return []
+
+        # 2. Query only monitor-specific channels owned by this monitor that are enabled
+        raw_channels = (
+            db.query(NotificationChannel)
+            .filter(
+                NotificationChannel.monitor_id == monitor.id,
+                NotificationChannel.enabled.is_(True),
+            )
+            .all()
+        )
+        # 3. Only include channels that have verified destination proof
+        channels = []
+        for ch in raw_channels:
+            cfg = decrypt_channel_config(ch.channel_type.value, ch.configuration_json or {})
+            if cfg.get("is_verified", False):
+                channels.append(ch)
+            else:
+                logger.info(f"Skipping unverified judge channel {ch.id}")
+    else:
+        # Admin monitor: Query monitor-specific channels and global channels that are enabled
+        channels = (
+            db.query(NotificationChannel)
+            .filter(
+                (NotificationChannel.monitor_id == monitor.id) | (NotificationChannel.monitor_id.is_(None)),
+                NotificationChannel.enabled.is_(True),
+            )
+            .all()
+        )
 
     if not channels:
         logger.info(f"No active notification channels configured for monitor {monitor.id}")

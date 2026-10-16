@@ -18,6 +18,7 @@ import {
   Compass,
   Info,
   Clock,
+  Bell,
 } from 'lucide-react';
 import { HealthStatus, MonitorSummary, CreateMonitorInput } from './types';
 import { 
@@ -31,6 +32,7 @@ import { AddMonitorModal } from './components/AddMonitorModal';
 import { MonitorDetails } from './components/MonitorDetails';
 import { ActivityView } from './components/ActivityView';
 import { SettingsView } from './components/SettingsView';
+import { JudgeNotificationsView } from './components/JudgeNotificationsView';
 import { LandingPage } from './components/LandingPage';
 
 export const App: React.FC = () => {
@@ -44,7 +46,7 @@ export const App: React.FC = () => {
   const [judgeInitLoading, setJudgeInitLoading] = useState<boolean>(false);
   const [judgeError, setJudgeError] = useState<string | null>(null);
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'monitors' | 'activity' | 'settings'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'monitors' | 'activity' | 'settings' | 'notifications'>('dashboard');
   const [health, setHealth] = useState<HealthStatus | null>(null);
   const [healthLoading, setHealthLoading] = useState<boolean>(true);
   const [monitors, setMonitors] = useState<MonitorSummary[]>([]);
@@ -200,6 +202,9 @@ export const App: React.FC = () => {
         } else if (hash.includes('activity')) {
           setSelectedMonitorId(null);
           setActiveTab('activity');
+        } else if (hash.includes('notifications')) {
+          setSelectedMonitorId(null);
+          setActiveTab('notifications');
         } else if (hash.includes('monitors')) {
           setSelectedMonitorId(null);
           setActiveTab('monitors');
@@ -418,6 +423,7 @@ export const App: React.FC = () => {
                 { id: 'dashboard', label: 'Dashboard', icon: Layers },
                 { id: 'monitors', label: 'Monitors', icon: Globe },
                 { id: 'activity', label: 'Activity', icon: Activity },
+                ...(isJudge ? [{ id: 'notifications', label: 'Notifications', icon: Bell }] : []),
                 ...(!isJudge ? [{ id: 'settings', label: 'Settings', icon: SettingsIcon }] : []),
               ].map((item) => {
                 const Icon = item.icon;
@@ -525,6 +531,42 @@ export const App: React.FC = () => {
         </div>
       </header>
 
+      {/* Mobile Subnavigation */}
+      <div className="md:hidden border-b border-[#40372D] bg-[#100F0D] px-4 py-2 flex items-center space-x-2 overflow-x-auto">
+        {[
+          { id: 'dashboard', label: 'Dashboard', icon: Layers },
+          { id: 'monitors', label: 'Monitors', icon: Globe },
+          { id: 'activity', label: 'Activity', icon: Activity },
+          ...(isJudge ? [{ id: 'notifications', label: 'Notifications', icon: Bell }] : []),
+          ...(!isJudge ? [{ id: 'settings', label: 'Settings', icon: SettingsIcon }] : []),
+        ].map((item) => {
+          const Icon = item.icon;
+          const isActive = activeTab === item.id && !selectedMonitorId;
+          return (
+            <button
+              key={item.id}
+              onClick={() => {
+                handleSelectMonitor(null);
+                setActiveTab(item.id as typeof activeTab);
+                if (isJudge) {
+                  window.location.hash = item.id === 'dashboard' ? '#/judge' : `#/judge/${item.id}`;
+                } else {
+                  window.location.hash = item.id === 'dashboard' ? '' : `#${item.id}`;
+                }
+              }}
+              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
+                isActive 
+                  ? 'bg-[#342B20] text-[#C5A474] border border-[#C5A474]/40 shadow-sm' 
+                  : 'text-[#BDB3A7] hover:text-[#F5EFE5] hover:bg-[#211D19]'
+              }`}
+            >
+              <Icon className="w-3.5 h-3.5" />
+              <span>{item.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {judgeError && isJudge && (
@@ -558,6 +600,11 @@ export const App: React.FC = () => {
         ) : activeTab === 'activity' ? (
           <ActivityView
             onNavigateToMonitor={(id, tab) => handleSelectMonitor(id, (tab as any) || 'overview')}
+          />
+        ) : activeTab === 'notifications' && isJudge ? (
+          <JudgeNotificationsView
+            monitors={monitors}
+            onNavigateToMonitor={(id) => handleSelectMonitor(id, 'overview')}
           />
         ) : activeTab === 'settings' ? (
           <SettingsView />

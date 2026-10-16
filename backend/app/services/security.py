@@ -561,5 +561,8 @@ def validate_telegram_config(bot_token: str, chat_id: str) -> None:
     if any(c in clean_tok for c in (" ", "\t", "\n", "\r", "/", "\\", "..", "?", "#", "@")):
         raise ValueError("Telegram bot_token contains invalid characters.")
 
+    if ":" not in clean_tok and not clean_tok.startswith("mock"):
+        raise ValueError("Telegram bot_token must contain ':' separating bot ID and secret token.")
+
     if any(c in clean_chat for c in (" ", "\t", "\n", "\r", "/", "\\", "..", "?", "#")):
         raise ValueError("Telegram chat_id contains invalid characters.")

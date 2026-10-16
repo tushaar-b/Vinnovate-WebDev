@@ -129,6 +129,29 @@ export interface NotificationOutboxItem {
   created_at: string;
 }
 
+export interface JudgeNotificationChannel {
+  id: string;
+  monitor_id: string;
+  monitor_name?: string;
+  channel_type: 'discord' | 'telegram';
+  enabled: boolean;
+  is_verified: boolean;
+  configuration: Record<string, any>;
+  created_at: string;
+}
+
+export interface JudgeNotificationSettings {
+  channels: {
+    discord?: JudgeNotificationChannel | null;
+    telegram?: JudgeNotificationChannel | null;
+  };
+  limits: {
+    max_channels_per_type: number;
+    test_rate_limit_per_hour: number;
+    max_alerts_volume: number;
+  };
+}
+
 export interface ActivityItem {
   id: string;
   event_type: string;

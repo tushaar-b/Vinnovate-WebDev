@@ -202,6 +202,30 @@ Open `http://localhost:5173` in your browser.
 - Configure CSS selectors under **Region Rules & Picker** to focus on or ignore specific DOM nodes.
 - Quotas: Maximum 2 monitors per session, minimum 15-minute background interval, maximum 3 manual checks per hour.
 
+#### Scoped Judge Telegram & Discord Notifications
+Judges can configure real-time external alerts for their evaluation monitors:
+1. Open the **Notifications** tab in the Judge Workspace navigation menu (`#/judge/notifications`).
+2. Select the target monitor owned by your session.
+3. **Discord Setup:** Enter your Discord Webhook URL (`https://discord.com/api/webhooks/...` or `https://discordapp.com/api/webhooks/...`).
+4. **Telegram Setup:** Enter your Telegram Bot Token (`<bot_id>:<token>`) and your numerical Chat ID.
+5. **Proof-of-Control Verification Flow:**
+   - To prevent public-session spam and confirm destination ownership, channels cannot be enabled without verification.
+   - Click **Send Test Notification**. The backend dispatches a test message containing an ephemeral 6-character verification code (valid for 15 minutes).
+   - Enter the verification code received in your Discord channel or Telegram chat into the **Verification Code** input box and click **Verify & Enable**.
+   - Once verified, the channel status switches to `Active`.
+6. **Delivery Outbox & Audit Log:**
+   - The delivery table displays all outgoing alerts with statuses (`PENDING`, `SENT`, `FAILED`), delivery attempts, timestamps, and error details.
+7. **Strict Judge Security Restrictions:**
+   - **Channel Limits:** At most 1 Discord channel and 1 Telegram channel per judge session.
+   - **Strict Ownership:** Notification channels are scoped directly to monitors owned by the judge session. Evaluators cannot access or trigger alerts on admin monitors or other sessions' monitors.
+   - **Encrypted at Rest:** Credentials are encrypted at rest using Fernet encryption and masked (`••••••••`) in all API responses.
+   - **SSRF Hardening:** Strict destination validation permits only official Discord and Telegram HTTPS endpoints, blocking RFC 1918 private networks, AWS/GCP metadata endpoints (`169.254.169.254`), and HTTP redirects.
+   - **Rate Limiting:** Maximum 3 test notifications per hour per judge session.
+   - **Bounded Alert Volume:** Maximum 10 automated change alerts per judge session.
+   - **CHANGED-Only Alert Policy:** Notifications are dispatched strictly when a confirmed `CHANGED` status is detected. `BASELINE`, `UNCHANGED`, `ERROR`, and `BLOCKED` runs never trigger change notifications.
+   - **Automatic Expiration Cleanup:** Channels and outbox records are automatically cascaded and purged when the judge session or monitor expires.
+   - *Note:* Claiming production notification delivery requires valid judge-controlled credentials entered and verified through the interface.
+
 ### 2. Admin Login (Privileged Operations)
 - Click **Sign In as Admin** on the landing page.
 - Enter the administrative password (configured via `ADMIN_PASSWORD`).

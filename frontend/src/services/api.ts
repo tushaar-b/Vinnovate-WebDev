@@ -433,4 +433,56 @@ export const api = {
     const res = await apiFetch(`/api/activity?${query.toString()}`);
     return handleResponse<{ items: import('../types').ActivityItem[]; total: number }>(res);
   },
+
+  // Judge Workspace Scoped Notification Endpoints
+  async getJudgeNotificationSettings(): Promise<import('../types').JudgeNotificationSettings> {
+    const res = await apiFetch('/api/judge/notifications');
+    return handleResponse<import('../types').JudgeNotificationSettings>(res);
+  },
+
+  async updateJudgeNotificationChannel(
+    channelType: string,
+    payload: { monitor_id: string; configuration: Record<string, any>; enabled: boolean }
+  ): Promise<import('../types').JudgeNotificationChannel> {
+    const res = await apiFetch(`/api/judge/notifications/${channelType}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    return handleResponse<import('../types').JudgeNotificationChannel>(res);
+  },
+
+  async testJudgeNotificationChannel(
+    channelType: string,
+    payload: { monitor_id: string; configuration?: Record<string, any> }
+  ): Promise<{ success: boolean; message: string; channel_type: string; verification_required: boolean }> {
+    const res = await apiFetch(`/api/judge/notifications/${channelType}/test`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    return handleResponse<{ success: boolean; message: string; channel_type: string; verification_required: boolean }>(res);
+  },
+
+  async verifyJudgeNotificationChannel(
+    channelType: string,
+    payload: { monitor_id: string; code: string }
+  ): Promise<{ success: boolean; message: string; channel_type: string; verification_required: boolean }> {
+    const res = await apiFetch(`/api/judge/notifications/${channelType}/verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    return handleResponse<{ success: boolean; message: string; channel_type: string; verification_required: boolean }>(res);
+  },
+
+  async deleteJudgeNotificationChannel(
+    channelType: string
+  ): Promise<{ success: boolean; message: string }> {
+    const res = await apiFetch(`/api/judge/notifications/${channelType}`, {
+      method: 'DELETE',
+    });
+    return handleResponse<{ success: boolean; message: string }>(res);
+  },
 };
+

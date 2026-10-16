@@ -53,7 +53,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       title: 'Real Headless Chromium Engine',
       desc: 'Executes client-side JavaScript, handles dynamic single-page applications, and captures full-resolution viewport snapshots using Playwright.',
       badge: 'Browser Automation',
-      highlight: '100% JS Rendered',
     },
     {
       id: 'noise',
@@ -61,7 +60,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       title: 'Noise & Telemetry Exclusion',
       desc: 'Intelligent DOM parsing strips ad trackers, request IDs, cache tokens, and ephemeral configuration variables before diff calculation.',
       badge: 'DOM Normalization',
-      highlight: '0% False Positives',
     },
     {
       id: 'diff',
@@ -69,7 +67,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       title: 'Side-by-Side & Overlay Diff',
       desc: 'Compare versions visually with interactive slider overlays or inspect word-by-word additions and deletions in human-readable color blocks.',
       badge: 'Visual & Text Engine',
-      highlight: 'Pixel Delta Tracking',
     },
     {
       id: 'picker',
@@ -77,7 +74,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       title: 'Visual CSS Region Picker',
       desc: 'Visually highlight and click on elements to generate WATCH or IGNORE CSS selectors. Suppress noisy headers or isolate prices with ease.',
       badge: 'Interactive Scoping',
-      highlight: 'Precision Targeting',
     },
     {
       id: 'alerts',
@@ -85,7 +81,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       title: 'Encrypted Notifications',
       desc: 'Dispatch confirmed change events directly to Discord webhooks, Telegram bots, or SMTP mailboxes with credentials encrypted at rest with Fernet.',
       badge: 'Alert Infrastructure',
-      highlight: 'Instant Webhooks',
     },
     {
       id: 'security',
@@ -93,7 +88,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       title: 'Enterprise SSRF & Quota Defenses',
       desc: 'Strict destination validation rejects loopbacks, cloud metadata (169.254.169.254), private ranges, and non-standard ports to protect infrastructure.',
       badge: 'Security Boundary',
-      highlight: 'Zero SSRF Leaks',
     },
   ];
 

@@ -73,6 +73,50 @@ def main():
         check("Administrative API access protection", False, type(exc).__name__)
         check("No obvious credentials in monitor response", False, "API unavailable")
 
+    # Public Judge Session Creation & Isolation Verification
+    judge_token = None
+    try:
+        status, _, body = request(back + "/api/judge/session", args.timeout, method="POST", headers={"Content-Type": "application/json"})
+        judge_data = {}
+        try:
+            judge_data = json.loads(body)
+        except Exception:
+            pass
+        judge_token = judge_data.get("token")
+        check("Public judge session creation", status == 200 and bool(judge_token),
+              f"HTTP {status}; session_id={judge_data.get('session_id') or judge_data.get('judge_session_id', 'none')}")
+    except Exception as exc:
+        check("Public judge session creation", False, type(exc).__name__)
+
+    if judge_token:
+        try:
+            status, _, body = request(
+                back + "/api/judge/session/status",
+                args.timeout,
+                headers={"Authorization": f"Bearer {judge_token}"},
+            )
+            status_data = {}
+            try:
+                status_data = json.loads(body)
+            except Exception:
+                pass
+            check("Judge session status verification", status == 200 and (status_data.get("active") or status_data.get("authenticated")),
+                  f"HTTP {status}; active={status_data.get('active')}")
+        except Exception as exc:
+            check("Judge session status verification", False, type(exc).__name__)
+
+        try:
+            # Judge session must be blocked from admin settings with 403 Forbidden
+            status, _, _ = request(
+                back + "/api/settings/notifications",
+                args.timeout,
+                headers={"Authorization": f"Bearer {judge_token}"},
+            )
+            check("Judge administrative isolation (403 Forbidden on admin settings)", status == 403,
+                  f"GET /api/settings/notifications returned HTTP {status}; expected 403")
+        except Exception as exc:
+            check("Judge administrative isolation (403 Forbidden on admin settings)", False, type(exc).__name__)
+
     # A CORS preflight from the actual frontend origin should be explicitly allowed.
     origin = f"{urlparse(front).scheme}://{urlparse(front).netloc}"
     try:

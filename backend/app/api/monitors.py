@@ -49,9 +49,26 @@ from app.services.storage import (
     ensure_version_screenshot_cached,
 )
 from app.services.diff import compute_text_diff, compute_screenshot_diff
+from app.services.auth import require_auth, AuthContext
+from app.services.judge import enforce_judge_monitor_limit, enforce_judge_manual_check_rate_limit
 
 router = APIRouter(tags=["Monitors"])
 
+
+def get_monitor_or_404(monitor_id: uuid.UUID, db: Session, auth: AuthContext) -> Monitor:
+    """Finds monitor and enforces judge ownership isolation."""
+    monitor = db.query(Monitor).filter(Monitor.id == monitor_id).first()
+    if not monitor:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"error": {"code": "NOT_FOUND", "message": "Monitor not found."}},
+        )
+    if auth.is_judge and monitor.judge_session_id != auth.judge_session_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"error": {"code": "NOT_FOUND", "message": "Monitor not found."}},
+        )
+    return monitor
 
 
 def get_monitor_versions_count(db: Session, monitor_id: uuid.UUID) -> int:
@@ -61,13 +78,19 @@ def get_monitor_versions_count(db: Session, monitor_id: uuid.UUID) -> int:
 @router.get("/monitors", response_model=MonitorListResponse)
 def list_monitors(
     db: Session = Depends(get_db),
+    auth: AuthContext = Depends(require_auth),
     limit: int = Query(50, ge=1, le=100),
     offset: int = Query(0, ge=0),
 ):
-    total = db.query(func.count(Monitor.id)).scalar() or 0
+    query = db.query(Monitor)
+    if auth.is_judge:
+        query = query.filter(Monitor.judge_session_id == auth.judge_session_id)
+    else:
+        query = query.filter(Monitor.judge_session_id.is_(None))
+
+    total = query.count()
     monitors = (
-        db.query(Monitor)
-        .order_by(Monitor.created_at.desc())
+        query.order_by(Monitor.created_at.desc())
         .offset(offset)
         .limit(limit)
         .all()
@@ -100,7 +123,13 @@ def list_monitors(
 def create_monitor(
     payload: MonitorCreate,
     db: Session = Depends(get_db),
+    auth: AuthContext = Depends(require_auth),
 ):
+    # Enforce Judge restrictions
+    if auth.is_judge:
+        enforce_judge_monitor_limit(db, auth.judge_session_id)
+        payload.interval_minutes = max(15, payload.interval_minutes)
+
     # Enforce SSRF validation
     is_safe, error_reason = validate_target_url(payload.url)
     if not is_safe:
@@ -119,6 +148,8 @@ def create_monitor(
         sensitivity=payload.sensitivity,
         enabled=True,
         next_check_at=utc_now(),
+        judge_session_id=auth.judge_session_id if auth.is_judge else None,
+        expires_at=(utc_now() + timedelta(hours=24)) if auth.is_judge else None,
     )
     db.add(monitor)
     db.commit()
@@ -145,13 +176,12 @@ def create_monitor(
 
 
 @router.get("/monitors/{monitor_id}", response_model=MonitorDetail)
-def get_monitor(monitor_id: uuid.UUID, db: Session = Depends(get_db)):
-    monitor = db.query(Monitor).filter(Monitor.id == monitor_id).first()
-    if not monitor:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"error": {"code": "NOT_FOUND", "message": "Monitor not found."}},
-        )
+def get_monitor(
+    monitor_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    auth: AuthContext = Depends(require_auth),
+):
+    monitor = get_monitor_or_404(monitor_id, db, auth)
 
     v_count = get_monitor_versions_count(db, monitor.id)
     return MonitorDetail(
@@ -222,13 +252,12 @@ def update_monitor(
 
 
 @router.delete("/monitors/{monitor_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_monitor(monitor_id: uuid.UUID, db: Session = Depends(get_db)):
-    monitor = db.query(Monitor).filter(Monitor.id == monitor_id).first()
-    if not monitor:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"error": {"code": "NOT_FOUND", "message": "Monitor not found."}},
-        )
+def delete_monitor(
+    monitor_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    auth: AuthContext = Depends(require_auth),
+):
+    monitor = get_monitor_or_404(monitor_id, db, auth)
 
     db.delete(monitor)
     db.commit()
@@ -243,13 +272,12 @@ def delete_monitor(monitor_id: uuid.UUID, db: Session = Depends(get_db)):
 def queue_manual_check(
     monitor_id: uuid.UUID,
     db: Session = Depends(get_db),
+    auth: AuthContext = Depends(require_auth),
 ):
-    monitor = db.query(Monitor).filter(Monitor.id == monitor_id).first()
-    if not monitor:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"error": {"code": "NOT_FOUND", "message": "Monitor not found."}},
-        )
+    monitor = get_monitor_or_404(monitor_id, db, auth)
+
+    if auth.is_judge:
+        enforce_judge_manual_check_rate_limit(db, monitor)
 
     check_run = enqueue_check(monitor_id=monitor.id, is_manual=True, db=db)
 
@@ -265,7 +293,9 @@ def list_monitor_checks(
     monitor_id: uuid.UUID,
     limit: int = Query(50, ge=1, le=100),
     db: Session = Depends(get_db),
+    auth: AuthContext = Depends(require_auth),
 ):
+    get_monitor_or_404(monitor_id, db, auth)
     runs = (
         db.query(CheckRun)
         .filter(CheckRun.monitor_id == monitor_id)
@@ -293,13 +323,18 @@ def list_monitor_checks(
 
 
 @router.get("/checks/{check_run_id}", response_model=CheckRunResponse)
-def get_check_run(check_run_id: uuid.UUID, db: Session = Depends(get_db)):
+def get_check_run(
+    check_run_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    auth: AuthContext = Depends(require_auth),
+):
     r = db.query(CheckRun).filter(CheckRun.id == check_run_id).first()
     if not r:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail={"error": {"code": "NOT_FOUND", "message": "Check run not found."}},
         )
+    get_monitor_or_404(r.monitor_id, db, auth)
 
     return CheckRunResponse(
         id=r.id,
@@ -316,7 +351,12 @@ def get_check_run(check_run_id: uuid.UUID, db: Session = Depends(get_db)):
 
 
 @router.get("/monitors/{monitor_id}/versions", response_model=VersionListResponse)
-def list_monitor_versions(monitor_id: uuid.UUID, db: Session = Depends(get_db)):
+def list_monitor_versions(
+    monitor_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    auth: AuthContext = Depends(require_auth),
+):
+    get_monitor_or_404(monitor_id, db, auth)
     versions = (
         db.query(Version)
         .filter(Version.monitor_id == monitor_id)
@@ -344,7 +384,9 @@ def get_version_details(
     monitor_id: uuid.UUID,
     version_id: uuid.UUID,
     db: Session = Depends(get_db),
+    auth: AuthContext = Depends(require_auth),
 ):
+    get_monitor_or_404(monitor_id, db, auth)
     v = (
         db.query(Version)
         .filter(Version.monitor_id == monitor_id, Version.id == version_id)
@@ -369,18 +411,25 @@ def get_version_details(
 
 
 @router.get("/versions/{version_id}/screenshot")
-def get_version_screenshot(version_id: uuid.UUID, db: Session = Depends(get_db)):
+def get_version_screenshot(
+    version_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    auth: AuthContext = Depends(require_auth),
+):
     v = db.query(Version).filter(Version.id == version_id).first()
     if not v:
         # Check if the screenshot was saved under any monitor directory (e.g. temporary preview)
         base_dir = Path(settings.DATA_DIR).resolve()
         matches = list(base_dir.glob(f"*/{version_id}.png"))
-        if matches and matches[0].is_file():
+        if matches and matches[0].is_file() and not auth.is_judge:
             return FileResponse(path=matches[0], media_type="image/png")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail={"error": {"code": "NOT_FOUND", "message": "Version not found."}},
         )
+
+    # Validate monitor ownership
+    get_monitor_or_404(v.monitor_id, db, auth)
 
     safe_path = ensure_version_screenshot_cached(v, db)
     if not safe_path:
@@ -398,14 +447,10 @@ def compare_versions(
     from_version_id: uuid.UUID = Query(..., alias="from", description="Base / older version UUID"),
     to_version_id: uuid.UUID = Query(..., alias="to", description="Target / newer version UUID"),
     db: Session = Depends(get_db),
+    auth: AuthContext = Depends(require_auth),
 ):
-    # Verify monitor exists
-    monitor = db.query(Monitor).filter(Monitor.id == monitor_id).first()
-    if not monitor:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"error": {"code": "NOT_FOUND", "message": "Monitor not found."}},
-        )
+    # Verify monitor exists and belongs to auth context
+    monitor = get_monitor_or_404(monitor_id, db, auth)
 
     # Fetch both versions and verify they belong to this monitor
     v_old = (
@@ -500,7 +545,9 @@ def get_diff_image(
     old_id: uuid.UUID,
     new_id: uuid.UUID,
     db: Session = Depends(get_db),
+    auth: AuthContext = Depends(require_auth),
 ):
+    get_monitor_or_404(monitor_id, db, auth)
     diff_rel_path = f"{monitor_id}/diff_{old_id}_{new_id}.png"
     safe_path = get_screenshot_path(diff_rel_path)
     if not safe_path:
@@ -534,17 +581,16 @@ def get_diff_image(
 
 
 @router.get("/monitors/{monitor_id}/picker/screenshot")
-def get_monitor_picker_screenshot(monitor_id: uuid.UUID, db: Session = Depends(get_db)):
+def get_monitor_picker_screenshot(
+    monitor_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    auth: AuthContext = Depends(require_auth),
+):
     """
     Returns the visual region picker screenshot for a monitor.
     Uses the latest picker capture or latest version screenshot artifact.
     """
-    monitor = db.query(Monitor).filter(Monitor.id == monitor_id).first()
-    if not monitor:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"error": {"code": "NOT_FOUND", "message": "Monitor not found."}},
-        )
+    monitor = get_monitor_or_404(monitor_id, db, auth)
 
     # 1. Check if dedicated picker screenshot exists
     safe_path = get_picker_screenshot_path(monitor.id)
@@ -570,18 +616,17 @@ def get_monitor_picker_screenshot(monitor_id: uuid.UUID, db: Session = Depends(g
 
 
 @router.get("/monitors/{monitor_id}/picker", response_model=PickerResponse)
-def get_monitor_picker(monitor_id: uuid.UUID, db: Session = Depends(get_db)):
+def get_monitor_picker(
+    monitor_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    auth: AuthContext = Depends(require_auth),
+):
     """
     Returns screenshot URL, dimensions, and element rect overlays for the visual region picker.
     Guarantees that the returned DOM bounding boxes and screenshot originate from the same
     page render, viewport (1440x900), and scroll position.
     """
-    monitor = db.query(Monitor).filter(Monitor.id == monitor_id).first()
-    if not monitor:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"error": {"code": "NOT_FOUND", "message": "Monitor not found."}},
-        )
+    monitor = get_monitor_or_404(monitor_id, db, auth)
 
     latest_version = (
         db.query(Version)
@@ -590,7 +635,7 @@ def get_monitor_picker(monitor_id: uuid.UUID, db: Session = Depends(get_db)):
         .first()
     )
 
-    is_fixture = "/fixture" in monitor.url
+    is_fixture = "/fixture" in monitor.url and not auth.is_judge
     try:
         capture = capture_page(monitor.url, is_fixture=is_fixture, extract_elements=True)
     except (BrowserCaptureError, SecurityValidationError) as e:
@@ -631,16 +676,12 @@ def update_monitor_rules(
     monitor_id: uuid.UUID,
     payload: MonitorRulesUpdateRequest,
     db: Session = Depends(get_db),
+    auth: AuthContext = Depends(require_auth),
 ):
     """
     Atomically replaces monitor watch and ignore rules.
     """
-    monitor = db.query(Monitor).filter(Monitor.id == monitor_id).first()
-    if not monitor:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"error": {"code": "NOT_FOUND", "message": "Monitor not found."}},
-        )
+    monitor = get_monitor_or_404(monitor_id, db, auth)
 
     # Delete existing rules for this monitor
     db.query(MonitorRule).filter(MonitorRule.monitor_id == monitor_id).delete()

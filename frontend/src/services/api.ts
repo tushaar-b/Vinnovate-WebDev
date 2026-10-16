@@ -19,6 +19,20 @@ let authToken: string = (() => {
   }
 })();
 
+let judgeToken: string = (() => {
+  try {
+    return localStorage.getItem('change_detector_judge_token') || '';
+  } catch {
+    return '';
+  }
+})();
+
+export function isJudgeMode(): boolean {
+  if (typeof window === 'undefined') return false;
+  const hash = window.location.hash || '';
+  return hash === '#/judge' || hash.startsWith('#/judge/') || hash === '#judge' || hash.startsWith('#judge/');
+}
+
 export function setAuthToken(token: string) {
   authToken = token;
   try {
@@ -40,6 +54,38 @@ export function clearAuthToken() {
   setAuthToken('');
 }
 
+export function setJudgeToken(token: string) {
+  judgeToken = token;
+  try {
+    if (token) {
+      localStorage.setItem('change_detector_judge_token', token);
+    } else {
+      localStorage.removeItem('change_detector_judge_token');
+    }
+  } catch {
+    // ignore storage exceptions
+  }
+}
+
+export function getJudgeToken(): string {
+  try {
+    return judgeToken || localStorage.getItem('change_detector_judge_token') || '';
+  } catch {
+    return judgeToken;
+  }
+}
+
+export function clearJudgeToken() {
+  setJudgeToken('');
+}
+
+export function getEffectiveToken(): string {
+  if (isJudgeMode()) {
+    return getJudgeToken();
+  }
+  return getAuthToken();
+}
+
 export function attachAuthToMediaUrl(url: string): string {
   if (!url) return '';
 
@@ -53,7 +99,7 @@ export function attachAuthToMediaUrl(url: string): string {
     }
   }
 
-  const token = getAuthToken() || (typeof window !== 'undefined' ? localStorage.getItem('change_detector_token') || '' : '');
+  const token = getEffectiveToken();
   if (!token) return fullUrl;
 
   try {
@@ -75,8 +121,9 @@ export function attachAuthToMediaUrl(url: string): string {
 
 async function apiFetch(path: string, options: RequestInit = {}): Promise<Response> {
   const headers = new Headers(options.headers || {});
-  if (authToken && !headers.has('Authorization')) {
-    headers.set('Authorization', `Bearer ${authToken}`);
+  const token = getEffectiveToken();
+  if (token && !headers.has('Authorization')) {
+    headers.set('Authorization', `Bearer ${token}`);
   }
   return fetch(`${BASE_URL}${path}`, {
     ...options,
@@ -86,11 +133,19 @@ async function apiFetch(path: string, options: RequestInit = {}): Promise<Respon
 
 async function handleResponse<T>(res: Response): Promise<T> {
   if (res.status === 401) {
-    clearAuthToken();
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('auth:unauthorized'));
+    if (isJudgeMode()) {
+      clearJudgeToken();
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('judge:unauthorized'));
+      }
+      throw new Error('Evaluation session expired. Please refresh to start a new session.');
+    } else {
+      clearAuthToken();
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('auth:unauthorized'));
+      }
+      throw new Error('Authentication required or session expired.');
     }
-    throw new Error('Authentication required or session expired.');
   }
 
   if (!res.ok) {
@@ -111,6 +166,81 @@ async function handleResponse<T>(res: Response): Promise<T> {
 }
 
 export const api = {
+  // Judge Session Endpoints
+  async initJudgeSession(): Promise<{ session_id: string; token: string; expires_at: string; monitor_count: number; max_monitors: number }> {
+    let currentJudgeToken = '';
+    try {
+      currentJudgeToken = localStorage.getItem('change_detector_judge_token') || '';
+    } catch {
+      // ignore
+    }
+
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (currentJudgeToken) {
+      headers['Authorization'] = `Bearer ${currentJudgeToken}`;
+    }
+
+    let res = await fetch(`${BASE_URL}/api/judge/session`, {
+      method: 'POST',
+      headers,
+    });
+
+    if (!res.ok) {
+      // If previous token was invalid/expired, clear and retry cleanly
+      if (res.status === 401 || res.status === 403) {
+        clearJudgeToken();
+        res = await fetch(`${BASE_URL}/api/judge/session`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
+    if (!res.ok) {
+      let msg = `Failed to create evaluation session (HTTP ${res.status})`;
+      try {
+        const body = await res.json();
+        if (body.detail?.error?.message) {
+          msg = body.detail.error.message;
+        }
+      } catch {
+        // ignore
+      }
+      throw new Error(msg);
+    }
+
+    const data = await res.json();
+    setJudgeToken(data.token);
+    return data;
+  },
+
+  async getJudgeStatus(): Promise<{
+    active: boolean;
+    session_id?: string;
+    expires_at?: string;
+    monitor_count?: number;
+    max_monitors?: number;
+    manual_checks_per_hour_limit?: number;
+    min_interval_minutes?: number;
+  }> {
+    try {
+      const res = await apiFetch('/api/judge/session/status');
+      if (!res.ok) {
+        if (res.status === 401 || res.status === 404) {
+          return { active: false };
+        }
+        return { active: false };
+      }
+      return await res.json();
+    } catch {
+      return { active: false };
+    }
+  },
+
+  clearJudgeSession(): void {
+    clearJudgeToken();
+  },
+
   // Authentication Endpoints
   async login(password: string): Promise<{ token: string; expires_at: number; user: string }> {
     const res = await fetch(`${BASE_URL}/api/auth/login`, {

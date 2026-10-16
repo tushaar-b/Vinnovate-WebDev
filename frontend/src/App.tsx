@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Activity, 
   Layers, 
@@ -16,15 +16,36 @@ import {
   Lock,
   LogOut,
   Key,
+  Compass,
+  ArrowRight,
+  Info,
+  Clock,
+  Sparkles,
 } from 'lucide-react';
 import { HealthStatus, MonitorSummary, CreateMonitorInput } from './types';
-import { api, getAuthToken } from './services/api';
+import { 
+  api, 
+  getAuthToken, 
+  getJudgeToken, 
+  clearJudgeToken,
+  isJudgeMode,
+} from './services/api';
 import { AddMonitorModal } from './components/AddMonitorModal';
 import { MonitorDetails } from './components/MonitorDetails';
 import { ActivityView } from './components/ActivityView';
 import { SettingsView } from './components/SettingsView';
 
 export const App: React.FC = () => {
+  const [isJudge, setIsJudge] = useState<boolean>(() => isJudgeMode());
+  const [judgeSessionStatus, setJudgeSessionStatus] = useState<{
+    session_id?: string;
+    expires_at?: string;
+    monitor_count?: number;
+    max_monitors?: number;
+  } | null>(null);
+  const [judgeInitLoading, setJudgeInitLoading] = useState<boolean>(false);
+  const [judgeError, setJudgeError] = useState<string | null>(null);
+
   const [activeTab, setActiveTab] = useState<'dashboard' | 'monitors' | 'activity' | 'settings'>('dashboard');
   const [health, setHealth] = useState<HealthStatus | null>(null);
   const [healthLoading, setHealthLoading] = useState<boolean>(true);
@@ -33,7 +54,7 @@ export const App: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
-  // Authentication State
+  // Authentication State (Admin)
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => !!getAuthToken());
   const [authChecking, setAuthChecking] = useState<boolean>(true);
   const [loginPassword, setLoginPassword] = useState<string>('');
@@ -42,7 +63,12 @@ export const App: React.FC = () => {
   
   // Navigation & Modal State
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
-  const [selectedMonitorId, setSelectedMonitorId] = useState<string | null>(null);
+  const [selectedMonitorId, setSelectedMonitorId] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null;
+    const hash = window.location.hash || '';
+    const m = hash.match(/^#\/?judge\/monitors\/([0-9a-fA-F-]+)/) || hash.match(/^#monitors\/([0-9a-fA-F-]+)/);
+    return m ? m[1] : null;
+  });
   const [monitorInitialTab, setMonitorInitialTab] = useState<'overview' | 'compare' | 'rules'>('overview');
   const [checkingIds, setCheckingIds] = useState<Record<string, boolean>>({});
 
@@ -58,7 +84,47 @@ export const App: React.FC = () => {
     }
   };
 
-  const fetchMonitorsData = async () => {
+  const initOrRefreshJudge = useCallback(async () => {
+    setJudgeInitLoading(true);
+    setJudgeError(null);
+    try {
+      const sessionData = await api.initJudgeSession();
+      setJudgeSessionStatus({
+        session_id: sessionData.session_id,
+        expires_at: sessionData.expires_at,
+        monitor_count: sessionData.monitor_count,
+        max_monitors: sessionData.max_monitors,
+      });
+      // Fetch judge monitors
+      setMonitorsLoading(true);
+      const res = await api.getMonitors();
+      setMonitors(res.items);
+    } catch (err: unknown) {
+      setJudgeError(err instanceof Error ? err.message : 'Failed to initialize evaluation session.');
+    } finally {
+      setJudgeInitLoading(false);
+      setMonitorsLoading(false);
+    }
+  }, []);
+
+  const fetchMonitorsData = useCallback(async () => {
+    if (isJudge) {
+      if (!getJudgeToken()) {
+        await initOrRefreshJudge();
+        return;
+      }
+      try {
+        setMonitorsLoading(true);
+        const res = await api.getMonitors();
+        setMonitors(res.items);
+      } catch {
+        // Silently handle or fallback
+      } finally {
+        setMonitorsLoading(false);
+      }
+      return;
+    }
+
     if (!isAuthenticated && !getAuthToken()) {
       setMonitorsLoading(false);
       return;
@@ -72,19 +138,19 @@ export const App: React.FC = () => {
     } finally {
       setMonitorsLoading(false);
     }
-  };
+  }, [isJudge, isAuthenticated, initOrRefreshJudge]);
 
   useEffect(() => {
     // Initial health check
     fetchHealthData();
 
-    // Check auth status with backend
+    // Check admin auth status with backend
     const checkAuth = async () => {
       setAuthChecking(true);
       try {
         const res = await api.getAuthStatus();
         setIsAuthenticated(res.authenticated);
-        if (res.authenticated) {
+        if (res.authenticated && !isJudge) {
           fetchMonitorsData();
         }
       } catch {
@@ -98,7 +164,13 @@ export const App: React.FC = () => {
 
     const handleUnauthorized = () => {
       setIsAuthenticated(false);
-      setLoginError('Your session has expired. Please sign in with your administrative password.');
+      setLoginError('Your administrative session has expired. Please sign in again.');
+    };
+
+    const handleJudgeUnauthorized = () => {
+      clearJudgeToken();
+      setJudgeError('Your evaluation session has expired. A fresh session has been created.');
+      initOrRefreshJudge();
     };
 
     const handleLogout = () => {
@@ -108,32 +180,55 @@ export const App: React.FC = () => {
     };
 
     window.addEventListener('auth:unauthorized', handleUnauthorized);
+    window.addEventListener('judge:unauthorized', handleJudgeUnauthorized);
     window.addEventListener('auth:logout', handleLogout);
 
     const healthInterval = setInterval(fetchHealthData, 15000);
     const monitorInterval = setInterval(() => {
-      if (isAuthenticated) {
+      if (isJudge || isAuthenticated) {
         fetchMonitorsData();
       }
     }, 10000);
 
     const parseHash = () => {
-      const hash = window.location.hash;
-      const match = hash.match(/^#monitors\/([0-9a-fA-F-]+)/);
-      if (match) {
-        setSelectedMonitorId(match[1]);
-      } else if (hash === '#activity') {
-        setSelectedMonitorId(null);
-        setActiveTab('activity');
-      } else if (hash === '#settings') {
-        setSelectedMonitorId(null);
-        setActiveTab('settings');
-      } else if (hash === '#monitors') {
-        setSelectedMonitorId(null);
-        setActiveTab('monitors');
-      } else if (!hash || hash === '#' || hash === '#dashboard') {
-        setSelectedMonitorId(null);
-        setActiveTab('dashboard');
+      const hash = window.location.hash || '';
+      const inJudgeModeNow = hash === '#/judge' || hash.startsWith('#/judge/') || hash === '#judge' || hash.startsWith('#judge/');
+
+      if (inJudgeModeNow) {
+        setIsJudge(true);
+        const judgeMonitorMatch = hash.match(/^#\/?judge\/monitors\/([0-9a-fA-F-]+)/);
+        if (judgeMonitorMatch) {
+          setSelectedMonitorId(judgeMonitorMatch[1]);
+        } else if (hash.includes('activity')) {
+          setSelectedMonitorId(null);
+          setActiveTab('activity');
+        } else if (hash.includes('monitors')) {
+          setSelectedMonitorId(null);
+          setActiveTab('monitors');
+        } else {
+          setSelectedMonitorId(null);
+          setActiveTab('dashboard');
+        }
+      } else {
+        setIsJudge(false);
+        const match = hash.match(/^#monitors\/([0-9a-fA-F-]+)/);
+        if (match) {
+          setSelectedMonitorId(match[1]);
+        } else if (hash === '#activity') {
+          setSelectedMonitorId(null);
+          setActiveTab('activity');
+        } else if (hash === '#settings') {
+          setSelectedMonitorId(null);
+          setActiveTab('settings');
+        } else if (hash === '#monitors') {
+          setSelectedMonitorId(null);
+          setActiveTab('monitors');
+        } else if (hash === '#admin' || hash === '#login') {
+          setSelectedMonitorId(null);
+        } else if (!hash || hash === '#' || hash === '#dashboard') {
+          setSelectedMonitorId(null);
+          setActiveTab('dashboard');
+        }
       }
     };
 
@@ -145,9 +240,21 @@ export const App: React.FC = () => {
       clearInterval(monitorInterval);
       window.removeEventListener('hashchange', parseHash);
       window.removeEventListener('auth:unauthorized', handleUnauthorized);
+      window.removeEventListener('judge:unauthorized', handleJudgeUnauthorized);
       window.removeEventListener('auth:logout', handleLogout);
     };
-  }, [isAuthenticated]);
+  }, [isJudge, isAuthenticated, fetchMonitorsData, initOrRefreshJudge]);
+
+  // When switching to Judge mode, ensure session is initialized
+  useEffect(() => {
+    if (isJudge) {
+      if (!getJudgeToken() || !judgeSessionStatus) {
+        initOrRefreshJudge();
+      } else {
+        fetchMonitorsData();
+      }
+    }
+  }, [isJudge, initOrRefreshJudge, fetchMonitorsData, judgeSessionStatus]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -156,10 +263,11 @@ export const App: React.FC = () => {
     try {
       await api.login(loginPassword);
       setIsAuthenticated(true);
+      window.location.hash = '#dashboard';
       fetchHealthData();
       fetchMonitorsData();
-    } catch (err: any) {
-      setLoginError(err.message || 'Authentication failed. Please verify password.');
+    } catch (err: unknown) {
+      setLoginError(err instanceof Error ? err.message : 'Authentication failed. Please verify password.');
     } finally {
       setLoginLoading(false);
     }
@@ -170,15 +278,37 @@ export const App: React.FC = () => {
     setIsAuthenticated(false);
     setLoginPassword('');
     setLoginError(null);
+    window.location.hash = '';
+  };
+
+  const handleEnterJudge = () => {
+    setIsJudge(true);
+    window.location.hash = '#/judge';
+  };
+
+  const handleResetJudgeSession = () => {
+    clearJudgeToken();
+    setJudgeSessionStatus(null);
+    setMonitors([]);
+    setSelectedMonitorId(null);
+    initOrRefreshJudge();
   };
 
   const handleSelectMonitor = (id: string | null, tab: 'overview' | 'compare' | 'rules' = 'overview') => {
     setSelectedMonitorId(id);
     setMonitorInitialTab(tab);
-    if (id) {
-      window.location.hash = `#monitors/${id}`;
+    if (isJudge) {
+      if (id) {
+        window.location.hash = `#/judge/monitors/${id}`;
+      } else {
+        window.location.hash = activeTab === 'dashboard' ? '#/judge' : `#/judge/${activeTab}`;
+      }
     } else {
-      window.location.hash = activeTab === 'dashboard' ? '' : `#${activeTab}`;
+      if (id) {
+        window.location.hash = `#monitors/${id}`;
+      } else {
+        window.location.hash = activeTab === 'dashboard' ? '' : `#${activeTab}`;
+      }
     }
   };
 
@@ -234,91 +364,21 @@ export const App: React.FC = () => {
     return (
       <div className="min-h-screen bg-[#F8FAFC] flex flex-col justify-center items-center p-4 text-[#64748B]">
         <RefreshCw className="w-8 h-8 animate-spin text-blue-600 mb-3" />
-        <p className="text-sm font-medium">Verifying administrative session...</p>
+        <p className="text-sm font-medium">Verifying session status...</p>
       </div>
     );
   }
 
-  // Unauthenticated Lock Screen
-  if (!isAuthenticated) {
+  // =========================================================================
+  // ENTRY SCREEN (Unauthenticated & Not in Judge Workspace)
+  // =========================================================================
+  if (!isJudge && !isAuthenticated) {
     return (
-      <div className="min-h-screen bg-[#F8FAFC] flex flex-col justify-center items-center p-4">
-        <div className="max-w-md w-full bg-white border border-[#E2E8F0] rounded-2xl shadow-xl p-8">
-          <div className="flex flex-col items-center text-center mb-6">
-            <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-3 shadow-inner">
-              <Lock className="w-6 h-6" />
-            </div>
-            <h1 className="text-xl font-bold text-[#0F172A]">Website Change Detector</h1>
-            <p className="text-xs text-[#64748B] mt-1">
-              Production Access Protection &bull; Enter administrative password to access system
-            </p>
-          </div>
-
-          {loginError && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg flex items-center space-x-2">
-              <AlertCircle className="w-4 h-4 flex-shrink-0" />
-              <span>{loginError}</span>
-            </div>
-          )}
-
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div>
-              <label className="block text-xs font-medium text-[#475569] mb-1">
-                Admin Password
-              </label>
-              <input
-                type="password"
-                placeholder="Enter admin password..."
-                value={loginPassword}
-                onChange={(e) => setLoginPassword(e.target.value)}
-                className="w-full text-sm px-3.5 py-2.5 bg-white border border-[#CBD5E1] rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                autoFocus
-                required
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={loginLoading || !loginPassword.trim()}
-              className="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-medium text-sm rounded-lg shadow-sm transition-all flex items-center justify-center space-x-2"
-            >
-              {loginLoading ? (
-                <>
-                  <RefreshCw className="w-4 h-4 animate-spin" />
-                  <span>Authenticating...</span>
-                </>
-              ) : (
-                <>
-                  <Key className="w-4 h-4" />
-                  <span>Unlock System</span>
-                </>
-              )}
-            </button>
-          </form>
-
-          {/* System Health footer on lock screen */}
-          <div className="mt-8 pt-4 border-t border-[#F1F5F9] flex items-center justify-between text-[11px] text-[#94A3B8]">
-            <span>Access: Protected</span>
-            <span className="flex items-center space-x-1.5">
-              <span className={`w-2 h-2 rounded-full ${health?.status === 'ok' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-              <span>API {health?.status === 'ok' ? 'Online' : 'Checking'}</span>
-            </span>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A] flex flex-col font-sans">
-      {/* Top Navigation */}
-      <header className="bg-white border-b border-[#E2E8F0] sticky top-0 z-30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center space-x-8">
-            <div 
-              onClick={() => handleSelectMonitor(null)}
-              className="flex items-center space-x-3 cursor-pointer"
-            >
+      <div className="min-h-screen bg-[#F8FAFC] flex flex-col justify-between font-sans">
+        {/* Simple Top Bar */}
+        <header className="border-b border-[#E2E8F0] bg-white">
+          <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+            <div className="flex items-center space-x-3">
               <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-sm">
                 <Globe className="w-5 h-5" />
               </div>
@@ -328,12 +388,189 @@ export const App: React.FC = () => {
               </div>
             </div>
 
+            <div className="flex items-center space-x-2 text-xs text-[#64748B]">
+              <span className={`w-2 h-2 rounded-full ${health?.status === 'ok' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+              <span>Production Pipeline {health?.status === 'ok' ? 'Active' : 'Checking'}</span>
+            </div>
+          </div>
+        </header>
+
+        {/* Hero & Dual-Choice Cards */}
+        <main className="max-w-5xl mx-auto px-4 py-12 w-full flex-1 flex flex-col justify-center">
+          <div className="text-center max-w-2xl mx-auto mb-10">
+            <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold mb-4">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Interactive Evaluation Submission</span>
+            </div>
+            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-[#0F172A]">
+              Website Change Detector
+            </h1>
+            <p className="text-sm sm:text-base text-[#64748B] mt-3 leading-relaxed">
+              Autonomous, high-precision web content diffing & visual change detection engine.
+              Observe real websites, capture Playwright snapshots, and inspect verified diffs.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto w-full">
+            {/* Card 1: Explore Judge Workspace (PRIMARY) */}
+            <div className="relative bg-white border-2 border-blue-500 rounded-2xl shadow-xl p-7 flex flex-col justify-between hover:shadow-2xl transition-all">
+              <div className="absolute -top-3 left-6 bg-blue-600 text-white text-[11px] font-bold px-3 py-0.5 rounded-full uppercase tracking-wider shadow-sm">
+                Recommended for Evaluators
+              </div>
+
+              <div>
+                <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center mb-4">
+                  <Compass className="w-6 h-6" />
+                </div>
+                <h2 className="text-xl font-bold text-[#0F172A]">
+                  Explore Judge Workspace
+                </h2>
+                <p className="text-xs text-[#64748B] mt-1.5 leading-relaxed">
+                  Monitor a real website, capture snapshots, and discover what changed. No login required.
+                </p>
+
+                <ul className="mt-5 space-y-2.5 text-xs text-[#475569]">
+                  <li className="flex items-center space-x-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>Real Playwright headless browser website captures</span>
+                  </li>
+                  <li className="flex items-center space-x-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>SHA-256 normalized diffing & false-positive filters</span>
+                  </li>
+                  <li className="flex items-center space-x-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>Side-by-side & visual overlay screenshot diffs</span>
+                  </li>
+                  <li className="flex items-center space-x-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>Interactive CSS WATCH/IGNORE region picker</span>
+                  </li>
+                  <li className="flex items-center space-x-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>Up to 2 monitors with real background worker checks</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="mt-8 pt-5 border-t border-slate-100">
+                <button
+                  onClick={handleEnterJudge}
+                  className="w-full py-3 px-5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm rounded-xl shadow-md transition-all flex items-center justify-center space-x-2 group"
+                >
+                  <span>Explore Judge Workspace</span>
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </button>
+              </div>
+            </div>
+
+            {/* Card 2: Admin Login (SECONDARY) */}
+            <div className="bg-white border border-[#E2E8F0] rounded-2xl shadow-sm p-7 flex flex-col justify-between hover:border-slate-300 transition-all">
+              <div>
+                <div className="w-12 h-12 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center mb-4">
+                  <Lock className="w-6 h-6" />
+                </div>
+                <h2 className="text-xl font-bold text-[#0F172A]">
+                  Admin Login
+                </h2>
+                <p className="text-xs text-[#64748B] mt-1.5 leading-relaxed">
+                  Access the protected administration dashboard.
+                </p>
+
+                {loginError && (
+                  <div className="mt-4 p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg flex items-center space-x-2">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    <span>{loginError}</span>
+                  </div>
+                )}
+
+                <form onSubmit={handleLogin} className="mt-5 space-y-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-[#475569] mb-1">
+                      Administrative Password
+                    </label>
+                    <input
+                      type="password"
+                      placeholder="Enter admin password..."
+                      value={loginPassword}
+                      onChange={(e) => setLoginPassword(e.target.value)}
+                      className="w-full text-sm px-3.5 py-2.5 bg-slate-50 border border-[#CBD5E1] rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={loginLoading || !loginPassword.trim()}
+                    className="w-full py-2.5 px-4 bg-slate-800 hover:bg-slate-900 disabled:bg-slate-300 text-white font-medium text-sm rounded-lg shadow-sm transition-all flex items-center justify-center space-x-2"
+                  >
+                    {loginLoading ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        <span>Authenticating...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Key className="w-4 h-4" />
+                        <span>Sign In as Admin</span>
+                      </>
+                    )}
+                  </button>
+                </form>
+              </div>
+
+              <div className="mt-8 pt-5 border-t border-slate-100 flex items-center justify-between text-[11px] text-[#94A3B8]">
+                <span>Access: Protected</span>
+                <span>Production Monitoring Dashboard</span>
+              </div>
+            </div>
+          </div>
+        </main>
+
+        {/* Footer */}
+        <footer className="border-t border-[#E2E8F0] py-4 bg-white text-center text-xs text-[#94A3B8]">
+          Website Change Detector &bull; Precision Observability Platform &bull; Railway Backend + Vercel Frontend
+        </footer>
+      </div>
+    );
+  }
+
+  // =========================================================================
+  // MAIN WORKSPACE (Judge Workspace OR Admin Dashboard)
+  // =========================================================================
+  const maxMonitorsAllowed = isJudge ? 2 : 100;
+  const isQuotaReached = isJudge && monitors.length >= maxMonitorsAllowed;
+
+  return (
+    <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A] flex flex-col font-sans">
+      {/* Top Navigation */}
+      <header className="bg-white border-b border-[#E2E8F0] sticky top-0 z-30">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          <div className="flex items-center space-x-6">
+            <div 
+              onClick={() => handleSelectMonitor(null)}
+              className="flex items-center space-x-3 cursor-pointer"
+            >
+              <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-white shadow-sm ${
+                isJudge ? 'bg-indigo-600' : 'bg-blue-600'
+              }`}>
+                {isJudge ? <Compass className="w-5 h-5" /> : <Globe className="w-5 h-5" />}
+              </div>
+              <div className="flex flex-col">
+                <span className="font-semibold text-base leading-none text-[#0F172A]">
+                  {isJudge ? 'Evaluation Workspace' : 'Website Change Detector'}
+                </span>
+                <span className="text-[11px] text-[#64748B] mt-0.5 font-medium tracking-wide uppercase">
+                  {isJudge ? 'Interactive Judge Mode' : 'Precision Observability'}
+                </span>
+              </div>
+            </div>
+
             <nav className="hidden md:flex space-x-1">
               {[
                 { id: 'dashboard', label: 'Dashboard', icon: Layers },
                 { id: 'monitors', label: 'Monitors', icon: Globe },
                 { id: 'activity', label: 'Activity', icon: Activity },
-                { id: 'settings', label: 'Settings', icon: SettingsIcon },
+                ...(!isJudge ? [{ id: 'settings', label: 'Settings', icon: SettingsIcon }] : []),
               ].map((item) => {
                 const Icon = item.icon;
                 const isActive = activeTab === item.id && !selectedMonitorId;
@@ -343,11 +580,15 @@ export const App: React.FC = () => {
                     onClick={() => {
                       handleSelectMonitor(null);
                       setActiveTab(item.id as typeof activeTab);
-                      window.location.hash = item.id === 'dashboard' ? '' : `#${item.id}`;
+                      if (isJudge) {
+                        window.location.hash = item.id === 'dashboard' ? '#/judge' : `#/judge/${item.id}`;
+                      } else {
+                        window.location.hash = item.id === 'dashboard' ? '' : `#${item.id}`;
+                      }
                     }}
                     className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                       isActive 
-                        ? 'bg-blue-50 text-blue-600' 
+                        ? isJudge ? 'bg-indigo-50 text-indigo-700' : 'bg-blue-50 text-blue-600' 
                         : 'text-[#64748B] hover:text-[#0F172A] hover:bg-slate-50'
                     }`}
                   >
@@ -359,9 +600,10 @@ export const App: React.FC = () => {
             </nav>
           </div>
 
-          {/* System Health Indicators & Action Buttons */}
+          {/* Right Action Controls */}
           <div className="flex items-center space-x-3">
-            <div className="flex items-center space-x-2 text-xs bg-slate-50 border border-[#E2E8F0] px-3 py-1.5 rounded-full">
+            {/* Health pill */}
+            <div className="hidden sm:flex items-center space-x-2 text-xs bg-slate-50 border border-[#E2E8F0] px-3 py-1.5 rounded-full">
               <div className="flex items-center space-x-1">
                 <Server className="w-3.5 h-3.5 text-[#64748B]" />
                 <span className="text-[#64748B]">API:</span>
@@ -393,26 +635,69 @@ export const App: React.FC = () => {
 
             <button
               onClick={() => setIsAddModalOpen(true)}
-              className="inline-flex items-center space-x-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-3.5 py-1.5 rounded-lg shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              className={`inline-flex items-center space-x-1.5 text-white text-sm font-medium px-3.5 py-1.5 rounded-lg shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                isJudge
+                  ? 'bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-500'
+                  : 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-500'
+              }`}
             >
               <Plus className="w-4 h-4" />
-              <span>Add Monitor</span>
+              <span>{isJudge ? 'Add Website' : 'Add Monitor'}</span>
             </button>
 
-            <button
-              onClick={handleLogoutClick}
-              title="Sign out of administrative session"
-              className="inline-flex items-center space-x-1 border border-[#E2E8F0] hover:bg-slate-50 text-[#64748B] hover:text-[#0F172A] text-xs font-medium px-2.5 py-1.5 rounded-lg transition-colors"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Sign Out</span>
-            </button>
+            {isJudge ? (
+              <div className="flex items-center space-x-1.5">
+                <button
+                  onClick={handleResetJudgeSession}
+                  title="Start a fresh anonymous evaluation session"
+                  className="inline-flex items-center space-x-1 border border-[#E2E8F0] hover:bg-slate-50 text-[#64748B] hover:text-[#0F172A] text-xs font-medium px-2.5 py-1.5 rounded-lg transition-colors"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${judgeInitLoading ? 'animate-spin' : ''}`} />
+                  <span className="hidden sm:inline">New Session</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setIsJudge(false);
+                    window.location.hash = '#admin';
+                  }}
+                  title="Switch to Admin Login"
+                  className="inline-flex items-center space-x-1 border border-[#E2E8F0] hover:bg-slate-50 text-[#64748B] hover:text-[#0F172A] text-xs font-medium px-2.5 py-1.5 rounded-lg transition-colors"
+                >
+                  <Lock className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Admin Login</span>
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={handleLogoutClick}
+                title="Sign out of administrative session"
+                className="inline-flex items-center space-x-1 border border-[#E2E8F0] hover:bg-slate-50 text-[#64748B] hover:text-[#0F172A] text-xs font-medium px-2.5 py-1.5 rounded-lg transition-colors"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Sign Out</span>
+              </button>
+            )}
           </div>
         </div>
       </header>
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {judgeError && isJudge && (
+          <div className="mb-6 p-4 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800 flex items-start space-x-3">
+            <AlertCircle className="w-5 h-5 shrink-0 text-amber-600 mt-0.5" />
+            <div className="flex-1">
+              <span className="font-semibold">Session Notice:</span> {judgeError}
+            </div>
+            <button
+              onClick={handleResetJudgeSession}
+              className="px-2.5 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded text-xs font-medium"
+            >
+              Re-initialize
+            </button>
+          </div>
+        )}
+
         {selectedMonitorId ? (
           <MonitorDetails
             monitorId={selectedMonitorId}
@@ -437,11 +722,18 @@ export const App: React.FC = () => {
             {/* Header & Status */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-6 border-b border-[#E2E8F0]">
               <div>
-                <h1 className="text-2xl font-semibold tracking-tight text-[#0F172A]">Website Change Detector</h1>
+                <h1 className="text-2xl font-bold tracking-tight text-[#0F172A]">
+                  {isJudge 
+                    ? 'Website Change Detector — Interactive Evaluation Workspace' 
+                    : 'Website Change Detector'}
+                </h1>
                 <p className="text-sm text-[#64748B] mt-1">
-                  Autonomous, high-precision web content diffing & change detection engine.
+                  {isJudge
+                    ? 'Observe real websites. Track meaningful changes. Compare captured versions.'
+                    : 'Autonomous, high-precision web content diffing & change detection engine.'}
                 </p>
               </div>
+
               <div className="mt-4 sm:mt-0 flex items-center space-x-2">
                 <button
                   onClick={() => {
@@ -456,23 +748,88 @@ export const App: React.FC = () => {
               </div>
             </div>
 
+            {/* Judge Evaluation Guidance & Quota Banner */}
+            {isJudge && (
+              <div className="mt-6 bg-gradient-to-r from-indigo-50 to-blue-50 border border-indigo-200 rounded-xl p-5 shadow-sm">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="flex items-start space-x-3">
+                    <div className="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center shrink-0 mt-0.5">
+                      <Info className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="flex items-center space-x-2">
+                        <span className="font-semibold text-sm text-indigo-950">
+                          Temporary evaluation session — up to 2 monitors.
+                        </span>
+                        <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-indigo-200/80 text-indigo-800">
+                          {monitors.length} / 2 active
+                        </span>
+                      </div>
+                      <p className="text-xs text-indigo-800 mt-1 leading-relaxed">
+                        Add any safe public HTTP/HTTPS URL. Genuine Playwright browser instances capture DOM and screenshots.
+                        Manual checks: up to 3 checks/hr per monitor. Min interval: 15 minutes.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-2 text-xs shrink-0 bg-white/80 backdrop-blur-sm border border-indigo-100 rounded-lg p-2.5">
+                    <Clock className="w-4 h-4 text-indigo-600" />
+                    <span className="text-indigo-900 font-medium">Session auto-expires after 24h</span>
+                  </div>
+                </div>
+
+                {/* State Definitions Guide */}
+                <div className="mt-4 pt-3 border-t border-indigo-100 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                  <div className="bg-white/80 rounded-lg p-2.5 border border-indigo-100/70">
+                    <div className="flex items-center space-x-1.5 font-semibold text-slate-800 mb-0.5">
+                      <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                      <span>BASELINE</span>
+                    </div>
+                    <p className="text-[11px] text-[#64748B]">Initial captured snapshot. Serves as reference point (not counted as a change).</p>
+                  </div>
+
+                  <div className="bg-white/80 rounded-lg p-2.5 border border-indigo-100/70">
+                    <div className="flex items-center space-x-1.5 font-semibold text-slate-800 mb-0.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                      <span>UNCHANGED</span>
+                    </div>
+                    <p className="text-[11px] text-[#64748B]">Content checked. Text and structure match the baseline version.</p>
+                  </div>
+
+                  <div className="bg-white/80 rounded-lg p-2.5 border border-indigo-100/70">
+                    <div className="flex items-center space-x-1.5 font-semibold text-slate-800 mb-0.5">
+                      <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+                      <span>CHANGED</span>
+                    </div>
+                    <p className="text-[11px] text-[#64748B]">Meaningful content difference detected. New snapshot & diff generated.</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Metric Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
               <div className="bg-white border border-[#E2E8F0] rounded-xl p-5 shadow-sm">
                 <div className="flex items-center justify-between text-[#64748B]">
-                  <span className="text-xs font-medium uppercase tracking-wider">Total Monitors</span>
-                  <Layers className="w-4 h-4 text-blue-600" />
+                  <span className="text-xs font-medium uppercase tracking-wider">
+                    {isJudge ? 'Session Monitors' : 'Total Monitors'}
+                  </span>
+                  <Layers className={`w-4 h-4 ${isJudge ? 'text-indigo-600' : 'text-blue-600'}`} />
                 </div>
                 <div className="mt-2 flex items-baseline space-x-2">
                   <span className="text-2xl font-semibold text-[#0F172A]">{totalMonitors}</span>
-                  <span className="text-xs text-[#64748B]">monitored targets</span>
+                  <span className="text-xs text-[#64748B]">
+                    {isJudge ? `/ ${maxMonitorsAllowed} max` : 'monitored targets'}
+                  </span>
                 </div>
-                <p className="text-xs text-[#64748B] mt-2">Active observation configurations</p>
+                <p className="text-xs text-[#64748B] mt-2">
+                  {isJudge ? 'Bounded evaluation slots' : 'Active observation configurations'}
+                </p>
               </div>
 
               <div className="bg-white border border-[#E2E8F0] rounded-xl p-5 shadow-sm">
                 <div className="flex items-center justify-between text-[#64748B]">
-                  <span className="text-xs font-medium uppercase tracking-wider">Healthy</span>
+                  <span className="text-xs font-medium uppercase tracking-wider">Healthy / OK</span>
                   <CheckCircle2 className="w-4 h-4 text-[#16A34A]" />
                 </div>
                 <div className="mt-2 flex items-baseline space-x-2">
@@ -484,14 +841,14 @@ export const App: React.FC = () => {
 
               <div className="bg-white border border-[#E2E8F0] rounded-xl p-5 shadow-sm">
                 <div className="flex items-center justify-between text-[#64748B]">
-                  <span className="text-xs font-medium uppercase tracking-wider">Changed (24h)</span>
+                  <span className="text-xs font-medium uppercase tracking-wider">Changed</span>
                   <Activity className="w-4 h-4 text-blue-600" />
                 </div>
                 <div className="mt-2 flex items-baseline space-x-2">
                   <span className="text-2xl font-semibold text-[#0F172A]">{changedMonitors}</span>
                   <span className="text-xs text-[#64748B]">confirmed diffs</span>
                 </div>
-                <p className="text-xs text-[#64748B] mt-2">Content changes detected</p>
+                <p className="text-xs text-[#64748B] mt-2">Verified content updates</p>
               </div>
 
               <div className="bg-white border border-[#E2E8F0] rounded-xl p-5 shadow-sm">
@@ -539,24 +896,32 @@ export const App: React.FC = () => {
 
               {filteredMonitors.length === 0 ? (
                 <div className="p-12 text-center flex flex-col items-center justify-center">
-                  <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mb-4">
-                    <Globe className="w-6 h-6" />
+                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-4 ${
+                    isJudge ? 'bg-indigo-50 text-indigo-600' : 'bg-blue-50 text-blue-600'
+                  }`}>
+                    {isJudge ? <Compass className="w-6 h-6" /> : <Globe className="w-6 h-6" />}
                   </div>
                   <h3 className="text-base font-semibold text-[#0F172A]">
-                    {monitors.length === 0 ? 'No monitors configured yet' : 'No matching monitors found'}
+                    {monitors.length === 0 
+                      ? isJudge ? 'No evaluation monitors added yet' : 'No monitors configured yet'
+                      : 'No matching monitors found'}
                   </h3>
                   <p className="text-xs text-[#64748B] max-w-md mt-1 mb-6 leading-relaxed">
                     {monitors.length === 0
-                      ? 'Add a public URL or load the built-in local test fixture to start tracking web changes with Playwright screenshots and normalized content diffing.'
+                      ? isJudge 
+                        ? 'Enter any publicly accessible website URL (e.g. https://example.com) to trigger a genuine Playwright capture and inspect snapshots and diffs.'
+                        : 'Add a public URL or load the built-in local test fixture to start tracking web changes with Playwright screenshots and normalized content diffing.'
                       : 'Try adjusting your search query or status filter.'}
                   </p>
                   {monitors.length === 0 && (
                     <button
                       onClick={() => setIsAddModalOpen(true)}
-                      className="inline-flex items-center space-x-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2 rounded-lg shadow-sm transition-all"
+                      className={`inline-flex items-center space-x-1.5 text-white text-xs font-semibold px-4 py-2 rounded-lg shadow-sm transition-all ${
+                        isJudge ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-blue-600 hover:bg-blue-700'
+                      }`}
                     >
                       <Plus className="w-3.5 h-3.5" />
-                      <span>Create First Monitor</span>
+                      <span>{isJudge ? 'Add First Website' : 'Create First Monitor'}</span>
                     </button>
                   )}
                 </div>
@@ -689,6 +1054,8 @@ export const App: React.FC = () => {
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onSubmit={handleCreateMonitor}
+        isJudge={isJudge}
+        maxMonitorsReached={isQuotaReached}
       />
     </div>
   );

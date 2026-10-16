@@ -15,6 +15,7 @@ from app.models.models import (
 )
 from app.schemas.activity import ActivityItem, ActivityListResponse
 from app.services.security import sanitize_error_message
+from app.services.auth import require_auth, AuthContext
 
 router = APIRouter(prefix="/activity", tags=["activity"])
 
@@ -25,6 +26,7 @@ def get_activity_feed(
     event_type: Optional[str] = Query(None, description="Filter by event_type or status"),
     monitor_id: Optional[uuid.UUID] = Query(None, description="Filter by monitor UUID"),
     db: Session = Depends(get_db),
+    auth: AuthContext = Depends(require_auth),
 ):
     """
     Returns unified real database-backed activity stream:
@@ -45,6 +47,11 @@ def get_activity_feed(
         .options(joinedload(CheckRun.monitor), joinedload(CheckRun.version))
         .filter(CheckRun.state.notin_([CheckRunStateEnum.QUEUED, CheckRunStateEnum.RUNNING]))
     )
+    if auth.is_judge:
+        check_query = check_query.filter(Monitor.judge_session_id == auth.judge_session_id)
+    else:
+        check_query = check_query.filter(Monitor.judge_session_id.is_(None))
+
     if monitor_id:
         check_query = check_query.filter(CheckRun.monitor_id == monitor_id)
 
@@ -55,6 +62,11 @@ def get_activity_feed(
         .options(joinedload(NotificationOutbox.monitor), joinedload(NotificationOutbox.channel))
         .filter(NotificationOutbox.state.in_([OutboxStateEnum.SENT, OutboxStateEnum.FAILED]))
     )
+    if auth.is_judge:
+        outbox_query = outbox_query.filter(Monitor.judge_session_id == auth.judge_session_id)
+    else:
+        outbox_query = outbox_query.filter(Monitor.judge_session_id.is_(None))
+
     if monitor_id:
         outbox_query = outbox_query.filter(NotificationOutbox.monitor_id == monitor_id)
 

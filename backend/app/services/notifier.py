@@ -305,6 +305,11 @@ def create_outbox_entries_for_changed_version(
     - Idempotency key (monitor_id, version_id, channel_id) ensures no duplicate records.
     - Persists outbox rows and enqueues background delivery jobs.
     """
+    # Resource protection: never dispatch external notifications for judge evaluation monitors
+    if getattr(monitor, "judge_session_id", None):
+        logger.info(f"Skipping notification dispatch for judge monitor {monitor.id}")
+        return []
+
     # Query monitor-specific channels and global channels that are enabled
     channels = (
         db.query(NotificationChannel)

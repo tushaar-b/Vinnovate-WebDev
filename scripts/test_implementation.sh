@@ -50,10 +50,12 @@ if [[ -d "$ROOT/frontend/node_modules" ]]; then
 fi
 
 if [[ -d "$BACKEND" ]]; then
-  (cd "$BACKEND" && PYTHONPATH="$BACKEND" "$PY" -m pytest -q)
-  rc=$?; [[ $rc -eq 0 ]] && report PASS 'Complete backend pytest suite' || report FAIL 'Complete backend pytest suite' "exit $rc"
-  (cd "$BACKEND" && PYTHONPATH="$BACKEND" "$PY" -m pytest -q tests/test_phase1.py tests/test_phase2.py tests/test_phase5.py -k 'security or ssrf or credential or encryption or webhook or secret or redirect or unsafe')
+  (cd "$BACKEND" && PYTHONPATH="$BACKEND" "$PY" -m pytest -q tests/test_judge_workspace.py)
+  rc=$?; [[ $rc -eq 0 ]] && report PASS 'Judge workspace isolation and quota tests' || report FAIL 'Judge workspace isolation and quota tests' "exit $rc"
+  (cd "$BACKEND" && PYTHONPATH="$BACKEND" "$PY" -m pytest -q tests/test_phase1.py tests/test_phase2.py tests/test_phase5.py tests/test_judge_workspace.py -k 'security or ssrf or credential or encryption or webhook or secret or redirect or unsafe or judge')
   rc=$?; [[ $rc -eq 0 ]] && report PASS 'Essential security regression tests' || report FAIL 'Essential security regression tests' "exit $rc"
+  (cd "$BACKEND" && PYTHONPATH="$BACKEND" "$PY" -m pytest -q tests/test_visible_content_extraction.py)
+  rc=$?; [[ $rc -eq 0 ]] && report PASS 'Visible text extraction & noise filtering tests' || report FAIL 'Visible text extraction & noise filtering tests' "exit $rc"
 fi
 
 if [[ -z "${DATABASE_URL:-}" ]]; then

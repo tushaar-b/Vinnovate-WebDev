@@ -25,18 +25,6 @@ import uvicorn
 client = TestClient(app)
 
 
-@pytest.fixture(scope="module", autouse=True)
-def fixture_server():
-    settings.TEST_MODE = True
-    config = uvicorn.Config(app, host="127.0.0.1", port=settings.API_PORT, log_level="error")
-    server = uvicorn.Server(config)
-    t = threading.Thread(target=server.run, daemon=True)
-    t.start()
-    time.sleep(1)
-    yield
-    server.should_exit = True
-
-
 
 # -----------------------------------------------------------------------------
 # 1. Direct Browser Extraction Tests with Playwright
@@ -318,7 +306,9 @@ def test_checker_safe_transition_from_legacy_script_polluted_baseline():
     # Must transition safely to BASELINE (not CHANGED)
     assert mock_check.state == CheckRunStateEnum.BASELINE
     assert mock_db.add.called
-    added_version = mock_db.add.call_args[0][0]
+    added_versions = [arg[0][0] for arg in mock_db.add.call_args_list if isinstance(arg[0][0], Version)]
+    assert len(added_versions) > 0
+    added_version = added_versions[0]
     # Clean text in the new baseline version
     assert "CacheDetection" not in added_version.normalized_text
     assert "requestId" not in added_version.normalized_text

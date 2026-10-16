@@ -1,89 +1,262 @@
 # Website Change Detector
 
-Monitor public web pages for meaningful changes. The application captures rendered page text and screenshots, filters configured noise, keeps version history, compares text and images, and can queue Discord, Telegram, or SMTP notifications.
+> Autonomous, precise website monitoring with headless Chromium captures, normalized content hashing, and visual difference inspection.
 
-## Problem and features
+---
 
-Websites change frequently, and manual checking creates noise and missed updates. This single-user application provides scheduled checks, watch and ignore selectors, normalized content comparisons, screenshot history, text and visual diffs, an activity feed, and an encrypted notification configuration store.
+## Live Demo
+
+- **Live Website:** [https://vinnovate-web-dev.vercel.app](https://vinnovate-web-dev.vercel.app/)
+- **GitHub Repository:** [https://github.com/tushaar-b/Vinnovate-WebDev](https://github.com/tushaar-b/Vinnovate-WebDev)
+- **Backend API:** [https://vinnovate-webdev-production.up.railway.app](https://vinnovate-webdev-production.up.railway.app/)
+
+### Interactive Evaluation (No Login Required)
+When you open the live deployed website, select **Explore Judge Workspace** on the entry screen. This creates a secure, temporary anonymous evaluation session instantly. You can enter any publicly reachable website URL (such as `https://example.com`), trigger **Check Now**, view the live headless browser snapshot, observe baseline generation, inspect captured screenshots, and test visual/text comparison features without needing an admin password or account.
+
+---
+
+## Project Overview
+
+Modern websites update continuously, making manual verification tedious, unreliable, and noisy. Generic uptime checkers only track whether a web server returns HTTP 200, missing subtle content changes, visual regressions, broken pricing, or layout shifts.
+
+Website Change Detector solves this by combining headless browser rendering with robust content normalization and versioned visual diffing. Rather than naively diffing volatile HTML markup or script telemetry, it captures the rendered DOM, strips ephemeral scripts and dynamic noise, computes cryptographic SHA-256 hashes of visible human-readable text, and tracks visual changes across historical checkpoints.
+
+### Key Differentiators
+- **Meaningful rendered webpage text extraction:** Traverses the rendered DOM in Playwright to extract visible human-facing text rather than raw HTML markup.
+- **Dynamic script and tracking noise exclusion:** Automatically ignores ephemeral JavaScript variables, telemetry tokens, ad trackers, and dynamic timestamps.
+- **SHA-256 change detection:** Computes cryptographic hashes over normalized content to reliably determine whether a change occurred.
+- **Real browser snapshots:** Captures genuine full-viewport screenshots using headless Chromium.
+- **Historical version comparison:** Maintains sequential snapshot checkpoints with side-by-side text diffing.
+- **Visual difference inspection:** Generates visual difference overlays highlighting pixel modifications.
+- **Region-specific monitoring rules:** Supports custom CSS `WATCH` and `IGNORE` rules with an interactive region picker.
+- **Background scheduled checks:** Periodically evaluates targets through an asynchronous Redis RQ worker queue.
+- **Isolated public evaluation workspace:** Provides evaluator access through short-lived, quota-managed sessions without exposing administrative privileges.
+- **Reliable screenshot persistence across distributed services:** Stores captured screenshot bytes directly in PostgreSQL `VersionArtifact` rows, ensuring immediate screenshot availability across separated API and Worker instances.
+
+---
+
+## Key Features
+
+- **Autonomous Website Monitoring:** Periodic polling of HTTP/HTTPS websites with configurable check intervals.
+- **Visual & Text Diffs:** Compare version histories through colored word-level additions/deletions and visual overlay diffs.
+- **Interactive Region Picker:** Visually select DOM elements to monitor or suppress without manually writing CSS selectors.
+- **Activity Feed & Audit Trail:** Chronological log of all check runs, duration timings, HTTP status codes, and detected changes.
+- **Encrypted Notification Channels:** Production credentials for Discord Webhooks, Telegram Bots, and SMTP Email encrypted at rest with Fernet.
+- **SSRF & Abuse Protection:** Server-enforced host validation rejecting private subnets, loopbacks, cloud metadata (169.254.169.254), and unsafe ports.
+
+---
+
+## Technology Stack
+
+- **Frontend:** React 18, TypeScript, Vite, Tailwind CSS, Lucide Icons.
+- **Backend:** FastAPI (Python 3.12), SQLAlchemy, Alembic, Playwright Chromium.
+- **Infrastructure:** Railway (FastAPI, Worker, Scheduler), Vercel (SPA Frontend), PostgreSQL, Redis + RQ.
+
+---
 
 ## Architecture
 
-- **Frontend:** React, TypeScript, Vite, and Tailwind. It calls the backend API directly using `VITE_API_URL` when set; otherwise it uses same-origin `/api` paths.
-- **API:** FastAPI with SQLAlchemy and Alembic.
-- **Persistence:** PostgreSQL for monitors, checks, versions, and notification records; Redis/RQ for asynchronous jobs and scheduling coordination.
-- **Capture:** Playwright Chromium; screenshot artifacts are written beneath `DATA_DIR`.
-- **Processes:** API, RQ worker, and automatic scheduler run as separate processes.
-
-Production deployments run FastAPI on Railway with PostgreSQL, Redis, and Playwright Chromium, with strict CORS restrictions, production authentication via HMAC-SHA256 session tokens and admin credentials, and the frontend hosted on Vercel.
-
-## Local setup
-
-Requirements: Python 3.12+, Node.js/npm, Docker Desktop, and Playwright Chromium. From the repository root:
-
-```bash
-cp .env.example .env
-docker compose up -d postgres redis
-python -m venv backend/.venv
-backend/.venv/bin/pip install -r backend/requirements.txt
-backend/.venv/bin/playwright install chromium
-(cd backend && PYTHONPATH=. ../backend/.venv/bin/alembic upgrade head)
+```
+                                  +-----------------------------+
+                                  |   React + Vite Frontend     |
+                                  |     (Hosted on Vercel)      |
+                                  +--------------+--------------+
+                                                 |
+                                                 | HTTPS / REST (Bearer Auth)
+                                                 v
+                                  +-----------------------------+
+                                  |     FastAPI Backend API     |
+                                  |    (Hosted on Railway)      |
+                                  +-------+--------------+------+
+                                          |              |
+                      Enqueues Check Job  |              | Reads / Writes Metadata
+                                          v              v
++------------------+             +--------+---+    +-----+--------------------+
+| Railway Cron     | Polls Due   |   Redis    |    |   PostgreSQL Database    |
+| Scheduler        |------------>|  RQ Queue  |    | - Monitors & Check Runs  |
++------------------+             +--------+---+    | - Versions & Diffs       |
+                                          |        | - VersionArtifact Images |
+                      Dequeues Job        |        | - Encrypted Configs      |
+                                          v        +-----+--------------------+
+                                 +--------+------+       ^
+                                 |  RQ Worker    |       | Persists Screenshots
+                                 |  (Playwright) |-------+ & Extracted Hashes
+                                 +---------------+
 ```
 
-Set `ENCRYPTION_KEY` in `.env` to a generated Fernet key. Keep it stable and private; it is needed to decrypt stored notification credentials.
+### Component Roles & Artifact Persistence
+1. **Frontend:** Single-page application built with React and Vite. Interfaces with the FastAPI backend using scoped Bearer authentication (Admin or Judge).
+2. **FastAPI:** Handles request routing, session validation, SSRF checks, quota enforcement, and comparison endpoints.
+3. **PostgreSQL & VersionArtifact:** Stores application state. Captured screenshot binaries are saved into `VersionArtifact` database records, allowing the API and Worker to share binary images across isolated container filesystems.
+4. **Redis & RQ Worker:** Decouples heavy browser execution. The worker executes Playwright headless Chromium, takes screenshots, extracts text, and evaluates SHA-256 hash deltas.
+5. **Scheduler:** Runs continuously to trigger background checks for active monitors whose scheduled interval has elapsed, and disables expired judge monitors.
 
-Start each process in a separate terminal:
+---
 
-```bash
-cd backend && PYTHONPATH=. .venv/bin/uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
-cd backend && PYTHONPATH=. .venv/bin/python worker.py
-cd backend && PYTHONPATH=. .venv/bin/python scheduler.py
-cd frontend && npm ci && npm run dev
-```
+## Local Setup
 
-Open `http://localhost:5173`. The API health endpoint is `http://localhost:8000/api/health`. Re-run migrations after pulling schema changes with `cd backend && PYTHONPATH=. .venv/bin/alembic upgrade head`.
+### Prerequisites
+- Python 3.12+
+- Node.js 18+ and npm
+- Docker and Docker Compose (for local PostgreSQL and Redis)
 
-## Environment variables
+### Step-by-Step Installation
 
-Backend settings are loaded from `.env` (see `.env.example`):
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/tushaar-b/Vinnovate-WebDev.git
+   cd Vinnovate-WebDev
+   ```
 
-| Variable | Purpose |
-| --- | --- |
-| `ENVIRONMENT` | Runtime environment name (`production` enforces auth and disables dev fixtures/docs) |
-| `ADMIN_PASSWORD` | Required in production. Password for web console login |
-| `ALLOWED_ORIGINS` | Comma-separated list of allowed CORS origins (e.g. your Vercel URL) |
-| `API_KEY` | Optional programmatic API key (`X-API-Key` or `Authorization: Bearer`) |
-| `AUTH_TOKEN_SECRET` | Optional session token secret (derived from `ENCRYPTION_KEY` if unset) |
-| `DATABASE_URL` | PostgreSQL SQLAlchemy URL |
-| `REDIS_URL` | Redis connection used by RQ and coordination |
-| `DATA_DIR` | Persistent screenshot and image diff directory |
-| `ENCRYPTION_KEY` | Stable Fernet key for notification credentials |
-| `VITE_API_URL` | Frontend API origin pointing to backend HTTPS on Railway |
+2. **Configure environment variables:**
+   ```bash
+   cp .env.example backend/.env
+   ```
 
-Vercel project settings should use `frontend/` as the root directory, Vite as framework preset, `npm run build` as build command, and `dist` as output directory. `frontend/vercel.json` provides SPA fallback routing. Set `VITE_API_URL` to your Railway backend HTTPS origin, and ensure that exact Vercel frontend URL is included in `ALLOWED_ORIGINS` on Railway.
+3. **Generate a Fernet encryption key:**
+   ```bash
+   python3 -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+   ```
+   Paste the generated string into `backend/.env` as `ENCRYPTION_KEY`.
+
+4. **Start local PostgreSQL and Redis:**
+   ```bash
+   docker compose up -d postgres redis
+   ```
+
+5. **Create and activate a Python virtual environment:**
+   ```bash
+   # macOS / Linux
+   python3 -m venv backend/venv
+   source backend/venv/bin/activate
+
+   # Windows
+   python -m venv backend\venv
+   backend\venv\Scripts\activate
+   ```
+
+6. **Install backend dependencies and Playwright Chromium:**
+   ```bash
+   pip install -r backend/requirements.txt
+   playwright install chromium
+   ```
+
+7. **Run database migrations:**
+   ```bash
+   cd backend
+   PYTHONPATH=. alembic upgrade head
+   cd ..
+   ```
+
+8. **Install frontend dependencies:**
+   ```bash
+   cd frontend
+   npm install
+   cd ..
+   ```
+
+### Running Services Locally
+
+Start each component in a separate terminal:
+
+- **Terminal 1: FastAPI API Server**
+  ```bash
+  cd backend
+  PYTHONPATH=. ./venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+  ```
+
+- **Terminal 2: RQ Worker (Playwright)**
+  ```bash
+  cd backend
+  PYTHONPATH=. ./venv/bin/python worker.py
+  ```
+
+- **Terminal 3: Scheduler**
+  ```bash
+  cd backend
+  PYTHONPATH=. ./venv/bin/python scheduler.py
+  ```
+
+- **Terminal 4: Frontend Development Server**
+  ```bash
+  cd frontend
+  npm run dev
+  ```
+
+Open `http://localhost:5173` in your browser.
+
+---
+
+## Usage
+
+### 1. Judge Workspace (Public & Evaluator Access)
+- Click **Explore Judge Workspace** on the landing page.
+- An anonymous, scoped evaluation session is automatically initialized.
+- Enter a public URL (e.g. `https://example.com`) and click **Add Website**.
+- Click **Check Now** to trigger an on-demand Playwright capture.
+- Monitor state transitions:
+  - `BASELINE`: First snapshot captured. Serves as the comparison reference.
+  - `UNCHANGED`: Content hash matches the previous version.
+  - `CHANGED`: Visible rendered content differs from the previous snapshot.
+- Open **Compare Versions** to inspect word additions, deletions, and visual image diffs.
+- Configure CSS selectors under **Region Rules & Picker** to focus on or ignore specific DOM nodes.
+- Quotas: Maximum 2 monitors per session, minimum 15-minute background interval, maximum 3 manual checks per hour.
+
+### 2. Admin Login (Privileged Operations)
+- Click **Sign In as Admin** on the landing page.
+- Enter the administrative password (configured via `ADMIN_PASSWORD`).
+- Access global system monitors, notification channel settings (Discord, Telegram, SMTP), and unconstrained monitoring parameters.
+
+---
 
 ## Verification
 
-Run the local verification script with `./scripts/test_implementation.sh`. It prints PASS, FAIL, and SKIPPED for checks it can actually perform. Backend service checks are skipped when the corresponding URL variable is absent. Run the deployed read-only probe with:
+The repository includes comprehensive automated verification suites.
 
+### Full Test Suite & Build Verification
+Run the verification shell script:
 ```bash
-python scripts/smoke_test.py --frontend-url https://your-site.example --backend-url https://your-api.example
+./scripts/test_implementation.sh
+```
+This script executes:
+- Python and npm dependency validation.
+- Frontend TypeScript type checking and Vite production build.
+- Judge workspace isolation and quota tests (`tests/test_judge_workspace.py`).
+- Essential security regression tests (`tests/test_production_access.py`, `tests/test_phase1.py`, SSRF tests).
+- Visible text extraction and noise filtering tests (`tests/test_visible_content_extraction.py`).
+- PostgreSQL and Redis connectivity checks.
+
+### Live Production Smoke Test
+Verify read-only endpoints and judge isolation against live or local deployments:
+```bash
+python3 scripts/smoke_test.py --frontend-url https://vinnovate-web-dev.vercel.app --backend-url https://vinnovate-webdev-production.up.railway.app
 ```
 
-The smoke test checks HTTPS delivery, health dependencies, CORS, unauthenticated admin access, public response content, and browser loading (requires Playwright and Chromium). It does not create, modify, or delete monitor data. No deployed test results are available because no production deployment exists.
+---
 
-## Current results and limitations
+## Deployment
 
-- Frontend production build: **PASS** (`npm run build`, exit 0, 2026-10-16).
-- Backend pytest suite: run using `./scripts/test_implementation.sh`; actual results are recorded in `REPORTS/final_submission.txt`.
-- Production hosting: **BLOCKED**. Vercel CLI has no authenticated account, outbound DNS resolution to `vercel.com` failed, and the API has no administrative authentication.
-- Docker-backed PostgreSQL/Redis checks could not run in this environment because access to the Docker daemon socket was denied.
-- There is no multi-user authorization or public SaaS access control. Keep the API bound to localhost or a trusted private network until access protection, production CORS, and persistent hosting are configured.
+The application is deployed as distributed cloud services:
 
-## Troubleshooting
+- **Frontend (Vercel):**
+  - Continuous deployment connected to the `main` branch.
+  - Output directory: `frontend/dist`.
+  - Rewrite rules in `frontend/vercel.json` route all SPA navigation paths back to `index.html`.
+  - Configured with `VITE_API_URL` pointing to the Railway API domain.
 
-- **Database connection failure:** check PostgreSQL is running and `DATABASE_URL` points to the expected database.
-- **Redis or queue unavailable:** start Redis and confirm `REDIS_URL`; run the worker separately.
-- **Screenshots missing after restart:** configure `DATA_DIR` on persistent storage before hosting.
-- **Notification decryption fails:** restore the original `ENCRYPTION_KEY`; do not rotate it while encrypted settings exist.
-- **Vercel frontend requests fail:** set build-time `VITE_API_URL` to the secured HTTPS backend and allow the frontend origin in CORS.
-- **Browser launch fails:** install Chromium with `playwright install chromium` in the backend runtime.
+- **Backend (Railway):**
+  - **API Service:** Runs `uvicorn app.main:app` with production CORS and Fernet key validation.
+  - **Worker Service:** Runs `python worker.py` with Playwright Chromium for website rendering.
+  - **Scheduler Service:** Runs `python scheduler.py` to trigger background intervals.
+  - **Managed PostgreSQL & Redis:** Persistent database storage for relational metadata and VersionArtifact images.
+
+---
+
+## Limitations
+
+- **Dynamic & Personalized Websites:** Sites requiring user authentication, CAPTCHA solvers, or exhibiting personalized location feeds may produce layout variations between runs.
+- **Automation Defenses:** Websites employing strict bot detection (e.g., Cloudflare Under Attack mode) may block headless Chromium requests. In such cases, the system reports a descriptive capture failure rather than simulating success.
+- **Canvas & Closed Shadow DOM:** Text drawn directly to an HTML `<canvas>` or encapsulated inside closed shadow roots cannot be extracted by standard DOM text traversal.
+- **Judge Session Rate Limits:** Anonymous evaluation sessions are capped at 2 monitors and 3 manual checks per monitor per hour to prevent resource exhaustion of shared browser instances.
+- **Screenshot Storage Growth:** Persistent full-page screenshots are stored in PostgreSQL. Long-running production instances monitoring hundreds of pages require regular retention pruning.
+- **Sequential Change Observation:** Detecting a change requires at least two distinct captures where the source website content actually changes. First captures are always registered as `BASELINE`.

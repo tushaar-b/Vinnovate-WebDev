@@ -22,6 +22,8 @@ from app.schemas.notifications import (
     sanitize_channel_config,
 )
 from app.services.notifier import send_test_notification
+from app.services.auth import require_auth, require_admin_auth, AuthContext
+from app.api.monitors import get_monitor_or_404
 from app.services.security import (
     sanitize_error_message,
     encrypt_channel_config,
@@ -62,7 +64,10 @@ def get_or_create_global_channel(
 
 
 @router.get("/settings/notifications", response_model=Dict[str, NotificationChannelResponse])
-def get_notification_settings(db: Session = Depends(get_db)):
+def get_notification_settings(
+    db: Session = Depends(get_db),
+    auth: AuthContext = Depends(require_admin_auth),
+):
     """Returns global notification channels with credentials decrypted then securely masked."""
     result = {}
     for ch_type in ["discord", "telegram", "email"]:
@@ -85,6 +90,7 @@ def update_notification_settings(
     channel_type: str,
     payload: NotificationChannelConfigPayload,
     db: Session = Depends(get_db),
+    auth: AuthContext = Depends(require_admin_auth),
 ):
     """
     Updates configuration and toggle for global notification channel.
@@ -157,6 +163,7 @@ def test_channel_notification(
     channel_type: str,
     payload: Optional[TestNotificationRequest] = None,
     db: Session = Depends(get_db),
+    auth: AuthContext = Depends(require_admin_auth),
 ):
     """
     Dispatches a test notification to verify connectivity.
@@ -186,9 +193,15 @@ def list_notification_outbox(
     limit: int = Query(50, ge=1, le=200),
     state: Optional[str] = Query(None),
     db: Session = Depends(get_db),
+    auth: AuthContext = Depends(require_auth),
 ):
     """Returns notification delivery history with sanitized error messages and monitor metadata."""
-    query = db.query(NotificationOutbox).order_by(NotificationOutbox.created_at.desc())
+    query = db.query(NotificationOutbox).join(Monitor, NotificationOutbox.monitor_id == Monitor.id).order_by(NotificationOutbox.created_at.desc())
+    if auth.is_judge:
+        query = query.filter(Monitor.judge_session_id == auth.judge_session_id)
+    else:
+        query = query.filter(Monitor.judge_session_id.is_(None))
+
     if state:
         try:
             state_enum = OutboxStateEnum(state.lower())
@@ -232,9 +245,15 @@ def list_notification_outbox(
 
 # Per-monitor notification channel routes
 @router.get("/monitors/{monitor_id}/channels", response_model=List[NotificationChannelResponse])
-def get_monitor_channels(monitor_id: uuid.UUID, db: Session = Depends(get_db)):
+def get_monitor_channels(
+    monitor_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    auth: AuthContext = Depends(require_auth),
+):
     """Returns channels configured specifically for a single monitor."""
-    channels = db.query(NotificationChannel).filter(NotificationChannel.monitor_id == monitor_id).all()
+    # Enforce monitor ownership: returns 404 if monitor doesn't belong to caller
+    monitor = get_monitor_or_404(monitor_id, db, auth)
+    channels = db.query(NotificationChannel).filter(NotificationChannel.monitor_id == monitor.id).all()
     return [
         NotificationChannelResponse(
             id=c.id,

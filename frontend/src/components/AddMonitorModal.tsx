@@ -6,12 +6,16 @@ interface AddMonitorModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (input: CreateMonitorInput) => Promise<void>;
+  isJudge?: boolean;
+  maxMonitorsReached?: boolean;
 }
 
 export const AddMonitorModal: React.FC<AddMonitorModalProps> = ({
   isOpen,
   onClose,
   onSubmit,
+  isJudge = false,
+  maxMonitorsReached = false,
 }) => {
   const [name, setName] = useState('');
   const [url, setUrl] = useState('');
@@ -36,6 +40,11 @@ export const AddMonitorModal: React.FC<AddMonitorModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (isJudge && maxMonitorsReached) {
+      setError('Maximum 2 monitors allowed for temporary evaluation session. Please remove an existing monitor first.');
+      return;
+    }
 
     const trimmedName = name.trim();
     const trimmedUrl = url.trim();
@@ -77,11 +86,19 @@ export const AddMonitorModal: React.FC<AddMonitorModalProps> = ({
   };
 
   const handleUseFixture = () => {
-    setName('AcuTime Chronometer Fixture');
-    setUrl(`http://127.0.0.1:8000/fixture/product`);
-    setIntervalMinutes(15);
-    setSensitivity('medium');
-    setError(null);
+    if (isJudge) {
+      setName('Example Domain');
+      setUrl('https://example.com');
+      setIntervalMinutes(15);
+      setSensitivity('medium');
+      setError(null);
+    } else {
+      setName('AcuTime Chronometer Fixture');
+      setUrl(`http://127.0.0.1:8000/fixture/product`);
+      setIntervalMinutes(15);
+      setSensitivity('medium');
+      setError(null);
+    }
   };
 
   return (
@@ -100,9 +117,13 @@ export const AddMonitorModal: React.FC<AddMonitorModalProps> = ({
             </div>
             <div>
               <h2 id="modal-title" className="text-base font-semibold text-[#0F172A]">
-                Add Website Monitor
+                {isJudge ? 'Add Website (Judge Evaluation)' : 'Add Website Monitor'}
               </h2>
-              <p className="text-xs text-[#64748B]">Configure target URL, check schedule and sensitivity</p>
+              <p className="text-xs text-[#64748B]">
+                {isJudge
+                  ? 'Enter any safe public HTTP/HTTPS URL (max 2 monitors, min 15m interval)'
+                  : 'Configure target URL, check schedule and sensitivity'}
+              </p>
             </div>
           </div>
           <button
@@ -125,14 +146,14 @@ export const AddMonitorModal: React.FC<AddMonitorModalProps> = ({
 
           {/* Quick preset chip */}
           <div className="flex items-center justify-between pb-1">
-            <span className="text-xs text-[#64748B] font-medium">Quick Test Preset:</span>
+            <span className="text-xs text-[#64748B] font-medium">Quick Preset:</span>
             <button
               type="button"
               onClick={handleUseFixture}
               className="inline-flex items-center space-x-1 text-xs text-blue-600 hover:text-blue-700 font-medium bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-md transition-colors"
             >
               <Sparkles className="w-3 h-3" />
-              <span>Load Local Test Fixture</span>
+              <span>{isJudge ? 'Load example.com' : 'Load Local Test Fixture'}</span>
             </button>
           </div>
 

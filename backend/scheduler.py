@@ -2,12 +2,13 @@ import logging
 import time
 from datetime import datetime, timezone, timedelta
 import redis
-from sqlalchemy import select, and_
+from sqlalchemy import select, and_, or_
 
 from app.config import settings
 from app.database import SessionLocal
 from app.models.models import Monitor, CheckRun, CheckRunStateEnum
 from app.services.queue import enqueue_check
+from app.services.judge import cleanup_expired_judge_monitors
 
 logging.basicConfig(
     level=logging.INFO,
@@ -42,14 +43,23 @@ def run_scheduler_tick(db=None, redis_conn=None) -> int:
     try:
         now = datetime.now(timezone.utc)
 
-        # Select enabled monitors that are due, with SKIP LOCKED for concurrency safety
+        # Automatic cleanup and disabling of expired judge evaluation monitors
+        try:
+            cleaned = cleanup_expired_judge_monitors(db)
+            if cleaned > 0:
+                logger.info(f"Cleaned up and disabled {cleaned} expired judge monitor(s)")
+        except Exception as e:
+            logger.warning(f"Error during expired judge monitor cleanup: {e}")
+
+        # Select enabled monitors that are due and not expired, with SKIP LOCKED for concurrency safety
         due_monitors = (
             db.query(Monitor)
             .filter(
                 and_(
                     Monitor.enabled.is_(True),
                     Monitor.next_check_at.isnot(None),
-                    Monitor.next_check_at <= now
+                    Monitor.next_check_at <= now,
+                    or_(Monitor.expires_at.is_(None), Monitor.expires_at > now),
                 )
             )
             .with_for_update(skip_locked=True)

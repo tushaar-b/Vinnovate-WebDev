@@ -90,6 +90,10 @@ class Monitor(Base):
     next_check_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
     last_error = Column(Text, nullable=True)
     rebaseline_needed = Column(Boolean, nullable=False, default=False)
+    judge_session_id = Column(String(64), nullable=True, index=True)
+    expires_at = Column(DateTime(timezone=True), nullable=True)
+    manual_checks_count = Column(Integer, nullable=False, default=0)
+    manual_checks_window_start = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
     updated_at = Column(
         DateTime(timezone=True), nullable=False, default=utc_now, onupdate=utc_now

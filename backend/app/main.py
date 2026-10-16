@@ -17,11 +17,18 @@ async def lifespan(app: FastAPI):
     # Validate production access security at startup
     from app.services.auth import validate_production_auth_at_startup
     validate_production_auth_at_startup()
-    # Ensure version_artifacts table exists if migrations have not yet run
+    # Ensure database tables and columns exist even if migration executes concurrently
     try:
+        from sqlalchemy import text
         from app.database import engine
         from app.models.models import VersionArtifact
         VersionArtifact.__table__.create(bind=engine, checkfirst=True)
+        with engine.begin() as conn:
+            conn.execute(text("ALTER TABLE monitors ADD COLUMN IF NOT EXISTS judge_session_id VARCHAR(64);"))
+            conn.execute(text("ALTER TABLE monitors ADD COLUMN IF NOT EXISTS expires_at TIMESTAMPTZ;"))
+            conn.execute(text("ALTER TABLE monitors ADD COLUMN IF NOT EXISTS manual_checks_count INTEGER DEFAULT 0 NOT NULL;"))
+            conn.execute(text("ALTER TABLE monitors ADD COLUMN IF NOT EXISTS manual_checks_window_start TIMESTAMPTZ;"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_monitors_judge_session_id ON monitors (judge_session_id);"))
     except Exception:
         pass
     yield
@@ -47,9 +54,14 @@ if not is_prod:
         if d not in configured_origins:
             configured_origins.append(d)
 
+prod_origin = "https://vinnovate-web-dev.vercel.app"
+if prod_origin not in configured_origins:
+    configured_origins.append(prod_origin)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=configured_origins,
+    allow_origin_regex=r"^https:\/\/.*\.vercel\.app$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

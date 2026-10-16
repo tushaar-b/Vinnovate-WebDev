@@ -215,17 +215,51 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       </header>
 
       {/* =====================================================================
-          2. HERO SECTION — FULL VIEWPORT
+          2. HERO SECTION — FULL VIEWPORT WITH CINEMATIC TECHNICAL BACKGROUND
          ===================================================================== */}
-      <section className="relative min-h-[calc(100vh-4rem)] flex flex-col justify-between items-center overflow-hidden px-4 sm:px-6 lg:px-8 text-center">
-        {/* Subtle warm atmospheric glow */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-5xl h-[520px] bg-gradient-to-b from-[#C5A474]/12 via-[#C5A474]/4 to-transparent pointer-events-none -z-10 blur-3xl rounded-full" />
+      <section className="relative min-h-[calc(100vh-4rem)] flex flex-col justify-between items-center overflow-hidden px-4 sm:px-6 lg:px-8 text-center bg-[#141210]">
+        {/* Cinematic Technical Background Image with Responsive Positioning & Vignette */}
+        <div className="absolute inset-0 pointer-events-none -z-20 overflow-hidden">
+          <picture>
+            <source srcSet="/assets/wide_dark_cinematic_tech_themed_hero_background.webp" type="image/webp" />
+            <img
+              src="/assets/wide_dark_cinematic_tech_themed_hero_background.png"
+              alt="Website Change Detector Technical Observability Infrastructure"
+              className="w-full h-full object-cover object-center md:object-[center_35%] opacity-90"
+              loading="eager"
+              decoding="async"
+            />
+          </picture>
+
+          {/* Layer 1: Horizontal & Radial Vignette Overlay to maintain high contrast for center headline while revealing edges */}
+          <div
+            className="absolute inset-0"
+            style={{
+              background: `
+                radial-gradient(ellipse 75% 65% at 50% 45%, rgba(20, 18, 16, 0.78) 0%, rgba(20, 18, 16, 0.52) 50%, rgba(20, 18, 16, 0.25) 100%),
+                linear-gradient(to right, rgba(20, 18, 16, 0.32) 0%, rgba(20, 18, 16, 0.74) 25%, rgba(20, 18, 16, 0.82) 50%, rgba(20, 18, 16, 0.74) 75%, rgba(20, 18, 16, 0.32) 100%)
+              `,
+            }}
+          />
+
+          {/* Layer 2: Mobile darkening reinforcement to guarantee maximum legibility on compact screens */}
+          <div className="absolute inset-0 bg-[#141210]/40 sm:bg-transparent" />
+
+          {/* Layer 3: Top edge seamless fade from header */}
+          <div className="absolute top-0 left-0 right-0 h-28 bg-gradient-to-b from-[#141210] via-[#141210]/80 to-transparent" />
+
+          {/* Layer 4: Bottom edge seamless fade into next obsidian section */}
+          <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-[#141210] via-[#141210]/90 to-transparent" />
+        </div>
+
+        {/* Subtle warm atmospheric champagne glow behind headline */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl h-[460px] bg-gradient-to-b from-[#C5A474]/12 via-[#C5A474]/4 to-transparent pointer-events-none -z-10 blur-3xl rounded-full" />
 
         {/* Top spacer to balance the vertical centering */}
         <div className="hidden sm:block h-6" />
 
         {/* Centered Hero Content */}
-        <div className="max-w-5xl mx-auto my-auto py-12 flex flex-col items-center">
+        <div className="relative z-10 max-w-5xl mx-auto my-auto py-12 flex flex-col items-center">
           {/* Main Headline */}
           <h1 className="font-serif text-5xl sm:text-6xl md:text-7xl lg:text-7xl font-normal text-[#F5EFE5] tracking-tight leading-[1.12] max-w-5xl mx-auto">
             Detect Every Website Change.{' '}
@@ -264,7 +298,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
         {/* Bottom Scroll Indicator */}
         <div
-          className="pb-8 pt-4 flex flex-col items-center space-y-1.5 text-[#8F8579] cursor-pointer hover:text-[#C5A474] transition-colors"
+          className="relative z-10 pb-8 pt-4 flex flex-col items-center space-y-1.5 text-[#8F8579] cursor-pointer hover:text-[#C5A474] transition-colors"
           onClick={() => scrollToSection('preview')}
         >
           <span className="text-[10px] font-sans uppercase tracking-widest text-[#8F8579]">Explore Diff Engine</span>

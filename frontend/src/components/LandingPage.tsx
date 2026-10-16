@@ -451,7 +451,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               return (
                 <div
                   onClick={() => setActiveCapIndex(prevCapIndex)}
-                  className="hidden sm:flex flex-col justify-between bg-[#1A1714] border border-[#40372D] rounded-2xl p-6 opacity-45 scale-95 blur-[0.5px] hover:opacity-80 hover:border-[#665744] hover:scale-98 transition-all duration-500 cursor-pointer shadow-sm h-[320px]"
+                  className="hidden sm:flex flex-col justify-between bg-[#1A1714] border border-[#40372D] rounded-2xl p-6 opacity-45 scale-95 blur-[0.5px] hover:opacity-80 hover:border-[#665744] hover:scale-98 transition-all duration-500 cursor-pointer shadow-sm min-h-[280px]"
                 >
                   <div>
                     <div className="flex items-center justify-between mb-4">
@@ -465,13 +465,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     <h3 className="font-serif text-base font-medium text-[#BDB3A7] leading-snug">
                       {prevItem.title}
                     </h3>
-                    <p className="text-xs text-[#8F8579] mt-2.5 leading-relaxed line-clamp-3 font-sans">
+                    <p className="text-xs text-[#8F8579] mt-2.5 leading-relaxed line-clamp-4 font-sans">
                       {prevItem.desc}
                     </p>
-                  </div>
-                  <div className="pt-4 border-t border-[#40372D]/50 flex items-center justify-between text-[11px] text-[#8F8579]">
-                    <span className="font-mono text-[#8F8579]">{prevItem.badge}</span>
-                    <span className="text-[#C5A474] text-xs">← Click to focus</span>
                   </div>
                 </div>
               );
@@ -483,7 +479,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               const ActiveIcon = activeItem.icon;
               return (
                 <div
-                  className="relative flex flex-col justify-between bg-[#241F1A] border-2 border-[#C5A474] rounded-2xl p-7 sm:p-8 scale-100 sm:scale-105 z-20 shadow-gold transition-all duration-500 h-[360px]"
+                  className="relative flex flex-col justify-between bg-[#241F1A] border-2 border-[#C5A474] rounded-2xl p-7 sm:p-8 scale-100 sm:scale-105 z-20 shadow-gold transition-all duration-500 min-h-[320px]"
                 >
                   {/* Active highlight glow top border */}
                   <div className="absolute top-0 left-1/4 right-1/4 h-[2px] bg-gradient-to-r from-transparent via-[#C5A474] to-transparent" />
@@ -510,16 +506,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                       {activeItem.desc}
                     </p>
                   </div>
-
-                  <div className="pt-4 border-t border-[#40372D] flex items-center justify-between">
-                    <div className="flex items-center space-x-1.5 text-xs text-[#34C59A] font-medium font-mono">
-                      <span className="w-2 h-2 rounded-full bg-[#34C59A] inline-block" />
-                      <span>{activeItem.highlight}</span>
-                    </div>
-                    <span className="text-[11px] font-mono text-[#8F8579]">
-                      0{activeCapIndex + 1} of 06
-                    </span>
-                  </div>
                 </div>
               );
             })()}
@@ -531,7 +517,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               return (
                 <div
                   onClick={() => setActiveCapIndex(nextCapIndex)}
-                  className="hidden sm:flex flex-col justify-between bg-[#1A1714] border border-[#40372D] rounded-2xl p-6 opacity-45 scale-95 blur-[0.5px] hover:opacity-80 hover:border-[#665744] hover:scale-98 transition-all duration-500 cursor-pointer shadow-sm h-[320px]"
+                  className="hidden sm:flex flex-col justify-between bg-[#1A1714] border border-[#40372D] rounded-2xl p-6 opacity-45 scale-95 blur-[0.5px] hover:opacity-80 hover:border-[#665744] hover:scale-98 transition-all duration-500 cursor-pointer shadow-sm min-h-[280px]"
                 >
                   <div>
                     <div className="flex items-center justify-between mb-4">
@@ -545,13 +531,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     <h3 className="font-serif text-base font-medium text-[#BDB3A7] leading-snug">
                       {nextItem.title}
                     </h3>
-                    <p className="text-xs text-[#8F8579] mt-2.5 leading-relaxed line-clamp-3 font-sans">
+                    <p className="text-xs text-[#8F8579] mt-2.5 leading-relaxed line-clamp-4 font-sans">
                       {nextItem.desc}
                     </p>
-                  </div>
-                  <div className="pt-4 border-t border-[#40372D]/50 flex items-center justify-between text-[11px] text-[#8F8579]">
-                    <span className="font-mono text-[#8F8579]">{nextItem.badge}</span>
-                    <span className="text-[#C5A474] text-xs">Click to focus →</span>
                   </div>
                 </div>
               );
@@ -580,9 +562,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </div>
         </div>
 
-        {/* Roulette Indicators & Pause Control */}
-        <div className="mt-10 flex flex-col items-center justify-center space-y-4">
-          {/* Indicator Dots */}
+        {/* Carousel Indicator Dots */}
+        <div className="mt-8 flex justify-center">
           <div className="flex items-center space-x-2">
             {capabilities.map((cap, idx) => (
               <button
@@ -596,23 +577,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 title={`Jump to ${cap.title}`}
                 aria-label={`Slide ${idx + 1}`}
               />
-            ))}
-          </div>
-
-          {/* Mini Quick-Select Roulette Strip */}
-          <div className="flex flex-wrap items-center justify-center gap-2 pt-2 max-w-4xl">
-            {capabilities.map((cap, idx) => (
-              <button
-                key={cap.id}
-                onClick={() => setActiveCapIndex(idx)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                  idx === activeCapIndex
-                    ? 'bg-[#342B20] text-[#C5A474] border border-[#C5A474]/50 shadow-gold'
-                    : 'bg-[#1A1714] text-[#8F8579] hover:text-[#F5EFE5] border border-[#40372D]/60 hover:border-[#665744]'
-                }`}
-              >
-                {cap.badge}
-              </button>
             ))}
           </div>
         </div>

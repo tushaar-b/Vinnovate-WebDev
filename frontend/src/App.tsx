@@ -361,7 +361,7 @@ export const App: React.FC = () => {
   // Session Checking State (prevents mounting protected components prematurely)
   if (authChecking) {
     return (
-      <div className="min-h-screen bg-[#F8FAFC] flex flex-col justify-center items-center p-4 text-[#64748B]">
+      <div className="min-h-screen bg-[#F5F7FB] flex flex-col justify-center items-center p-4 text-[#66758C]">
         <RefreshCw className="w-8 h-8 animate-spin text-blue-600 mb-3" />
         <p className="text-sm font-medium">Verifying session status...</p>
       </div>
@@ -391,7 +391,7 @@ export const App: React.FC = () => {
   const isQuotaReached = isJudge && monitors.length >= maxMonitorsAllowed;
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A] flex flex-col font-sans">
+    <div className="min-h-screen bg-[#F5F7FB] text-[#101828] flex flex-col font-sans">
       {/* Top Navigation */}
       <header className="bg-white border-b border-[#E2E8F0] sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -406,10 +406,10 @@ export const App: React.FC = () => {
                 {isJudge ? <Compass className="w-5 h-5" /> : <Globe className="w-5 h-5" />}
               </div>
               <div className="flex flex-col">
-                <span className="font-semibold text-base leading-none text-[#0F172A]">
+                <span className="font-semibold text-base leading-none text-[#101828]">
                   {isJudge ? 'Evaluation Workspace' : 'Website Change Detector'}
                 </span>
-                <span className="text-[11px] text-[#64748B] mt-0.5 font-medium tracking-wide uppercase">
+                <span className="text-[11px] text-[#66758C] mt-0.5 font-medium tracking-wide uppercase">
                   {isJudge ? 'Interactive Judge Mode' : 'Precision Observability'}
                 </span>
               </div>
@@ -439,7 +439,7 @@ export const App: React.FC = () => {
                     className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                       isActive 
                         ? isJudge ? 'bg-indigo-50 text-indigo-700' : 'bg-blue-50 text-blue-600' 
-                        : 'text-[#64748B] hover:text-[#0F172A] hover:bg-slate-50'
+                        : 'text-[#66758C] hover:text-[#101828] hover:bg-slate-50'
                     }`}
                   >
                     <Icon className="w-4 h-4" />
@@ -455,8 +455,8 @@ export const App: React.FC = () => {
             {/* Health pill */}
             <div className="hidden sm:flex items-center space-x-2 text-xs bg-slate-50 border border-[#E2E8F0] px-3 py-1.5 rounded-full">
               <div className="flex items-center space-x-1">
-                <Server className="w-3.5 h-3.5 text-[#64748B]" />
-                <span className="text-[#64748B]">API:</span>
+                <Server className="w-3.5 h-3.5 text-[#66758C]" />
+                <span className="text-[#66758C]">API:</span>
                 <span className={health?.status === 'ok' ? 'text-green-600 font-medium' : 'text-amber-600 font-medium'}>
                   {healthLoading ? '...' : health?.status === 'ok' ? 'ONLINE' : 'OFFLINE'}
                 </span>
@@ -465,8 +465,8 @@ export const App: React.FC = () => {
               <span className="text-[#CBD5E1]">|</span>
 
               <div className="flex items-center space-x-1">
-                <Database className="w-3.5 h-3.5 text-[#64748B]" />
-                <span className="text-[#64748B]">DB:</span>
+                <Database className="w-3.5 h-3.5 text-[#66758C]" />
+                <span className="text-[#66758C]">DB:</span>
                 <span className={health?.database === 'ok' ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
                   {health?.database === 'ok' ? 'OK' : 'ERR'}
                 </span>
@@ -475,8 +475,8 @@ export const App: React.FC = () => {
               <span className="text-[#CBD5E1]">|</span>
 
               <div className="flex items-center space-x-1">
-                <RefreshCw className={`w-3.5 h-3.5 ${healthLoading ? 'animate-spin text-blue-600' : 'text-[#64748B]'}`} />
-                <span className="text-[#64748B]">Redis:</span>
+                <RefreshCw className={`w-3.5 h-3.5 ${healthLoading ? 'animate-spin text-blue-600' : 'text-[#66758C]'}`} />
+                <span className="text-[#66758C]">Redis:</span>
                 <span className={health?.redis === 'ok' ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
                   {health?.redis === 'ok' ? 'OK' : 'ERR'}
                 </span>
@@ -500,7 +500,7 @@ export const App: React.FC = () => {
                 <button
                   onClick={handleResetJudgeSession}
                   title="Start a fresh anonymous evaluation session"
-                  className="inline-flex items-center space-x-1 border border-[#E2E8F0] hover:bg-slate-50 text-[#64748B] hover:text-[#0F172A] text-xs font-medium px-2.5 py-1.5 rounded-lg transition-colors"
+                  className="inline-flex items-center space-x-1 border border-[#E2E8F0] hover:bg-slate-50 text-[#66758C] hover:text-[#101828] text-xs font-medium px-2.5 py-1.5 rounded-lg transition-colors"
                 >
                   <RefreshCw className={`w-3.5 h-3.5 ${judgeInitLoading ? 'animate-spin' : ''}`} />
                   <span className="hidden sm:inline">New Session</span>
@@ -511,7 +511,7 @@ export const App: React.FC = () => {
                     window.location.hash = '#admin';
                   }}
                   title="Switch to Admin Login"
-                  className="inline-flex items-center space-x-1 border border-[#E2E8F0] hover:bg-slate-50 text-[#64748B] hover:text-[#0F172A] text-xs font-medium px-2.5 py-1.5 rounded-lg transition-colors"
+                  className="inline-flex items-center space-x-1 border border-[#E2E8F0] hover:bg-slate-50 text-[#66758C] hover:text-[#101828] text-xs font-medium px-2.5 py-1.5 rounded-lg transition-colors"
                 >
                   <Lock className="w-3.5 h-3.5" />
                   <span className="hidden sm:inline">Admin Login</span>
@@ -521,7 +521,7 @@ export const App: React.FC = () => {
               <button
                 onClick={handleLogoutClick}
                 title="Sign out of administrative session"
-                className="inline-flex items-center space-x-1 border border-[#E2E8F0] hover:bg-slate-50 text-[#64748B] hover:text-[#0F172A] text-xs font-medium px-2.5 py-1.5 rounded-lg transition-colors"
+                className="inline-flex items-center space-x-1 border border-[#E2E8F0] hover:bg-slate-50 text-[#66758C] hover:text-[#101828] text-xs font-medium px-2.5 py-1.5 rounded-lg transition-colors"
               >
                 <LogOut className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Sign Out</span>
@@ -572,12 +572,12 @@ export const App: React.FC = () => {
             {/* Header & Status */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-6 border-b border-[#E2E8F0]">
               <div>
-                <h1 className="text-2xl font-bold tracking-tight text-[#0F172A]">
+                <h1 className="text-2xl font-bold tracking-tight text-[#101828]">
                   {isJudge 
                     ? 'Website Change Detector — Interactive Evaluation Workspace' 
                     : 'Website Change Detector'}
                 </h1>
-                <p className="text-sm text-[#64748B] mt-1">
+                <p className="text-sm text-[#66758C] mt-1">
                   {isJudge
                     ? 'Observe real websites. Track meaningful changes. Compare captured versions.'
                     : 'Autonomous, high-precision web content diffing & change detection engine.'}
@@ -590,7 +590,7 @@ export const App: React.FC = () => {
                     fetchHealthData();
                     fetchMonitorsData();
                   }}
-                  className="inline-flex items-center space-x-1.5 px-3 py-1.5 border border-[#E2E8F0] rounded-lg text-xs font-medium text-[#64748B] hover:text-[#0F172A] hover:bg-white transition-colors"
+                  className="inline-flex items-center space-x-1.5 px-3 py-1.5 border border-[#E2E8F0] rounded-lg text-xs font-medium text-[#66758C] hover:text-[#101828] hover:bg-white transition-colors"
                 >
                   <RefreshCw className={`w-3.5 h-3.5 ${monitorsLoading ? 'animate-spin' : ''}`} />
                   <span>Refresh Monitors</span>
@@ -635,7 +635,7 @@ export const App: React.FC = () => {
                       <span className="w-2 h-2 rounded-full bg-blue-500"></span>
                       <span>BASELINE</span>
                     </div>
-                    <p className="text-[11px] text-[#64748B]">Initial captured snapshot. Serves as reference point (not counted as a change).</p>
+                    <p className="text-[11px] text-[#66758C]">Initial captured snapshot. Serves as reference point (not counted as a change).</p>
                   </div>
 
                   <div className="bg-white/80 rounded-lg p-2.5 border border-indigo-100/70">
@@ -643,7 +643,7 @@ export const App: React.FC = () => {
                       <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
                       <span>UNCHANGED</span>
                     </div>
-                    <p className="text-[11px] text-[#64748B]">Content checked. Text and structure match the baseline version.</p>
+                    <p className="text-[11px] text-[#66758C]">Content checked. Text and structure match the baseline version.</p>
                   </div>
 
                   <div className="bg-white/80 rounded-lg p-2.5 border border-indigo-100/70">
@@ -651,7 +651,7 @@ export const App: React.FC = () => {
                       <span className="w-2 h-2 rounded-full bg-amber-500"></span>
                       <span>CHANGED</span>
                     </div>
-                    <p className="text-[11px] text-[#64748B]">Meaningful content difference detected. New snapshot & diff generated.</p>
+                    <p className="text-[11px] text-[#66758C]">Meaningful content difference detected. New snapshot & diff generated.</p>
                   </div>
                 </div>
               </div>
@@ -660,57 +660,57 @@ export const App: React.FC = () => {
             {/* Metric Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
               <div className="bg-white border border-[#E2E8F0] rounded-xl p-5 shadow-sm">
-                <div className="flex items-center justify-between text-[#64748B]">
+                <div className="flex items-center justify-between text-[#66758C]">
                   <span className="text-xs font-medium uppercase tracking-wider">
                     {isJudge ? 'Session Monitors' : 'Total Monitors'}
                   </span>
                   <Layers className={`w-4 h-4 ${isJudge ? 'text-indigo-600' : 'text-blue-600'}`} />
                 </div>
                 <div className="mt-2 flex items-baseline space-x-2">
-                  <span className="text-2xl font-semibold text-[#0F172A]">{totalMonitors}</span>
-                  <span className="text-xs text-[#64748B]">
+                  <span className="text-2xl font-semibold text-[#101828]">{totalMonitors}</span>
+                  <span className="text-xs text-[#66758C]">
                     {isJudge ? `/ ${maxMonitorsAllowed} max` : 'monitored targets'}
                   </span>
                 </div>
-                <p className="text-xs text-[#64748B] mt-2">
+                <p className="text-xs text-[#66758C] mt-2">
                   {isJudge ? 'Bounded evaluation slots' : 'Active observation configurations'}
                 </p>
               </div>
 
               <div className="bg-white border border-[#E2E8F0] rounded-xl p-5 shadow-sm">
-                <div className="flex items-center justify-between text-[#64748B]">
+                <div className="flex items-center justify-between text-[#66758C]">
                   <span className="text-xs font-medium uppercase tracking-wider">Healthy / OK</span>
-                  <CheckCircle2 className="w-4 h-4 text-[#16A34A]" />
+                  <CheckCircle2 className="w-4 h-4 text-[#12B886]" />
                 </div>
                 <div className="mt-2 flex items-baseline space-x-2">
-                  <span className="text-2xl font-semibold text-[#0F172A]">{healthyMonitors}</span>
-                  <span className="text-xs text-[#16A34A] font-medium">operational</span>
+                  <span className="text-2xl font-semibold text-[#101828]">{healthyMonitors}</span>
+                  <span className="text-xs text-[#12B886] font-medium">operational</span>
                 </div>
-                <p className="text-xs text-[#64748B] mt-2">Successful captures without outages</p>
+                <p className="text-xs text-[#66758C] mt-2">Successful captures without outages</p>
               </div>
 
               <div className="bg-white border border-[#E2E8F0] rounded-xl p-5 shadow-sm">
-                <div className="flex items-center justify-between text-[#64748B]">
+                <div className="flex items-center justify-between text-[#66758C]">
                   <span className="text-xs font-medium uppercase tracking-wider">Changed</span>
                   <Activity className="w-4 h-4 text-blue-600" />
                 </div>
                 <div className="mt-2 flex items-baseline space-x-2">
-                  <span className="text-2xl font-semibold text-[#0F172A]">{changedMonitors}</span>
-                  <span className="text-xs text-[#64748B]">confirmed diffs</span>
+                  <span className="text-2xl font-semibold text-[#101828]">{changedMonitors}</span>
+                  <span className="text-xs text-[#66758C]">confirmed diffs</span>
                 </div>
-                <p className="text-xs text-[#64748B] mt-2">Verified content updates</p>
+                <p className="text-xs text-[#66758C] mt-2">Verified content updates</p>
               </div>
 
               <div className="bg-white border border-[#E2E8F0] rounded-xl p-5 shadow-sm">
-                <div className="flex items-center justify-between text-[#64748B]">
+                <div className="flex items-center justify-between text-[#66758C]">
                   <span className="text-xs font-medium uppercase tracking-wider">Errors / Blocked</span>
                   <AlertCircle className="w-4 h-4 text-[#D97706]" />
                 </div>
                 <div className="mt-2 flex items-baseline space-x-2">
-                  <span className="text-2xl font-semibold text-[#0F172A]">{errorMonitors}</span>
-                  <span className="text-xs text-[#64748B]">outages / challenges</span>
+                  <span className="text-2xl font-semibold text-[#101828]">{errorMonitors}</span>
+                  <span className="text-xs text-[#66758C]">outages / challenges</span>
                 </div>
-                <p className="text-xs text-[#64748B] mt-2">Never counted as content diffs</p>
+                <p className="text-xs text-[#66758C] mt-2">Never counted as content diffs</p>
               </div>
             </div>
 
@@ -718,21 +718,21 @@ export const App: React.FC = () => {
             <div className="mt-6 bg-white border border-[#E2E8F0] rounded-xl shadow-sm overflow-hidden">
               <div className="px-6 py-4 border-b border-[#E2E8F0] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div className="relative flex-1 max-w-sm">
-                  <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#64748B]" />
+                  <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#66758C]" />
                   <input
                     type="text"
                     placeholder="Search monitors..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-[#E2E8F0] rounded-lg text-[#0F172A] placeholder-[#64748B] focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-[#E2E8F0] rounded-lg text-[#101828] placeholder-[#66758C] focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
                 </div>
                 <div className="flex items-center space-x-2">
-                  <span className="text-xs text-[#64748B]">Filter:</span>
+                  <span className="text-xs text-[#66758C]">Filter:</span>
                   <select
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value)}
-                    className="text-xs bg-slate-50 border border-[#E2E8F0] text-[#0F172A] px-2.5 py-1 rounded-md font-medium focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="text-xs bg-slate-50 border border-[#E2E8F0] text-[#101828] px-2.5 py-1 rounded-md font-medium focus:outline-none focus:ring-1 focus:ring-blue-500"
                   >
                     <option value="all">All Monitors ({monitors.length})</option>
                     <option value="ok">Healthy (OK)</option>
@@ -751,12 +751,12 @@ export const App: React.FC = () => {
                   }`}>
                     {isJudge ? <Compass className="w-6 h-6" /> : <Globe className="w-6 h-6" />}
                   </div>
-                  <h3 className="text-base font-semibold text-[#0F172A]">
+                  <h3 className="text-base font-semibold text-[#101828]">
                     {monitors.length === 0 
                       ? isJudge ? 'No evaluation monitors added yet' : 'No monitors configured yet'
                       : 'No matching monitors found'}
                   </h3>
-                  <p className="text-xs text-[#64748B] max-w-md mt-1 mb-6 leading-relaxed">
+                  <p className="text-xs text-[#66758C] max-w-md mt-1 mb-6 leading-relaxed">
                     {monitors.length === 0
                       ? isJudge 
                         ? 'Enter any publicly accessible website URL (e.g. https://example.com) to trigger a genuine Playwright capture and inspect snapshots and diffs.'
@@ -778,7 +778,7 @@ export const App: React.FC = () => {
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs">
-                    <thead className="bg-slate-50 border-b border-[#E2E8F0] text-[#64748B] uppercase font-semibold text-[11px] tracking-wider">
+                    <thead className="bg-slate-50 border-b border-[#E2E8F0] text-[#66758C] uppercase font-semibold text-[11px] tracking-wider">
                       <tr>
                         <th className="px-6 py-3">Monitor</th>
                         <th className="px-6 py-3">Status</th>
@@ -800,10 +800,10 @@ export const App: React.FC = () => {
                           >
                             <td className="px-6 py-4">
                               <div className="flex flex-col">
-                                <span className="font-semibold text-sm text-[#0F172A] hover:text-blue-600 transition-colors">
+                                <span className="font-semibold text-sm text-[#101828] hover:text-blue-600 transition-colors">
                                   {m.name}
                                 </span>
-                                <span className="text-xs text-[#64748B] truncate max-w-xs mt-0.5">
+                                <span className="text-xs text-[#66758C] truncate max-w-xs mt-0.5">
                                   {m.url}
                                 </span>
                               </div>
@@ -827,23 +827,23 @@ export const App: React.FC = () => {
                               </span>
                             </td>
 
-                            <td className="px-6 py-4 text-[#64748B]">
+                            <td className="px-6 py-4 text-[#66758C]">
                               Every {m.interval_minutes}m
                             </td>
 
-                            <td className="px-6 py-4 text-[#64748B]">
+                            <td className="px-6 py-4 text-[#66758C]">
                               {m.last_checked_at
                                 ? new Date(m.last_checked_at).toLocaleTimeString()
                                 : 'Pending'}
                             </td>
 
-                            <td className="px-6 py-4 text-[#64748B]">
+                            <td className="px-6 py-4 text-[#66758C]">
                               {m.next_check_at
                                 ? new Date(m.next_check_at).toLocaleTimeString()
                                 : '---'}
                             </td>
 
-                            <td className="px-6 py-4 text-[#0F172A] font-medium">
+                            <td className="px-6 py-4 text-[#101828] font-medium">
                               {m.versions_count} snapshot{m.versions_count === 1 ? '' : 's'}
                             </td>
 
@@ -852,10 +852,10 @@ export const App: React.FC = () => {
                                 <button
                                   onClick={(e) => handleCheckNow(m.id, e)}
                                   disabled={isChecking}
-                                  className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border border-[#E2E8F0] hover:bg-white text-xs font-medium text-[#0F172A] shadow-sm transition-colors"
+                                  className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border border-[#E2E8F0] hover:bg-white text-xs font-medium text-[#101828] shadow-sm transition-colors"
                                 >
                                   <RefreshCw
-                                    className={`w-3.5 h-3.5 ${isChecking ? 'animate-spin text-blue-600' : 'text-[#64748B]'}`}
+                                    className={`w-3.5 h-3.5 ${isChecking ? 'animate-spin text-blue-600' : 'text-[#66758C]'}`}
                                   />
                                   <span>{isChecking ? 'Checking...' : 'Check Now'}</span>
                                 </button>
@@ -872,25 +872,25 @@ export const App: React.FC = () => {
             </div>
 
             {/* Architectural Footnote */}
-            <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-[#64748B]">
+            <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-[#66758C]">
               <div className="border border-[#E2E8F0] bg-white rounded-lg p-3.5">
-                <div className="font-semibold text-[#0F172A] mb-1 flex items-center justify-between">
+                <div className="font-semibold text-[#101828] mb-1 flex items-center justify-between">
                   <span>SSRF Defenses Active</span>
-                  <ArrowUpRight className="w-3.5 h-3.5 text-[#64748B]" />
+                  <ArrowUpRight className="w-3.5 h-3.5 text-[#66758C]" />
                 </div>
                 <p>DNS resolution verification, private CIDR blocking, subresource request interception.</p>
               </div>
               <div className="border border-[#E2E8F0] bg-white rounded-lg p-3.5">
-                <div className="font-semibold text-[#0F172A] mb-1 flex items-center justify-between">
+                <div className="font-semibold text-[#101828] mb-1 flex items-center justify-between">
                   <span>Playwright Capture Engine</span>
-                  <ArrowUpRight className="w-3.5 h-3.5 text-[#64748B]" />
+                  <ArrowUpRight className="w-3.5 h-3.5 text-[#66758C]" />
                 </div>
                 <p>Headless Chromium renders full DOM, captures consistent 1440x900 viewport screenshots.</p>
               </div>
               <div className="border border-[#E2E8F0] bg-white rounded-lg p-3.5">
-                <div className="font-semibold text-[#0F172A] mb-1 flex items-center justify-between">
+                <div className="font-semibold text-[#101828] mb-1 flex items-center justify-between">
                   <span>Precision Normalized Diff</span>
-                  <ArrowUpRight className="w-3.5 h-3.5 text-[#64748B]" />
+                  <ArrowUpRight className="w-3.5 h-3.5 text-[#66758C]" />
                 </div>
                 <p>SHA-256 content hashing with whitespace normalization to eliminate cosmetic false positives.</p>
               </div>

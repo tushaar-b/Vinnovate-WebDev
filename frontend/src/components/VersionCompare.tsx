@@ -76,10 +76,10 @@ export const VersionCompare: React.FC<VersionCompareProps> = ({
 
   if (versions.length < 2) {
     return (
-      <div className="bg-white border border-[#E2E8F0] rounded-xl p-8 text-center text-[#64748B]">
+      <div className="bg-white border border-[#E2E8F0] rounded-xl p-8 text-center text-[#66758C]">
         <GitCompare className="w-10 h-10 text-slate-400 mx-auto mb-3" />
-        <h4 className="text-sm font-semibold text-[#0F172A]">Multiple Versions Required</h4>
-        <p className="text-xs text-[#64748B] mt-1 max-w-sm mx-auto">
+        <h4 className="text-sm font-semibold text-[#101828]">Multiple Versions Required</h4>
+        <p className="text-xs text-[#66758C] mt-1 max-w-sm mx-auto">
           At least two distinct saved snapshots are needed to compute text and visual difference comparisons.
         </p>
       </div>
@@ -98,19 +98,19 @@ export const VersionCompare: React.FC<VersionCompareProps> = ({
             <GitCompare className="w-4 h-4" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-[#0F172A]">Version Comparison</h3>
-            <p className="text-[11px] text-[#64748B]">Compare any two captured versions across timeline</p>
+            <h3 className="text-sm font-bold text-[#101828]">Version Comparison</h3>
+            <p className="text-[11px] text-[#66758C]">Compare any two captured versions across timeline</p>
           </div>
         </div>
 
         {/* Version Pickers */}
         <div className="flex flex-wrap items-center gap-2 text-xs">
           <div className="flex items-center space-x-1.5 bg-white border border-[#CBD5E1] rounded-lg px-2.5 py-1.5 shadow-sm">
-            <span className="text-[#64748B] font-medium text-[11px]">Base:</span>
+            <span className="text-[#66758C] font-medium text-[11px]">Base:</span>
             <select
               value={fromId}
               onChange={(e) => setFromId(e.target.value)}
-              className="bg-transparent font-semibold text-[#0F172A] focus:outline-none cursor-pointer"
+              className="bg-transparent font-semibold text-[#101828] focus:outline-none cursor-pointer"
             >
               {sortedVersions.map((v) => (
                 <option key={v.id} value={v.id}>
@@ -123,11 +123,11 @@ export const VersionCompare: React.FC<VersionCompareProps> = ({
           <ArrowRight className="w-4 h-4 text-[#94A3B8]" />
 
           <div className="flex items-center space-x-1.5 bg-white border border-[#CBD5E1] rounded-lg px-2.5 py-1.5 shadow-sm">
-            <span className="text-[#64748B] font-medium text-[11px]">Target:</span>
+            <span className="text-[#66758C] font-medium text-[11px]">Target:</span>
             <select
               value={toId}
               onChange={(e) => setToId(e.target.value)}
-              className="bg-transparent font-semibold text-[#0F172A] focus:outline-none cursor-pointer"
+              className="bg-transparent font-semibold text-[#101828] focus:outline-none cursor-pointer"
             >
               {sortedVersions.map((v) => (
                 <option key={v.id} value={v.id}>
@@ -140,7 +140,7 @@ export const VersionCompare: React.FC<VersionCompareProps> = ({
           <button
             onClick={() => fetchComparison(fromId, toId)}
             disabled={loading}
-            className="p-2 text-[#64748B] hover:text-[#0F172A] hover:bg-slate-200 rounded-lg transition-colors"
+            className="p-2 text-[#66758C] hover:text-[#101828] hover:bg-slate-200 rounded-lg transition-colors"
             title="Refresh comparison"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
@@ -156,7 +156,7 @@ export const VersionCompare: React.FC<VersionCompareProps> = ({
             className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${
               activeTab === 'text'
                 ? 'bg-white text-blue-600 shadow-sm'
-                : 'text-[#64748B] hover:text-[#0F172A]'
+                : 'text-[#66758C] hover:text-[#101828]'
             }`}
           >
             <span className="flex items-center space-x-1.5">
@@ -169,7 +169,7 @@ export const VersionCompare: React.FC<VersionCompareProps> = ({
             className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${
               activeTab === 'side-by-side'
                 ? 'bg-white text-blue-600 shadow-sm'
-                : 'text-[#64748B] hover:text-[#0F172A]'
+                : 'text-[#66758C] hover:text-[#101828]'
             }`}
           >
             <span className="flex items-center space-x-1.5">
@@ -182,7 +182,7 @@ export const VersionCompare: React.FC<VersionCompareProps> = ({
             className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${
               activeTab === 'visual'
                 ? 'bg-white text-blue-600 shadow-sm'
-                : 'text-[#64748B] hover:text-[#0F172A]'
+                : 'text-[#66758C] hover:text-[#101828]'
             }`}
           >
             <span className="flex items-center space-x-1.5">
@@ -202,7 +202,7 @@ export const VersionCompare: React.FC<VersionCompareProps> = ({
               -{removalsCount} removals
             </span>
             {comparison.change_ratio > 0 && (
-              <span className="text-[#64748B] text-[11px] font-mono">
+              <span className="text-[#66758C] text-[11px] font-mono">
                 Visual change: {formatChangePercent(comparison.change_ratio)}
               </span>
             )}
@@ -214,7 +214,7 @@ export const VersionCompare: React.FC<VersionCompareProps> = ({
       {/* Content Area */}
       <div className="p-5">
         {loading && (
-          <div className="py-20 flex flex-col items-center justify-center text-[#64748B]">
+          <div className="py-20 flex flex-col items-center justify-center text-[#66758C]">
             <RefreshCw className="w-6 h-6 animate-spin text-blue-600 mb-2" />
             <p className="text-xs font-medium">Computing diff between selected versions...</p>
           </div>
@@ -232,15 +232,15 @@ export const VersionCompare: React.FC<VersionCompareProps> = ({
             {/* 1. Text Diff View */}
             {activeTab === 'text' && (
               <div className="border border-[#E2E8F0] rounded-lg overflow-hidden bg-white">
-                <div className="px-4 py-2.5 bg-slate-50 border-b border-[#E2E8F0] text-xs font-semibold text-[#0F172A] flex justify-between items-center">
+                <div className="px-4 py-2.5 bg-slate-50 border-b border-[#E2E8F0] text-xs font-semibold text-[#101828] flex justify-between items-center">
                   <span>Structured Normalized Text Diff</span>
-                  <span className="text-[11px] text-[#64748B]">
+                  <span className="text-[11px] text-[#66758C]">
                     Comparing v{comparison.old_version.sequence_number} → v{comparison.new_version.sequence_number}
                   </span>
                 </div>
                 <div className="divide-y divide-[#F1F5F9] font-mono text-xs max-h-[500px] overflow-y-auto">
                   {comparison.text_diff.length === 0 ? (
-                    <div className="p-8 text-center text-[#64748B]">No text changes detected between these versions.</div>
+                    <div className="p-8 text-center text-[#66758C]">No text changes detected between these versions.</div>
                   ) : (
                     comparison.text_diff.map((item, idx) => {
                       if (item.kind === 'add') {
@@ -278,10 +278,10 @@ export const VersionCompare: React.FC<VersionCompareProps> = ({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="border border-[#E2E8F0] rounded-xl overflow-hidden bg-slate-50 shadow-sm">
                   <div className="px-3.5 py-2 border-b border-[#E2E8F0] bg-white flex justify-between items-center text-xs">
-                    <span className="font-semibold text-[#0F172A]">
+                    <span className="font-semibold text-[#101828]">
                       Base (v{comparison.old_version.sequence_number})
                     </span>
-                    <span className="text-[#64748B] text-[10px]">
+                    <span className="text-[#66758C] text-[10px]">
                       {new Date(comparison.old_version.captured_at).toLocaleTimeString()}
                     </span>
                   </div>
@@ -296,10 +296,10 @@ export const VersionCompare: React.FC<VersionCompareProps> = ({
 
                 <div className="border border-[#E2E8F0] rounded-xl overflow-hidden bg-slate-50 shadow-sm">
                   <div className="px-3.5 py-2 border-b border-[#E2E8F0] bg-white flex justify-between items-center text-xs">
-                    <span className="font-semibold text-[#0F172A]">
+                    <span className="font-semibold text-[#101828]">
                       Target (v{comparison.new_version.sequence_number})
                     </span>
-                    <span className="text-[#64748B] text-[10px]">
+                    <span className="text-[#66758C] text-[10px]">
                       {new Date(comparison.new_version.captured_at).toLocaleTimeString()}
                     </span>
                   </div>
@@ -319,13 +319,13 @@ export const VersionCompare: React.FC<VersionCompareProps> = ({
               <div className="border border-[#E2E8F0] rounded-xl overflow-hidden bg-slate-50 shadow-sm">
                 <div className="px-4 py-2.5 border-b border-[#E2E8F0] bg-white flex justify-between items-center text-xs">
                   <div className="flex items-center space-x-2">
-                    <span className="font-semibold text-[#0F172A]">Pillow Pixel Difference Overlay</span>
+                    <span className="font-semibold text-[#101828]">Pillow Pixel Difference Overlay</span>
                     <span className="text-[11px] text-rose-600 bg-rose-50 px-2 py-0.5 rounded font-medium">
                       Red pixels indicate visual changes
                     </span>
                   </div>
                   {comparison.change_ratio !== undefined && (
-                    <span className="text-[#64748B] text-[11px] font-mono">
+                    <span className="text-[#66758C] text-[11px] font-mono">
                       Delta: {formatChangePercent(comparison.change_ratio)}
                     </span>
                   )}
@@ -340,7 +340,7 @@ export const VersionCompare: React.FC<VersionCompareProps> = ({
                       className="max-h-[500px] w-auto max-w-full rounded-lg border border-[#CBD5E1] shadow-sm"
                     />
                   ) : (
-                    <div className="text-center text-[#64748B] p-8 text-xs">
+                    <div className="text-center text-[#66758C] p-8 text-xs">
                       Visual diff unavailable for these screenshots.
                     </div>
                   )}

@@ -68,7 +68,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A] font-sans flex flex-col selection:bg-blue-100 selection:text-blue-900">
+    <div className="min-h-screen bg-[#F5F7FB] text-[#101828] font-sans flex flex-col selection:bg-blue-100 selection:text-blue-900">
       {/* =====================================================================
           1. STICKY TOP NAVBAR
          ===================================================================== */}
@@ -80,17 +80,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <Globe className="w-5 h-5" />
             </div>
             <div className="flex flex-col">
-              <span className="font-bold text-base leading-tight tracking-tight text-[#0F172A]">
+              <span className="font-bold text-base leading-tight tracking-tight text-[#101828]">
                 Website Change Detector
               </span>
-              <span className="text-[10px] text-[#64748B] font-semibold tracking-wider uppercase">
+              <span className="text-[10px] text-[#66758C] font-semibold tracking-wider uppercase">
                 Autonomous Observability
               </span>
             </div>
           </div>
 
           {/* Center Navigation Links */}
-          <nav className="hidden md:flex items-center space-x-7 text-xs font-semibold text-[#64748B]">
+          <nav className="hidden md:flex items-center space-x-7 text-xs font-semibold text-[#66758C]">
             <button
               onClick={() => scrollToSection('features')}
               className="hover:text-blue-600 transition-colors"
@@ -126,7 +126,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           {/* Right Action Buttons */}
           <div className="flex items-center space-x-3">
             {/* System Status Pill */}
-            <div className="hidden lg:flex items-center space-x-2 text-[11px] bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-full text-[#64748B]">
+            <div className="hidden lg:flex items-center space-x-2 text-[11px] bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-full text-[#66758C]">
               <span
                 className={`w-2 h-2 rounded-full ${
                   health?.status === 'ok' ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'
@@ -140,7 +140,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             {/* Direct Admin Login Quick-Action */}
             <button
               onClick={() => scrollToSection('continue-options')}
-              className="hidden sm:inline-flex items-center space-x-1.5 text-xs font-semibold text-[#475569] hover:text-[#0F172A] px-3 py-2 rounded-lg hover:bg-slate-100 transition-colors"
+              className="hidden sm:inline-flex items-center space-x-1.5 text-xs font-semibold text-[#475569] hover:text-[#101828] px-3 py-2 rounded-lg hover:bg-slate-100 transition-colors"
             >
               <Lock className="w-3.5 h-3.5" />
               <span>Admin Login</span>
@@ -173,7 +173,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </div>
 
           {/* Main Headline */}
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-[#0F172A] tracking-tight leading-[1.15] max-w-4xl mx-auto">
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-[#101828] tracking-tight leading-[1.15] max-w-4xl mx-auto">
             Detect Every Website Change.{' '}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600">
               Down to the Pixel and Word.
@@ -181,7 +181,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </h1>
 
           {/* Subtitle */}
-          <p className="mt-5 text-base sm:text-lg text-[#64748B] max-w-2xl mx-auto leading-relaxed">
+          <p className="mt-5 text-base sm:text-lg text-[#66758C] max-w-2xl mx-auto leading-relaxed">
             Autonomous web page monitoring powered by Playwright headless browsers, normalized text extraction,
             and cryptographic hash validation. Zero false positives from dynamic tracking scripts or ad noise.
           </p>
@@ -200,16 +200,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             {/* Direct Judge Workspace Button (Recommended for evaluators) */}
             <button
               onClick={onEnterNormalUser}
-              className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-6 py-3.5 bg-white hover:bg-slate-50 text-[#0F172A] font-semibold text-sm rounded-xl border border-slate-200 shadow-xs hover:border-slate-300 transition-all"
+              className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-6 py-3.5 bg-white hover:bg-slate-50 text-[#101828] font-semibold text-sm rounded-xl border border-slate-200 shadow-xs hover:border-slate-300 transition-all"
             >
               <Compass className="w-4 h-4 text-blue-600" />
               <span>Explore Judge Workspace</span>
-              <span className="text-[11px] font-normal text-[#64748B]">(No Login)</span>
+              <span className="text-[11px] font-normal text-[#66758C]">(No Login)</span>
             </button>
           </div>
 
           {/* Feature highlights below CTA */}
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-[#64748B]">
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-[#66758C]">
             <span className="flex items-center space-x-1.5">
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
               <span>No login required for normal users</span>
@@ -235,7 +235,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 <span className="w-3 h-3 rounded-full bg-amber-400" />
                 <span className="w-3 h-3 rounded-full bg-emerald-400" />
               </div>
-              <div className="bg-white border border-slate-200 px-4 py-1 rounded-md text-[11px] font-mono text-[#64748B] flex items-center space-x-2 w-72 justify-center shadow-xs">
+              <div className="bg-white border border-slate-200 px-4 py-1 rounded-md text-[11px] font-mono text-[#66758C] flex items-center space-x-2 w-72 justify-center shadow-xs">
                 <Globe className="w-3 h-3 text-slate-400" />
                 <span className="truncate">https://store.example.com/item/pro-15</span>
               </div>
@@ -256,7 +256,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                   <div className="mt-3 space-y-2">
                     <div className="text-xs font-medium text-slate-800">Ultra-Lightweight Developer Laptop 15"</div>
                     <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100 text-xs">
-                      <div className="text-[#64748B] line-through">Stock: In Stock (42 units)</div>
+                      <div className="text-[#66758C] line-through">Stock: In Stock (42 units)</div>
                       <div className="text-base font-bold text-slate-900 mt-1">$1,299.00 USD</div>
                     </div>
                   </div>
@@ -287,7 +287,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               {/* Verified Text Diff Chip Strip */}
               <div className="mt-4 p-3 bg-white border border-slate-200 rounded-xl flex flex-wrap items-center justify-between gap-2 text-xs">
                 <div className="flex items-center space-x-2">
-                  <span className="text-[#64748B] font-medium">Text Delta:</span>
+                  <span className="text-[#66758C] font-medium">Text Delta:</span>
                   <span className="px-2 py-0.5 bg-rose-50 text-rose-700 border border-rose-200 rounded font-mono text-[11px] line-through">
                     - $1,299.00
                   </span>
@@ -295,7 +295,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     + $999.00
                   </span>
                 </div>
-                <div className="text-[11px] text-[#64748B] font-mono">
+                <div className="text-[11px] text-[#66758C] font-mono">
                   SHA-256: <span className="text-slate-800 font-semibold">e4b7...910a</span>
                 </div>
               </div>
@@ -310,20 +310,20 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       <section className="border-y border-[#E2E8F0] bg-white py-8">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
           <div>
-            <div className="text-2xl sm:text-3xl font-extrabold text-[#0F172A]">0% Noise</div>
-            <div className="text-xs text-[#64748B] mt-1 font-medium">Tracking script & telemetry exclusion</div>
+            <div className="text-2xl sm:text-3xl font-extrabold text-[#101828]">0% Noise</div>
+            <div className="text-xs text-[#66758C] mt-1 font-medium">Tracking script & telemetry exclusion</div>
           </div>
           <div>
-            <div className="text-2xl sm:text-3xl font-extrabold text-[#0F172A]">Playwright</div>
-            <div className="text-xs text-[#64748B] mt-1 font-medium">Headless Chromium full-viewport captures</div>
+            <div className="text-2xl sm:text-3xl font-extrabold text-[#101828]">Playwright</div>
+            <div className="text-xs text-[#66758C] mt-1 font-medium">Headless Chromium full-viewport captures</div>
           </div>
           <div>
-            <div className="text-2xl sm:text-3xl font-extrabold text-[#0F172A]">SHA-256</div>
-            <div className="text-xs text-[#64748B] mt-1 font-medium">Normalized cryptographic content hashing</div>
+            <div className="text-2xl sm:text-3xl font-extrabold text-[#101828]">SHA-256</div>
+            <div className="text-xs text-[#66758C] mt-1 font-medium">Normalized cryptographic content hashing</div>
           </div>
           <div>
-            <div className="text-2xl sm:text-3xl font-extrabold text-[#0F172A]">PostgreSQL</div>
-            <div className="text-xs text-[#64748B] mt-1 font-medium">VersionArtifact distributed binary persistence</div>
+            <div className="text-2xl sm:text-3xl font-extrabold text-[#101828]">PostgreSQL</div>
+            <div className="text-xs text-[#66758C] mt-1 font-medium">VersionArtifact distributed binary persistence</div>
           </div>
         </div>
       </section>
@@ -334,10 +334,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       <section id="features" className="py-20 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-2xl mx-auto mb-14">
           <div className="text-xs font-bold uppercase tracking-wider text-blue-600 mb-2">Capabilities</div>
-          <h2 className="text-3xl font-bold text-[#0F172A] tracking-tight">
+          <h2 className="text-3xl font-bold text-[#101828] tracking-tight">
             Engineered for Precision Observability
           </h2>
-          <p className="mt-3 text-sm text-[#64748B] leading-relaxed">
+          <p className="mt-3 text-sm text-[#66758C] leading-relaxed">
             Eliminate noisy alerts and false alarms. Inspect verified visual differences and human-readable text modifications.
           </p>
         </div>
@@ -348,8 +348,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center mb-4">
               <Cpu className="w-5 h-5" />
             </div>
-            <h3 className="text-base font-bold text-[#0F172A]">Real Headless Chromium Engine</h3>
-            <p className="text-xs text-[#64748B] mt-2 leading-relaxed">
+            <h3 className="text-base font-bold text-[#101828]">Real Headless Chromium Engine</h3>
+            <p className="text-xs text-[#66758C] mt-2 leading-relaxed">
               Executes client-side JavaScript, handles dynamic single-page applications, and captures full-resolution viewport snapshots using Playwright.
             </p>
           </div>
@@ -359,8 +359,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-4">
               <Eye className="w-5 h-5" />
             </div>
-            <h3 className="text-base font-bold text-[#0F172A]">Noise & Telemetry Exclusion</h3>
-            <p className="text-xs text-[#64748B] mt-2 leading-relaxed">
+            <h3 className="text-base font-bold text-[#101828]">Noise & Telemetry Exclusion</h3>
+            <p className="text-xs text-[#66758C] mt-2 leading-relaxed">
               Intelligent DOM parsing strips ad trackers, request IDs, cache tokens, and ephemeral configuration variables before diff calculation.
             </p>
           </div>
@@ -370,8 +370,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <div className="w-10 h-10 rounded-xl bg-violet-50 text-violet-600 flex items-center justify-center mb-4">
               <Layers className="w-5 h-5" />
             </div>
-            <h3 className="text-base font-bold text-[#0F172A]">Side-by-Side & Overlay Diff</h3>
-            <p className="text-xs text-[#64748B] mt-2 leading-relaxed">
+            <h3 className="text-base font-bold text-[#101828]">Side-by-Side & Overlay Diff</h3>
+            <p className="text-xs text-[#66758C] mt-2 leading-relaxed">
               Compare versions visually with interactive slider overlays or inspect word-by-word additions and deletions in human-readable color blocks.
             </p>
           </div>
@@ -381,8 +381,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4">
               <Sliders className="w-5 h-5" />
             </div>
-            <h3 className="text-base font-bold text-[#0F172A]">Visual CSS Region Picker</h3>
-            <p className="text-xs text-[#64748B] mt-2 leading-relaxed">
+            <h3 className="text-base font-bold text-[#101828]">Visual CSS Region Picker</h3>
+            <p className="text-xs text-[#66758C] mt-2 leading-relaxed">
               Visually highlight and click on elements to generate WATCH or IGNORE CSS selectors. Suppress noisy headers or isolate prices with ease.
             </p>
           </div>
@@ -392,8 +392,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center mb-4">
               <Bell className="w-5 h-5" />
             </div>
-            <h3 className="text-base font-bold text-[#0F172A]">Encrypted Notifications</h3>
-            <p className="text-xs text-[#64748B] mt-2 leading-relaxed">
+            <h3 className="text-base font-bold text-[#101828]">Encrypted Notifications</h3>
+            <p className="text-xs text-[#66758C] mt-2 leading-relaxed">
               Dispatch confirmed change events directly to Discord webhooks, Telegram bots, or SMTP mailboxes with credentials encrypted at rest with Fernet.
             </p>
           </div>
@@ -403,8 +403,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center mb-4">
               <Shield className="w-5 h-5" />
             </div>
-            <h3 className="text-base font-bold text-[#0F172A]">Enterprise SSRF & Quota Defenses</h3>
-            <p className="text-xs text-[#64748B] mt-2 leading-relaxed">
+            <h3 className="text-base font-bold text-[#101828]">Enterprise SSRF & Quota Defenses</h3>
+            <p className="text-xs text-[#66758C] mt-2 leading-relaxed">
               Strict destination validation rejects loopbacks, cloud metadata (169.254.169.254), private ranges, and non-standard ports to protect infrastructure.
             </p>
           </div>
@@ -418,7 +418,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-14">
             <div className="text-xs font-bold uppercase tracking-wider text-blue-600 mb-2">Workflow</div>
-            <h2 className="text-3xl font-bold text-[#0F172A] tracking-tight">
+            <h2 className="text-3xl font-bold text-[#101828] tracking-tight">
               Three Steps from URL to Verified Change
             </h2>
           </div>
@@ -429,8 +429,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <div className="w-9 h-9 rounded-full bg-blue-600 text-white font-bold text-sm flex items-center justify-center mb-4">
                 1
               </div>
-              <h3 className="text-base font-bold text-[#0F172A]">Add Target URL</h3>
-              <p className="text-xs text-[#64748B] mt-2 leading-relaxed">
+              <h3 className="text-base font-bold text-[#101828]">Add Target URL</h3>
+              <p className="text-xs text-[#66758C] mt-2 leading-relaxed">
                 Enter any publicly reachable HTTP/HTTPS website. Configure desired check frequency and optional custom region selectors.
               </p>
             </div>
@@ -440,8 +440,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <div className="w-9 h-9 rounded-full bg-indigo-600 text-white font-bold text-sm flex items-center justify-center mb-4">
                 2
               </div>
-              <h3 className="text-base font-bold text-[#0F172A]">Headless Playwright Capture</h3>
-              <p className="text-xs text-[#64748B] mt-2 leading-relaxed">
+              <h3 className="text-base font-bold text-[#101828]">Headless Playwright Capture</h3>
+              <p className="text-xs text-[#66758C] mt-2 leading-relaxed">
                 Asynchronous Redis workers boot headless Chromium, execute page scripts, store full-viewport screenshot artifacts, and normalize text.
               </p>
             </div>
@@ -451,8 +451,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <div className="w-9 h-9 rounded-full bg-emerald-600 text-white font-bold text-sm flex items-center justify-center mb-4">
                 3
               </div>
-              <h3 className="text-base font-bold text-[#0F172A]">Diff & Alert</h3>
-              <p className="text-xs text-[#64748B] mt-2 leading-relaxed">
+              <h3 className="text-base font-bold text-[#101828]">Diff & Alert</h3>
+              <p className="text-xs text-[#66758C] mt-2 leading-relaxed">
                 The engine evaluates cryptographic SHA-256 deltas. If meaningful content changed, version snapshots and visual overlays are generated.
               </p>
             </div>
@@ -466,10 +466,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       <section id="architecture" className="py-20 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-2xl mx-auto mb-12">
           <div className="text-xs font-bold uppercase tracking-wider text-blue-600 mb-2">Distributed Stack</div>
-          <h2 className="text-3xl font-bold text-[#0F172A] tracking-tight">
+          <h2 className="text-3xl font-bold text-[#101828] tracking-tight">
             Built for Scalability and Reliability
           </h2>
-          <p className="mt-3 text-sm text-[#64748B]">
+          <p className="mt-3 text-sm text-[#66758C]">
             Separated API, worker, scheduler, and persistent database storage.
           </p>
         </div>
@@ -479,22 +479,22 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
               <Globe className="w-6 h-6 text-blue-600 mx-auto mb-2" />
               <div className="text-xs font-bold text-slate-800">React + Vite SPA</div>
-              <div className="text-[11px] text-[#64748B] mt-1">Hosted on Vercel</div>
+              <div className="text-[11px] text-[#66758C] mt-1">Hosted on Vercel</div>
             </div>
             <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
               <Server className="w-6 h-6 text-indigo-600 mx-auto mb-2" />
               <div className="text-xs font-bold text-slate-800">FastAPI API</div>
-              <div className="text-[11px] text-[#64748B] mt-1">Hosted on Railway</div>
+              <div className="text-[11px] text-[#66758C] mt-1">Hosted on Railway</div>
             </div>
             <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
               <Cpu className="w-6 h-6 text-violet-600 mx-auto mb-2" />
               <div className="text-xs font-bold text-slate-800">Redis + Playwright Worker</div>
-              <div className="text-[11px] text-[#64748B] mt-1">Asynchronous RQ queue</div>
+              <div className="text-[11px] text-[#66758C] mt-1">Asynchronous RQ queue</div>
             </div>
             <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
               <Database className="w-6 h-6 text-emerald-600 mx-auto mb-2" />
               <div className="text-xs font-bold text-slate-800">PostgreSQL VersionArtifact</div>
-              <div className="text-[11px] text-[#64748B] mt-1">Shared image binary storage</div>
+              <div className="text-[11px] text-[#66758C] mt-1">Shared image binary storage</div>
             </div>
           </div>
         </div>
@@ -510,10 +510,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <Sparkles className="w-3 h-3" />
               <span>Choose Your Workspace</span>
             </div>
-            <h2 className="text-3xl font-extrabold text-[#0F172A] tracking-tight">
+            <h2 className="text-3xl font-extrabold text-[#101828] tracking-tight">
               Ready to Observe the Web in Real-Time?
             </h2>
-            <p className="mt-3 text-sm text-[#64748B]">
+            <p className="mt-3 text-sm text-[#66758C]">
               Continue as a normal evaluator without login credentials, or authenticate to access the administration dashboard.
             </p>
           </div>
@@ -529,8 +529,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mb-5">
                   <Compass className="w-6 h-6" />
                 </div>
-                <h3 className="text-2xl font-bold text-[#0F172A]">Normal User Workspace</h3>
-                <p className="text-xs text-[#64748B] mt-2 leading-relaxed">
+                <h3 className="text-2xl font-bold text-[#101828]">Normal User Workspace</h3>
+                <p className="text-xs text-[#66758C] mt-2 leading-relaxed">
                   Monitor any public website, trigger genuine Playwright captures, and inspect verified diffs.
                   No login credentials, Google account, or invitation required.
                 </p>
@@ -575,8 +575,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-700 flex items-center justify-center mb-5">
                   <Lock className="w-6 h-6" />
                 </div>
-                <h3 className="text-2xl font-bold text-[#0F172A]">Admin Console</h3>
-                <p className="text-xs text-[#64748B] mt-2 leading-relaxed">
+                <h3 className="text-2xl font-bold text-[#101828]">Admin Console</h3>
+                <p className="text-xs text-[#66758C] mt-2 leading-relaxed">
                   Protected administrative console for configuring encrypted notification channels, managing global system monitors, and viewing backend logs.
                 </p>
 
@@ -604,7 +604,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                   <button
                     type="submit"
                     disabled={loginLoading || !bottomAdminPassword.trim()}
-                    className="w-full py-3.5 px-6 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white font-semibold text-sm rounded-xl shadow-sm transition-all flex items-center justify-center space-x-2"
+                    className="w-full py-3.5 px-6 bg-[#101828] hover:bg-[#1A233A] disabled:opacity-50 text-white font-semibold text-sm rounded-xl shadow-sm transition-all flex items-center justify-center space-x-2"
                   >
                     {loginLoading ? (
                       <>
@@ -633,7 +633,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       {/* =====================================================================
           8. FOOTER
          ===================================================================== */}
-      <footer className="border-t border-[#E2E8F0] bg-white py-8 text-center text-xs text-[#64748B]">
+      <footer className="border-t border-[#E2E8F0] bg-white py-8 text-center text-xs text-[#66758C]">
         <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center space-x-2">
             <Globe className="w-4 h-4 text-blue-600" />
@@ -651,7 +651,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           9. NAVBAR "CONTINUE" MODAL (ROLE SELECTOR)
          ===================================================================== */}
       {isContinueModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#101828]/60 backdrop-blur-xs p-4 animate-fade-in">
           <div className="bg-white rounded-3xl shadow-2xl max-w-xl w-full p-7 border border-slate-200 relative">
             <button
               onClick={() => setIsContinueModalOpen(false)}
@@ -665,8 +665,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 <Sparkles className="w-3.5 h-3.5" />
                 <span>Select Experience</span>
               </div>
-              <h3 className="text-2xl font-bold text-slate-900">Continue to Website Change Detector</h3>
-              <p className="text-xs text-slate-500 mt-1">
+              <h3 className="text-2xl font-bold text-[#101828]">Continue to Website Change Detector</h3>
+              <p className="text-xs text-[#66758C] mt-1">
                 Choose whether you would like to enter the interactive public workspace or access the admin console.
               </p>
             </div>
@@ -685,12 +685,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center justify-between">
-                    <span className="font-bold text-sm text-slate-900">Normal User Workspace</span>
+                    <span className="font-bold text-sm text-[#101828]">Normal User Workspace</span>
                     <span className="text-[10px] bg-blue-100 text-blue-700 font-semibold px-2 py-0.5 rounded-full">
                       No Login Required
                     </span>
                   </div>
-                  <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+                  <p className="text-xs text-[#66758C] mt-1 leading-relaxed">
                     Instantly monitor any public website, trigger automated browser checks, and view side-by-side & overlay diffs.
                   </p>
                   <div className="mt-3 inline-flex items-center space-x-1 text-xs font-semibold text-blue-600 group-hover:translate-x-1 transition-transform">
@@ -708,12 +708,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center justify-between">
-                      <span className="font-bold text-sm text-slate-900">Admin Console</span>
-                      <span className="text-[10px] bg-slate-100 text-slate-600 font-semibold px-2 py-0.5 rounded-full">
+                      <span className="font-bold text-sm text-[#101828]">Admin Console</span>
+                      <span className="text-[10px] bg-slate-100 text-[#66758C] font-semibold px-2 py-0.5 rounded-full">
                         Password Protected
                       </span>
                     </div>
-                    <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+                    <p className="text-xs text-[#66758C] mt-1 leading-relaxed">
                       Manage encrypted notification credentials (Discord, Telegram, SMTP), system-wide monitors, and logs.
                     </p>
 
@@ -728,7 +728,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                       <button
                         type="submit"
                         disabled={loginLoading || !adminPassword.trim()}
-                        className="px-4 py-2 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white text-xs font-semibold rounded-lg transition-all"
+                        className="px-4 py-2 bg-[#101828] hover:bg-[#1A233A] disabled:opacity-50 text-white text-xs font-semibold rounded-lg transition-all"
                       >
                         {loginLoading ? 'Checking...' : 'Sign In'}
                       </button>

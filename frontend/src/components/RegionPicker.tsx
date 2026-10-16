@@ -142,8 +142,8 @@ export const RegionPicker: React.FC<RegionPickerProps> = ({
             <Crosshair className="w-4 h-4" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-[#0F172A]">Visual Region Picker & Rules</h3>
-            <p className="text-[11px] text-[#64748B]">
+            <h3 className="text-sm font-bold text-[#101828]">Visual Region Picker & Rules</h3>
+            <p className="text-[11px] text-[#66758C]">
               Click elements on the screenshot overlay to watch specific areas or ignore noise
             </p>
           </div>
@@ -153,7 +153,7 @@ export const RegionPicker: React.FC<RegionPickerProps> = ({
           <button
             onClick={loadPickerData}
             disabled={loading}
-            className="p-2 text-[#64748B] hover:text-[#0F172A] hover:bg-slate-200 rounded-lg transition-colors"
+            className="p-2 text-[#66758C] hover:text-[#101828] hover:bg-slate-200 rounded-lg transition-colors"
             title="Refresh picker elements"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
@@ -187,8 +187,8 @@ export const RegionPicker: React.FC<RegionPickerProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 p-5">
         {/* Left Column: Interactive Screenshot Overlay */}
         <div className="lg:col-span-2 space-y-3">
-          <div className="flex items-center justify-between text-xs text-[#64748B]">
-            <span className="font-semibold text-[#0F172A]">Interactive Screenshot Viewport</span>
+          <div className="flex items-center justify-between text-xs text-[#66758C]">
+            <span className="font-semibold text-[#101828]">Interactive Screenshot Viewport</span>
             <div className="flex items-center space-x-2">
               <span className="inline-flex items-center space-x-1 text-[11px] text-emerald-700 font-medium">
                 <span className="w-2.5 h-2.5 rounded-sm bg-emerald-500/50 border border-emerald-600 inline-block"></span>
@@ -203,7 +203,7 @@ export const RegionPicker: React.FC<RegionPickerProps> = ({
 
           <div className="relative border border-[#CBD5E1] rounded-xl overflow-hidden bg-slate-900 shadow-inner flex items-center justify-center min-h-[400px]">
             {loading && (
-              <div className="absolute inset-0 z-30 bg-white/80 backdrop-blur-xs flex flex-col items-center justify-center text-[#64748B]">
+              <div className="absolute inset-0 z-30 bg-white/80 backdrop-blur-xs flex flex-col items-center justify-center text-[#66758C]">
                 <RefreshCw className="w-6 h-6 animate-spin text-blue-600 mb-2" />
                 <p className="text-xs font-medium">Analyzing DOM elements and geometry...</p>
               </div>
@@ -286,10 +286,10 @@ export const RegionPicker: React.FC<RegionPickerProps> = ({
 
           {/* Hovered Element Bar */}
           <div className="p-2.5 bg-slate-50 border border-[#E2E8F0] rounded-lg text-xs flex items-center justify-between">
-            <span className="text-[#64748B]">
+            <span className="text-[#66758C]">
               {hoveredElement ? (
                 <span>
-                  Element: <code className="font-mono text-[#0F172A] font-semibold">{hoveredElement.selector}</code> (
+                  Element: <code className="font-mono text-[#101828] font-semibold">{hoveredElement.selector}</code> (
                   {hoveredElement.label})
                 </span>
               ) : (
@@ -312,8 +312,8 @@ export const RegionPicker: React.FC<RegionPickerProps> = ({
           {/* Add Rule Selector Mode */}
           <div className="bg-slate-50 border border-[#E2E8F0] rounded-xl p-4 space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-[#0F172A]">Click Action Mode</span>
-              <span className="text-[10px] text-[#64748B]">Target when clicking screenshot</span>
+              <span className="text-xs font-semibold text-[#101828]">Click Action Mode</span>
+              <span className="text-[10px] text-[#66758C]">Target when clicking screenshot</span>
             </div>
 
             <div className="grid grid-cols-2 gap-2">
@@ -323,7 +323,7 @@ export const RegionPicker: React.FC<RegionPickerProps> = ({
                 className={`py-2 px-3 rounded-lg text-xs font-semibold border flex items-center justify-center space-x-1.5 transition-all ${
                   selectedMode === 'watch'
                     ? 'border-emerald-500 bg-emerald-50 text-emerald-700 shadow-sm'
-                    : 'border-[#CBD5E1] bg-white text-[#64748B] hover:bg-slate-100'
+                    : 'border-[#CBD5E1] bg-white text-[#66758C] hover:bg-slate-100'
                 }`}
               >
                 <Eye className="w-3.5 h-3.5 text-emerald-600" />
@@ -336,7 +336,7 @@ export const RegionPicker: React.FC<RegionPickerProps> = ({
                 className={`py-2 px-3 rounded-lg text-xs font-semibold border flex items-center justify-center space-x-1.5 transition-all ${
                   selectedMode === 'ignore'
                     ? 'border-amber-500 bg-amber-50 text-amber-700 shadow-sm'
-                    : 'border-[#CBD5E1] bg-white text-[#64748B] hover:bg-slate-100'
+                    : 'border-[#CBD5E1] bg-white text-[#66758C] hover:bg-slate-100'
                 }`}
               >
                 <EyeOff className="w-3.5 h-3.5 text-amber-600" />
@@ -347,7 +347,7 @@ export const RegionPicker: React.FC<RegionPickerProps> = ({
 
           {/* Manual CSS Selector Form */}
           <div className="bg-slate-50 border border-[#E2E8F0] rounded-xl p-4 space-y-3 text-xs">
-            <span className="font-semibold text-[#0F172A] block">Manual CSS Selector</span>
+            <span className="font-semibold text-[#101828] block">Manual CSS Selector</span>
 
             <div className="space-y-2">
               <input
@@ -355,14 +355,14 @@ export const RegionPicker: React.FC<RegionPickerProps> = ({
                 placeholder="CSS Selector (e.g. #price, .stock, #timestamp)"
                 value={customSelector}
                 onChange={(e) => setCustomSelector(e.target.value)}
-                className="w-full px-3 py-1.5 bg-white border border-[#CBD5E1] rounded-lg font-mono text-[11px] text-[#0F172A] focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="w-full px-3 py-1.5 bg-white border border-[#CBD5E1] rounded-lg font-mono text-[11px] text-[#101828] focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
               <input
                 type="text"
                 placeholder="Label / Description (Optional)"
                 value={customLabel}
                 onChange={(e) => setCustomLabel(e.target.value)}
-                className="w-full px-3 py-1.5 bg-white border border-[#CBD5E1] rounded-lg text-[11px] text-[#0F172A] focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="w-full px-3 py-1.5 bg-white border border-[#CBD5E1] rounded-lg text-[11px] text-[#101828] focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
               <button
                 type="button"
@@ -383,14 +383,14 @@ export const RegionPicker: React.FC<RegionPickerProps> = ({
           {/* Active Rules List */}
           <div className="bg-white border border-[#E2E8F0] rounded-xl p-4 shadow-sm space-y-3">
             <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-1.5 text-xs font-semibold text-[#0F172A]">
+              <div className="flex items-center space-x-1.5 text-xs font-semibold text-[#101828]">
                 <Layers className="w-4 h-4 text-blue-600" />
                 <span>Active Region Rules ({rules.length})</span>
               </div>
             </div>
 
             {rules.length === 0 ? (
-              <p className="text-xs text-[#64748B] py-2">
+              <p className="text-xs text-[#66758C] py-2">
                 No custom region rules configured. The monitor will capture all body text.
               </p>
             ) : (
@@ -415,7 +415,7 @@ export const RegionPicker: React.FC<RegionPickerProps> = ({
                         >
                           {r.rule_type}
                         </span>
-                        {r.label && <span className="font-semibold text-[#0F172A] truncate">{r.label}</span>}
+                        {r.label && <span className="font-semibold text-[#101828] truncate">{r.label}</span>}
                       </div>
                       <div className="font-mono text-[11px] text-[#475569] truncate">{r.css_selector}</div>
                     </div>

@@ -116,10 +116,10 @@ export const AddMonitorModal: React.FC<AddMonitorModalProps> = ({
               <Globe className="w-4 h-4" />
             </div>
             <div>
-              <h2 id="modal-title" className="text-base font-semibold text-[#0F172A]">
+              <h2 id="modal-title" className="text-base font-semibold text-[#101828]">
                 {isJudge ? 'Add Website (Judge Evaluation)' : 'Add Website Monitor'}
               </h2>
-              <p className="text-xs text-[#64748B]">
+              <p className="text-xs text-[#66758C]">
                 {isJudge
                   ? 'Enter any safe public HTTP/HTTPS URL (max 2 monitors, min 15m interval)'
                   : 'Configure target URL, check schedule and sensitivity'}
@@ -129,7 +129,7 @@ export const AddMonitorModal: React.FC<AddMonitorModalProps> = ({
           <button
             onClick={onClose}
             disabled={submitting}
-            className="text-[#64748B] hover:text-[#0F172A] p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+            className="text-[#66758C] hover:text-[#101828] p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
@@ -146,7 +146,7 @@ export const AddMonitorModal: React.FC<AddMonitorModalProps> = ({
 
           {/* Quick preset chip */}
           <div className="flex items-center justify-between pb-1">
-            <span className="text-xs text-[#64748B] font-medium">Quick Preset:</span>
+            <span className="text-xs text-[#66758C] font-medium">Quick Preset:</span>
             <button
               type="button"
               onClick={handleUseFixture}
@@ -158,7 +158,7 @@ export const AddMonitorModal: React.FC<AddMonitorModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-[#0F172A] mb-1.5">
+            <label className="block text-xs font-semibold text-[#101828] mb-1.5">
               Monitor Name / Label
             </label>
             <input
@@ -168,12 +168,12 @@ export const AddMonitorModal: React.FC<AddMonitorModalProps> = ({
               value={name}
               onChange={(e) => setName(e.target.value)}
               disabled={submitting}
-              className="w-full px-3 py-2 text-sm bg-white border border-[#E2E8F0] rounded-lg text-[#0F172A] placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              className="w-full px-3 py-2 text-sm bg-white border border-[#E2E8F0] rounded-lg text-[#101828] placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-[#0F172A] mb-1.5">
+            <label className="block text-xs font-semibold text-[#101828] mb-1.5">
               Target Webpage URL
             </label>
             <input
@@ -183,23 +183,23 @@ export const AddMonitorModal: React.FC<AddMonitorModalProps> = ({
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               disabled={submitting}
-              className="w-full px-3 py-2 text-sm bg-white border border-[#E2E8F0] rounded-lg text-[#0F172A] placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              className="w-full px-3 py-2 text-sm bg-white border border-[#E2E8F0] rounded-lg text-[#101828] placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
             />
-            <p className="text-[11px] text-[#64748B] mt-1">
+            <p className="text-[11px] text-[#66758C] mt-1">
               Protected against SSRF. Internal RFC1918 and metadata endpoints are blocked.
             </p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-[#0F172A] mb-1.5">
+              <label className="block text-xs font-semibold text-[#101828] mb-1.5">
                 Check Frequency
               </label>
               <select
                 value={intervalMinutes}
                 onChange={(e) => setIntervalMinutes(Number(e.target.value))}
                 disabled={submitting}
-                className="w-full px-3 py-2 text-sm bg-white border border-[#E2E8F0] rounded-lg text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                className="w-full px-3 py-2 text-sm bg-white border border-[#E2E8F0] rounded-lg text-[#101828] focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
               >
                 <option value={15}>Every 15 minutes</option>
                 <option value={30}>Every 30 minutes</option>
@@ -210,14 +210,14 @@ export const AddMonitorModal: React.FC<AddMonitorModalProps> = ({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-[#0F172A] mb-1.5">
+              <label className="block text-xs font-semibold text-[#101828] mb-1.5">
                 Sensitivity
               </label>
               <select
                 value={sensitivity}
                 onChange={(e) => setSensitivity(e.target.value as SensitivityLevel)}
                 disabled={submitting}
-                className="w-full px-3 py-2 text-sm bg-white border border-[#E2E8F0] rounded-lg text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                className="w-full px-3 py-2 text-sm bg-white border border-[#E2E8F0] rounded-lg text-[#101828] focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
               >
                 <option value="high">High (immediate change)</option>
                 <option value="medium">Medium (standard)</option>
@@ -232,7 +232,7 @@ export const AddMonitorModal: React.FC<AddMonitorModalProps> = ({
               type="button"
               onClick={onClose}
               disabled={submitting}
-              className="px-4 py-2 text-xs font-medium text-[#64748B] hover:text-[#0F172A] hover:bg-slate-100 rounded-lg transition-colors"
+              className="px-4 py-2 text-xs font-medium text-[#66758C] hover:text-[#101828] hover:bg-slate-100 rounded-lg transition-colors"
             >
               Cancel
             </button>

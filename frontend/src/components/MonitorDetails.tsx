@@ -147,7 +147,7 @@ export const MonitorDetails: React.FC<MonitorDetailsProps> = ({
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center p-24 text-[#64748B]">
+      <div className="flex flex-col items-center justify-center p-24 text-[#66758C]">
         <RefreshCw className="w-8 h-8 animate-spin text-blue-600 mb-3" />
         <p className="text-sm font-medium">Loading monitor details...</p>
       </div>
@@ -181,13 +181,13 @@ export const MonitorDetails: React.FC<MonitorDetailsProps> = ({
         <div className="flex items-center space-x-3">
           <button
             onClick={onBack}
-            className="p-2 rounded-lg text-[#64748B] hover:text-[#0F172A] hover:bg-white border border-[#E2E8F0] shadow-sm transition-colors"
+            className="p-2 rounded-lg text-[#66758C] hover:text-[#101828] hover:bg-white border border-[#E2E8F0] shadow-sm transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
           <div>
             <div className="flex items-center space-x-2.5">
-              <h1 className="text-xl font-bold text-[#0F172A]">{monitor.name}</h1>
+              <h1 className="text-xl font-bold text-[#101828]">{monitor.name}</h1>
               <span
                 className={`text-[11px] font-semibold uppercase px-2.5 py-0.5 rounded-full border ${
                   monitor.status === 'ok'
@@ -204,7 +204,7 @@ export const MonitorDetails: React.FC<MonitorDetailsProps> = ({
                 {monitor.status}
               </span>
             </div>
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-[#64748B] mt-1">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-[#66758C] mt-1">
               <a
                 href={monitor.url}
                 target="_blank"
@@ -296,7 +296,7 @@ export const MonitorDetails: React.FC<MonitorDetailsProps> = ({
           className={`flex items-center space-x-2 px-4 py-2 text-xs font-semibold rounded-lg transition-all ${
             activeTab === 'overview'
               ? 'bg-blue-600 text-white shadow-sm'
-              : 'text-[#64748B] hover:text-[#0F172A] hover:bg-slate-100'
+              : 'text-[#66758C] hover:text-[#101828] hover:bg-slate-100'
           }`}
         >
           <ImageIcon className="w-3.5 h-3.5" />
@@ -308,7 +308,7 @@ export const MonitorDetails: React.FC<MonitorDetailsProps> = ({
           className={`flex items-center space-x-2 px-4 py-2 text-xs font-semibold rounded-lg transition-all ${
             activeTab === 'compare'
               ? 'bg-blue-600 text-white shadow-sm'
-              : 'text-[#64748B] hover:text-[#0F172A] hover:bg-slate-100'
+              : 'text-[#66758C] hover:text-[#101828] hover:bg-slate-100'
           }`}
         >
           <GitCompare className="w-3.5 h-3.5" />
@@ -320,7 +320,7 @@ export const MonitorDetails: React.FC<MonitorDetailsProps> = ({
           className={`flex items-center space-x-2 px-4 py-2 text-xs font-semibold rounded-lg transition-all ${
             activeTab === 'rules'
               ? 'bg-blue-600 text-white shadow-sm'
-              : 'text-[#64748B] hover:text-[#0F172A] hover:bg-slate-100'
+              : 'text-[#66758C] hover:text-[#101828] hover:bg-slate-100'
           }`}
         >
           <Crosshair className="w-3.5 h-3.5" />
@@ -354,14 +354,14 @@ export const MonitorDetails: React.FC<MonitorDetailsProps> = ({
             {/* Display Selected or Latest Screenshot Card */}
             <div className="bg-white border border-[#E2E8F0] rounded-xl overflow-hidden shadow-sm">
               <div className="px-5 py-3.5 border-b border-[#E2E8F0] flex items-center justify-between bg-slate-50/50">
-                <div className="flex items-center space-x-2 text-xs font-semibold text-[#0F172A]">
+                <div className="flex items-center space-x-2 text-xs font-semibold text-[#101828]">
                   <ImageIcon className="w-4 h-4 text-blue-600" />
                   <span>
                     Captured Webpage Snapshot {displayVersion ? `(Version #${displayVersion.sequence_number})` : ''}
                   </span>
                 </div>
                 {displayVersion && (
-                  <span className="text-[11px] text-[#64748B]">
+                  <span className="text-[11px] text-[#66758C]">
                     Captured {new Date(displayVersion.captured_at).toLocaleTimeString()}
                   </span>
                 )}
@@ -370,12 +370,12 @@ export const MonitorDetails: React.FC<MonitorDetailsProps> = ({
               <div className="p-4 bg-slate-100 flex items-center justify-center min-h-[360px]">
                 {displayVersion ? (
                   imageError ? (
-                    <div className="text-center p-8 text-[#64748B] flex flex-col items-center">
+                    <div className="text-center p-8 text-[#66758C] flex flex-col items-center">
                       <div className="w-10 h-10 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center mb-2.5">
                         <AlertCircle className="w-5 h-5" />
                       </div>
-                      <p className="text-xs font-semibold text-[#0F172A]">Screenshot failed to render</p>
-                      <p className="text-[11px] text-[#64748B] mt-1 mb-3 max-w-xs">
+                      <p className="text-xs font-semibold text-[#101828]">Screenshot failed to render</p>
+                      <p className="text-[11px] text-[#66758C] mt-1 mb-3 max-w-xs">
                         Unable to load the captured snapshot image. Verify network access or retry.
                       </p>
                       <button
@@ -403,10 +403,10 @@ export const MonitorDetails: React.FC<MonitorDetailsProps> = ({
                   )
                 ) : (
 
-                <div className="text-center p-12 text-[#64748B]">
+                <div className="text-center p-12 text-[#66758C]">
                   <ImageIcon className="w-12 h-12 stroke-[1.5] mx-auto mb-2 text-slate-400" />
-                  <p className="text-xs font-semibold text-[#0F172A]">No snapshot captured yet</p>
-                  <p className="text-[11px] text-[#64748B] mt-1 mb-4">
+                  <p className="text-xs font-semibold text-[#101828]">No snapshot captured yet</p>
+                  <p className="text-[11px] text-[#66758C] mt-1 mb-4">
                     Click "Check Now" to execute the first Playwright Chromium capture.
                   </p>
                   <button
@@ -424,7 +424,7 @@ export const MonitorDetails: React.FC<MonitorDetailsProps> = ({
 
             {/* Extracted Content & Hashes */}
             <div className="bg-white border border-[#E2E8F0] rounded-xl p-5 shadow-sm space-y-4">
-              <div className="flex items-center space-x-2 text-xs font-semibold text-[#0F172A]">
+              <div className="flex items-center space-x-2 text-xs font-semibold text-[#101828]">
                 <FileText className="w-4 h-4 text-blue-600" />
                 <span>
                   Extracted Web Content Details {displayVersion ? `(v${displayVersion.sequence_number})` : ''}
@@ -434,22 +434,22 @@ export const MonitorDetails: React.FC<MonitorDetailsProps> = ({
               {displayVersion ? (
                 <div className="space-y-3 text-xs">
                   <div>
-                    <span className="text-[#64748B] block font-medium mb-1">SHA-256 Content Hash:</span>
-                    <div className="flex items-center space-x-1.5 bg-slate-50 border border-[#E2E8F0] px-3 py-1.5 rounded-lg font-mono text-[11px] text-[#0F172A]">
-                      <Hash className="w-3.5 h-3.5 text-[#64748B] shrink-0" />
+                    <span className="text-[#66758C] block font-medium mb-1">SHA-256 Content Hash:</span>
+                    <div className="flex items-center space-x-1.5 bg-slate-50 border border-[#E2E8F0] px-3 py-1.5 rounded-lg font-mono text-[11px] text-[#101828]">
+                      <Hash className="w-3.5 h-3.5 text-[#66758C] shrink-0" />
                       <span className="truncate">{displayVersion.content_hash}</span>
                     </div>
                   </div>
 
                   <div>
-                    <span className="text-[#64748B] block font-medium mb-1">Normalized Text Preview:</span>
+                    <span className="text-[#66758C] block font-medium mb-1">Normalized Text Preview:</span>
                     <div className="bg-slate-50 border border-[#E2E8F0] rounded-lg p-3 font-mono text-[11px] text-slate-800 whitespace-pre-wrap max-h-48 overflow-y-auto leading-relaxed">
                       {displayVersion.short_preview}
                     </div>
                   </div>
                 </div>
               ) : (
-                <p className="text-xs text-[#64748B]">Content metadata will appear after the first successful check.</p>
+                <p className="text-xs text-[#66758C]">Content metadata will appear after the first successful check.</p>
               )}
             </div>
           </div>
@@ -460,14 +460,14 @@ export const MonitorDetails: React.FC<MonitorDetailsProps> = ({
           {/* Versions Timeline */}
           <div className="bg-white border border-[#E2E8F0] rounded-xl p-5 shadow-sm">
             <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center space-x-2 text-xs font-semibold text-[#0F172A]">
+              <div className="flex items-center space-x-2 text-xs font-semibold text-[#101828]">
                 <Layers className="w-4 h-4 text-blue-600" />
                 <span>Captured Versions ({versions.length})</span>
               </div>
             </div>
 
             {versions.length === 0 ? (
-              <p className="text-xs text-[#64748B]">No versions saved yet.</p>
+              <p className="text-xs text-[#66758C]">No versions saved yet.</p>
             ) : (
               <div className="space-y-2">
                 {versions.map((v, idx) => (
@@ -485,14 +485,14 @@ export const MonitorDetails: React.FC<MonitorDetailsProps> = ({
                   >
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center space-x-1.5">
-                        <span className="font-semibold text-[#0F172A]">Version #{v.sequence_number}</span>
+                        <span className="font-semibold text-[#101828]">Version #{v.sequence_number}</span>
                         {idx === 0 && (
                           <span className="text-[9px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-medium">
                             Latest
                           </span>
                         )}
                       </div>
-                      <span className="text-[10px] text-[#64748B]">
+                      <span className="text-[10px] text-[#66758C]">
                         {new Date(v.captured_at).toLocaleTimeString()}
                       </span>
                     </div>
@@ -502,7 +502,7 @@ export const MonitorDetails: React.FC<MonitorDetailsProps> = ({
                     </p>
 
                     <div className="flex items-center justify-between pt-1 border-t border-slate-100 mt-1.5 text-[10px]">
-                      <span className="text-[#64748B] font-mono truncate max-w-[140px]">
+                      <span className="text-[#66758C] font-mono truncate max-w-[140px]">
                         {v.content_hash.slice(0, 14)}...
                       </span>
 
@@ -532,13 +532,13 @@ export const MonitorDetails: React.FC<MonitorDetailsProps> = ({
 
           {/* Check History / Run Log */}
           <div className="bg-white border border-[#E2E8F0] rounded-xl p-5 shadow-sm">
-            <div className="flex items-center space-x-2 text-xs font-semibold text-[#0F172A] mb-4">
+            <div className="flex items-center space-x-2 text-xs font-semibold text-[#101828] mb-4">
               <Terminal className="w-4 h-4 text-blue-600" />
               <span>Check Execution Activity</span>
             </div>
 
             {checks.length === 0 ? (
-              <p className="text-xs text-[#64748B]">No checks logged yet.</p>
+              <p className="text-xs text-[#66758C]">No checks logged yet.</p>
             ) : (
               <div className="space-y-3 max-h-96 overflow-y-auto pr-1">
                 {checks.map((c) => (
@@ -569,12 +569,12 @@ export const MonitorDetails: React.FC<MonitorDetailsProps> = ({
                           ? `FAILED (${c.state})`
                           : c.state}
                       </span>
-                      <span className="text-[10px] text-[#64748B]">
+                      <span className="text-[10px] text-[#66758C]">
                         {c.finished_at ? new Date(c.finished_at).toLocaleTimeString() : c.state === 'running' ? 'In Progress' : 'Queued'}
                       </span>
                     </div>
 
-                    <div className="text-[11px] text-[#64748B] mt-1 flex items-center justify-between">
+                    <div className="text-[11px] text-[#66758C] mt-1 flex items-center justify-between">
                       <span>HTTP {c.http_status || '---'}</span>
                       {c.duration_ms && <span>{c.duration_ms} ms</span>}
                     </div>
